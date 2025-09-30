@@ -10,12 +10,14 @@ class Qubit:
         assert float_eq(abs(a0) ** 2 + abs(a1) ** 2, 1)
         self.a0 = a0
         self.a1 = a1
+    def vector(self):
+        return self.a0, self.a1
 
     def __repr__(self):
         a0, a1 = self.a0, self.a1
         sign = a1 < 0
-        a0 = "" if a0 == 1 else "-" if a0 == -1 else decorate_num(a0) + ' '
-        a1 = "" if abs(a1) == 1 else decorate_num(abs(a1)) + ' '
+        a0 = "1 " if a0 == 1 else "-" if a0 == -1 else decorate_num(a0) + ' '
+        a1 = "" if a1 == -1 else decorate_num(abs(a1)) + ' '
         return f"|φ> {a0}|0> {'-' if sign else '+'} {a1}|1>"
 
     def vec_repr(self):
@@ -66,17 +68,20 @@ class Matrix:
         Str = "\n    ".join(f'{"⎧⎪⎩("[e]}{format(*row)}{"⎫⎪⎭)"[e]}' for e, row in edge_enumerate(mat))
         return f"M = {Str}"
 
-    def __mul__(self, vec):
-        mode = 0
-        if type(vec) is Qubit:
-            vec = vec.a0, vec.a1
-            mode = 1
+    def __mul__(self, R):
+        T = type(R)
+
+        if T is tuple:
+            vec = R
+        elif hasattr(R, "vector"):
+            vec = R.vector()
+            assert type(vec) is tuple
+        else:
+            assert T in (int, float, complex)
+            return Matrix(*(tuple(e * R for e in row) for row in self.mat))
 
         assert len(self.mat) == len(vec)
-        vec = tuple(sum(a * b for a, b in zip(row, vec)) for row in self.mat)
-
-        if mode: return Qubit(*vec)
-        return vec
+        return T(*(sum(a * b for a, b in zip(row, vec)) for row in self.mat))
 
     def __invert__(self): # conjugate и транспонирование
         return Matrix(*(tuple(e.conjugate() for e in row) for row in zip(*self.mat)))
@@ -104,10 +109,11 @@ class Matrix:
         print(H   * Q_0)
         print(~H)
         print(H.is_unitary())
+        print(~C == C, C.is_unitary())
 
 I   = Matrix((1, 0), (0, 1))
 NOT = Matrix((0, 1), (1, 0))
-H   = Matrix((1/s2, 1/s2), (1/s2, -1/s2))
+H   = Matrix((1, 1), (1, -1)) * (1/s2) # Hadamard
 C   = Matrix((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, 1), (0, 0, 1, 0))
 
 Matrix.test()
