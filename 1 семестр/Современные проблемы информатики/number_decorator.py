@@ -9,6 +9,8 @@ class NumDecorator:
         without_0 = tuple(chain(range(-32, 0), range(1, 33)))
         primes = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131)
         nums = (
+            *((i, repr(i)) for i in range(-128, 129)),
+
             *((i / j, f"{i}/{j}") for i in without_0 for j in range(2, 33) if gcd(i, j) == 1),
 
             *((i / j ** 0.5, f"{i}/√{j}") for i in without_0 for j in primes),
