@@ -58,22 +58,29 @@ class NumDecorator:
         4.123105625617661: ['17/√17', '√17']
         """
 
-    def check(self, num):
+    def get_idx(self, num):
         num_arr = self.nums
         # for i in num_arr[:4]:
         #     print(i, bisect(num_arr, i - 0.01), bisect(num_arr, i), bisect(num_arr, i + 0.01))
         idx = bisect(num_arr, num)
         if idx == 0:
-            if float_eq(num, num_arr[0]): return self.strs[0]
+            if float_eq(num, num_arr[0]): return 0
         elif idx == len(num_arr):
-            if float_eq(num, num_arr[-1]): return self.strs[-1]
+            if float_eq(num, num_arr[-1]): return -1
         else:
             a = abs(num - num_arr[idx - 1])
             b = abs(num - num_arr[idx])
             if min(a, b) < EPS:
-                if a < b: return self.strs[idx - 1]
-                return self.strs[idx]
+                if a < b: return idx - 1
+                return idx
+
+    def check(self, num):
+        idx = self.get_idx(num)
+        if idx is not None: return self.strs[idx]
         return str(num)
+
+    def exists(self, *nums):
+        return all(self.get_idx(num) is not None for num in nums)
 
     def test(self):
         for i in decorator.nums[:4]:
@@ -81,9 +88,12 @@ class NumDecorator:
         for i in decorator.nums[-4:]:
             print(self.check(i - EPS/2), self.check(i), self.check(i + EPS/2))
         print(decorate_num(1/2**0.5)) # 1/√2
+        print(exists_decor(1/2**0.5)) # True
+        print(exists_decor(12345))    # False
 
 decorator = NumDecorator()
 decorate_num = decorator.check
+exists_decor = decorator.exists
 
 if __name__ == "__main__":
     decorator.repeats()
