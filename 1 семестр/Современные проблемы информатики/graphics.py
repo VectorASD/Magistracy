@@ -14,15 +14,18 @@ class Camera:
         # self.x, self.y, self.z = self.pos = 0, 0, 5
         self.pos = 0, 0, 3
         self.YPR = 0, 0, 0
+        self.fovy   = 90
+        self.aspect = 1
+        self.near   = 0.1
+        self.far    = 100
         self.update_proj()
 
-    def update_proj(self, fovy = 90, aspect = 1, near = 0.1, far = 100):
-        self.near        = near
-        self.far         = far
+    def update_proj(self):
+        fovy, near, far = self.fovy, self.near, self.far
         self.fovy_factor = ff = tan(fovy * pi_180 / 2)
         self.depth_states = near, far, ff
 
-        self.proj = Matrix.perspective(fovy, aspect, near, far)
+        self.proj = Matrix.perspective(fovy, self.aspect, near, far)
         self.update_proj_view()
 
     def update_proj_view(self):
@@ -76,9 +79,14 @@ camera = Camera()
 
 
 
-canvas_size = 640
+canvas_size = 1000
 center = canvas_size // 2
 model = None
+
+def dist(A, B):
+    x,  y,  z,  color = A
+    x2, y2, z2, color = B
+    return hypot(x - x2, y - y2, z - z2)
 
 def init_model():
     global model
@@ -91,6 +99,7 @@ def init_model():
     for i in range(circle_count):
         angle = i * part
         dots.append((cos(angle) * R, sin(angle) * R, 0, ("pink", "red")[i % 2]))
+    # print(dist(dots[0], dots[1])) # 0.049 шпилек между вершинами
     for i in range(41):
         ii = i / 20 - 1
         dots.append((ii, -1, 0, ("aqua", "blue")[i % 2]))
@@ -113,13 +122,17 @@ def redraw():
     # print(1 - (dots[-1][2] * 0.5 + 0.5))
 
     near, far, fovy_factor = camera.depth_states
-    object_size = 100
+
+    pixels_per_world_unit = canvas_size / (2 * fovy_factor)
+    object_size = pixels_per_world_unit / 3.2
+
+    # print("pixels_per_world_unit:", pixels_per_world_unit)
+    # print("object_size:", object_size)
 
     for x, y, z, color in dots:
         depth = z * 0.5 + 0.5
         # screen_scale = (near + depth * (far - near))
         # circle_radius = object_size * screen_scale * fovy_factor
-        # pixels_per_world_unit = canvas_size / (2 * fovy_factor)
         # circle_radius = object_size * pixels_per_world_unit / screen_scale
         circle_radius = object_size * (1 - depth)
 
@@ -141,7 +154,8 @@ def redraw():
 
 fps_last_time = time.time()
 frame_count = 0
-fps_position = (10, canvas_size - 10)
+fps_position = (10, canvas_size - 10), "sw"
+fps_position = (10, 5),                "nw"
 
 def update_fps():
     global fps_last_time, frame_count
@@ -227,6 +241,9 @@ def update_move():
     if 27 in key_state:
         key_table = tuple(dbg_keys.get(i, 'x') for i in range(max(keys) + 1))
         print(key_table)
+    elif "Escape" in key_state:
+        root.destroy()
+        return
 
     L = hypot(dx, dy, dz)
     if L: dx /= L; dy /= L; dz /= L # нормализация вектора
@@ -240,11 +257,11 @@ def update_move():
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.title("Окружность из кругов")
+    root.title("OpenGL-like 2D rendering")
     canvas = tk.Canvas(root, width=canvas_size, height=canvas_size, bg="white")
     canvas.pack()
 
-    fps_text_id = canvas.create_text(*fps_position, anchor="sw", text="FPS: 0", font=("Arial", 12), fill="black")
+    fps_text_id = canvas.create_text(*fps_position[0], anchor=fps_position[1], text="FPS: 0", font=("Arial", 12), fill="black")
 
     init_model()
     redraw()
