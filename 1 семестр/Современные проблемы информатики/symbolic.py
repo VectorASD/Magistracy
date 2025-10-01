@@ -135,7 +135,7 @@ class Symbolic:
 
 
 
-from lab1 import Matrix
+from matrix import Matrix
 
 def MetaMatrix(*rows):
     return Matrix(*(tuple(Symbolic(cell) if type(cell) is str else cell for cell in row) for row in rows))

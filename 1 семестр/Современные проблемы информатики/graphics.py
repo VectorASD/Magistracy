@@ -1,7 +1,7 @@
 import tkinter as tk
 from math import pi, sin, cos, hypot, tan
 import time
-from lab1 import Matrix
+from matrix import Matrix
 
 pi_180 = pi / 180
 
@@ -40,7 +40,7 @@ class Camera:
         self.update_proj_view()
     def rotate(self, dY, dP, dR):
         Y, P, R = self.YPR
-        self.YPR = Y + dY, P + dP, R + dR
+        self.YPR = Y + dY, max(-75, min(P + dP, 75)), R + dR
         self.update_proj_view()
 
     def move_forward(self, dt):
