@@ -155,7 +155,8 @@ class Matrix:
 
     @staticmethod
     def perspective(fovy, aspect, near, far):
-        fovy = ctg(fovy / 2)
+        fovy *= pi_180
+        fovy = ctg(fovy / 2) # inverted fovy_factor
         return Matrix(*(
             (fovy / aspect, 0, 0, 0),
             (0, fovy, 0, 0),
@@ -171,12 +172,21 @@ class Matrix:
         sY, cY = sin(yaw),   cos(yaw)
         sP, cP = sin(pitch), cos(pitch)
         sR, cR = sin(roll),  cos(roll)
-        r00, r01, r02 = cY*cP, cY*sP*sR - sY*cR, cY*sP*cR + sY*sR
-        r10, r11, r12 = sY*cP, sY*sP*sR + cY*cR, sY*sP*cR - cY*sR
-        r20, r21, r22 =   -sP, cP*sR,            cP*cR
-        right   =  r00,  r10,  r20
-        up      =  r01,  r11,  r21
-        forward = -r02, -r12, -r22
+        # r00, r01, r02 = cY*cP, cY*sP*sR - sY*cR, cY*sP*cR + sY*sR
+        # r10, r11, r12 = sY*cP, sY*sP*sR + cY*cR, sY*sP*cR - cY*sR
+        # r20, r21, r22 =   -sP, cP*sR,            cP*cR
+
+        Y = Matrix((cY, 0, sY), (0, 1, 0), (-sY, 0, cY))
+        P = Matrix((1, 0, 0), (0, cP, -sP), (0, sP, cP))
+        R = Matrix((cR, -sR, 0), (sR, cR, 0), (0, 0, 1))
+        YPR = P @ Y @ R
+
+        right, up, (r20, r21, r22) = YPR.mat
+
+        r00, r01, r02 = right
+        r10, r11, r12 = up
+        forward = -r20, -r21, -r22
+
         x, y, z = -x, -y, -z
         return Matrix(
             (r00, r01, r02, r00*x + r01*y + r02*z),
@@ -185,11 +195,14 @@ class Matrix:
             (0,   0,   0,   1),
         ), forward, right, up
 
-    def project(self, x, y, z):
+    def project(self, x, y, z, winX, winY):
         x, y, z, w = self * (x, y, z, 1)
-        return x / w, y / w, z / w
-        # -0.01 -> -1 (близко)
-        # -100  ->  1 (далеко)
+        if w:
+            return (x / w + 1) * (winX / 2), (1 - y / w) * (winY / 2), z / w
+        return 0, 0, 2
+        # z = -1 (далеко)
+        # z = 1 (близко)
+        # z > 1 (за камерой)
 
     def __call__(self, letter):
         self.letter = letter
@@ -206,11 +219,11 @@ class Matrix:
         print(~C == C, C.is_unitary())
         print()
 
-        proj = Matrix.perspective(90 * pi_180, 1, 0.01, 100)
+        proj = Matrix.perspective(90, 1, 0.01, 100)
         print(Matrix.view(0, 0, 0, 60,  0,  0)[0]("Y-rot")) # sY = √3/2; cY = 1/2
         print(Matrix.view(0, 0, 0,  0, 60,  0)[0]("P-rot")) # sP = √3/2; cP = 1/2
         print(Matrix.view(0, 0, 0,  0,  0, 60)[0]("R-rot")) # sR = √3/2; cR = 1/2
-        view, F, R, U = Matrix.view(0, 0, 30, 0, 0, 0)
+        view, F, R, U = Matrix.view(-30, 0, 0, 0, 90, 0)
         proj_view = proj @ view
         print(proj("proj"))
         print(view("view"))
@@ -218,7 +231,7 @@ class Matrix:
         print("Forward:", F)
         print("Right:",   R)
         print("Up:",      U)
-        print(proj_view.project(5, 5/2, 0))
+        print(proj_view.project(5, 5/2, 0, 64, 64))
 
 I   = Matrix((1, 0), (0, 1))
 NOT = Matrix((0, 1), (1, 0))
