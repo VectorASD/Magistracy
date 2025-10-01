@@ -1,9 +1,11 @@
 import tkinter as tk
 from math import pi, sin, cos, hypot, tan
 import time
-from matrix import Matrix
+from matrix import Matrix, pi_180
 
-pi_180 = pi / 180
+from sortedcontainers import SortedList # pip install sortedcontainers
+
+# pi_180 = pi / 180
 
 
 
@@ -29,7 +31,10 @@ class Camera:
 
     def project_dots(self, dots, winX, winY):
         project = self.proj_view.project
-        return tuple(project(*dot, winX, winY) for dot in dots)
+        return SortedList(
+            (dot for dot in (project(*dot, winX, winY) for dot in dots) if dot[2] <= 1),
+            key = lambda p: -p[2], # сортировка по Z по убыванию
+        )
 
     def move_to(self, x, y, z):
         self.pos = x, y, z
@@ -85,11 +90,11 @@ def init_model():
     part = 2 * pi / circle_count
     for i in range(circle_count):
         angle = i * part
-        dots.append((cos(angle) * R, sin(angle) * R, 0))
+        dots.append((cos(angle) * R, sin(angle) * R, 0, ("pink", "red")[i % 2]))
     for i in range(41):
-        i = i / 20 - 1
-        dots.append((i, -1, 0))
-        if i: dots.append((0, -1, i))
+        ii = i / 20 - 1
+        dots.append((ii, -1, 0, ("aqua", "blue")[i % 2]))
+        if ii: dots.append((0, -1, ii, ("lime", "green")[i % 2]))
     model = dots
 
 circle_pos = center, center
@@ -100,7 +105,7 @@ def redraw():
     canvas.delete("circles")
 
     circle_radius = 20
-    central_radius = 30
+    central_radius = 15
     border_width = central_radius // 2
 
     dots = camera.project_dots(model, canvas_size, canvas_size)
@@ -110,9 +115,7 @@ def redraw():
     near, far, fovy_factor = camera.depth_states
     object_size = 100
 
-    for x, y, z in dots:
-        if z > 1: continue
-
+    for x, y, z, color in dots:
         depth = z * 0.5 + 0.5
         # screen_scale = (near + depth * (far - near))
         # circle_radius = object_size * screen_scale * fovy_factor
@@ -123,7 +126,7 @@ def redraw():
         canvas.create_oval(
             x - circle_radius, y - circle_radius,
             x + circle_radius, y + circle_radius,
-            fill="red", outline="", tags="circles"
+            fill=color, outline="", tags="circles"
         )
 
     cx, cy = circle_pos
@@ -158,32 +161,30 @@ def update_fps():
 last_mouse_pos = None
 
 def on_press(event):
-    global last_mouse_pos
-    last_mouse_pos = event.x, event.y
+    global last_mouse_pos, circle_pos
+    last_mouse_pos = circle_pos = event.x, event.y
+    redraw()
     # print(f"Нажатие: x={}, y={event.y}")
 def on_move(event):
     # print(f"Движение: x={event.x}, y={event.y}")
-    global circle_pos
-    circle_pos = event.x, event.y
+    global last_mouse_pos, circle_pos
 
-    global last_mouse_pos
     if last_mouse_pos is None:
-        last_mouse_pos = (event.x, event.y)
-        return
+        last_mouse_pos = event.x, event.y
 
     x0, y0 = last_mouse_pos
     dx = event.x - x0
     dy = event.y - y0
-    last_mouse_pos = (event.x, event.y)
+    last_mouse_pos = circle_pos = event.x, event.y
 
-    sensitivity = 0.4  # коэффициент чувствительности
+    if dx or dy:
+        sensitivity = 0.4  # коэффициент чувствительности
 
-    dYaw = dx * sensitivity
-    dPitch  = dy * sensitivity
+        dYaw   = dx * sensitivity
+        dPitch = dy * sensitivity
 
-    camera.rotate(dYaw, dPitch, 0)
-
-    redraw()
+        camera.rotate(dYaw, dPitch, 0)
+        redraw()
 def on_release(event):
     global last_mouse_pos
     last_mouse_pos = None

@@ -116,11 +116,11 @@ class Matrix:
             (0,   0,   0,   1),
         ), forward, right, up
 
-    def project(self, x, y, z, winX, winY):
+    def project(self, x, y, z, color, winX, winY):
         x, y, z, w = self * (x, y, z, 1)
         if w:
-            return (x / w + 1) * (winX / 2), (1 - y / w) * (winY / 2), z / w
-        return 0, 0, 2
+            return (x / w + 1) * (winX / 2), (1 - y / w) * (winY / 2), z / w, color
+        return 0, 0, 2, color
         # z = -1 (далеко)
         # z = 1 (близко)
         # z > 1 (за камерой)
