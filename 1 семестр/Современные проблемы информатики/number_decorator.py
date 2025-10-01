@@ -59,6 +59,8 @@ class NumDecorator:
         """
 
     def get_idx(self, num):
+        if type(num) not in (int, float): return
+
         num_arr = self.nums
         # for i in num_arr[:4]:
         #     print(i, bisect(num_arr, i - 0.01), bisect(num_arr, i), bisect(num_arr, i + 0.01))
