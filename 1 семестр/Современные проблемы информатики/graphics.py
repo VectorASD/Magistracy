@@ -12,7 +12,7 @@ from sortedcontainers import SortedList # pip install sortedcontainers
 class Camera:
     def __init__(self):
         # self.x, self.y, self.z = self.pos = 0, 0, 5
-        self.pos = 0, 0, 3
+        self.pos = 0, 0, 2
         self.YPR = 0, 0, 0
         self.fovy   = 90
         self.aspect = 1
@@ -52,36 +52,256 @@ class Camera:
         self.update_proj_view()
 
     def move_forward(self, dt):
-        x, y, z = self.pos
         dx, dy, dz = self.forward
-        self.pos = x + dx * dt, y + dy * dt, z + dz * dt
-        self.update_proj_view()
+        self.move(dx * dt, dy * dt, dz * dt)
 
     def move_right(self, dt):
-        x, y, z = self.pos
         dx, dy, dz = self.right
-        self.pos = x + dx * dt, y + dy * dt, z + dz * dt
-        self.update_proj_view()
+        self.move(dx * dt, dy * dt, dz * dt)
 
     def move_up(self, dt):
-        x, y, z = self.pos
-        dx, dy, dz = self.up
-        self.pos = x + dx * dt, y + dy * dt, z + dz * dt
-        self.update_proj_view()
+        # dx, dy, dz = self.up
+        dx, dy, dz = 0, 1, 0 # рациональнее независимый от поворота камеры вариант
+        self.move(dx * dt, dy * dt, dz * dt)
+
+    def test(self):
+        print(self.proj_view)
+        self.move(0, 0, 2)
+        self.rotate(0, 0, 45)
+        print(self.proj_view)
 
 
 
-camera = Camera()
-# print(camera.proj_view)
-# camera.move(0, 0, 2)
-# camera.rotate(0, 0, 45)
-# print(camera.proj_view)
+class KeyboardHandler:
+    dbg_keys = {}
+    key_table = ('x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'BackSpace', 'Tab', 'x', 'x', 'Clear', 'Return', 'x', 'x', 'Shift_L', 'Control_R', 'Alt_R', 'x', 'Caps_Lock', 'x', 'x', 'x', 'x', 'x', 'x', 'Escape', 'x', 'x', 'x', 'x', 'space', 'Prior', 'Next', 'End', 'Home', 'Left', 'Up', 'Right', 'Down', 'x', 'x', 'x', 'x', 'Insert', 'Delete', 'x', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'Win_L', 'x', 'x', 'x', 'x', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'asterisk', 'plus', 'x', 'minus', 'period', 'slash', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'Num_Lock', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'semicolon', 'equal', 'comma', 'minus', 'period', 'slash', 'grave', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'bracketleft', 'backslash', 'bracketright', 'apostrophe')
+
+    def __init__(self, context):
+        self.ctx = context
+        self.last_time = time.time()
+        self.key_state = set()
+
+    def on_key_press(self, event):
+        # KeyboardHandler.dbg_keys[event.keycode] = event.keysym
+        key_table = KeyboardHandler.key_table
+        key = key_table[event.keycode] if event.keycode in range(len(key_table)) else 'x'
+        self.key_state.add(key)
+        # print(f"[↓] {key} нажата")
+
+    def on_key_release(self, event):
+        key_table = KeyboardHandler.key_table
+        key = key_table[event.keycode] if event.keycode in range(len(key_table)) else 'x'
+        self.key_state.discard(key)
+        # print(f"[↑] {key} отпущена")
+
+    def bind(self):
+        root = self.ctx.root
+        root.bind("<KeyPress>",   self.on_key_press)
+        root.bind("<KeyRelease>", self.on_key_release)
+        return self
+
+    def update_move(self):
+        T = time.time()
+        dt = T - self.last_time
+        self.last_time = T
+
+        key_state = self.key_state
+        # if key_state: print(key_state)
+        speed = 3 * (2.5 if "Shift_L" in key_state or "Shift_R" in key_state else 1)
+        dx = dy = dz = 0
+
+        if "w" in key_state or "Up" in key_state: dz += 1
+        if "a" in key_state or "Left" in key_state: dx -= 1
+        if "s" in key_state or "Down" in key_state: dz -= 1
+        if "d" in key_state or "Right" in key_state: dx += 1
+        if "space" in key_state: dy += 1
+        if "Control_L" in key_state or "Control_R" in key_state: dy -= 1
+        if 27 in key_state:
+            key_table = tuple(KeyboardHandler.dbg_keys.get(i, 'x') for i in range(max(keys) + 1))
+            print(key_table)
+        elif "Escape" in key_state:
+            root.destroy()
+            return
+
+        L = hypot(dx, dy, dz)
+        if L: dx /= L; dy /= L; dz /= L # нормализация вектора
+
+        camera = self.ctx.camera
+        if dz: camera.move_forward(dt * speed * dz)
+        if dx: camera.move_right  (dt * speed * dx)
+        if dy: camera.move_up     (dt * speed * dy)
+        if L: self.ctx.render.redraw()
 
 
 
-canvas_size = 1000
-center = canvas_size // 2
-model = None
+class MouseHandler:
+    def __init__(self, context):
+        self.ctx = context
+        self.last_mouse_pos = None
+
+    def on_press(self, event):
+        # print(f"Нажатие: x={}, y={event.y}")
+        self.last_mouse_pos = event.x, event.y
+        self.ctx.render.redraw()
+        self.ctx.focus_me()
+
+    def on_move(self, event):
+        # print(f"Движение: x={event.x}, y={event.y}")
+        if self.last_mouse_pos is None:
+            self.last_mouse_pos = event.x, event.y
+
+        x0, y0 = self.last_mouse_pos
+        dx = event.x - x0
+        dy = event.y - y0
+        self.last_mouse_pos = event.x, event.y
+
+        if dx or dy:
+            sensitivity = 0.4  # коэффициент чувствительности
+
+            dYaw   = dx * sensitivity
+            dPitch = dy * sensitivity
+
+            self.ctx.camera.rotate(dYaw, dPitch, 0)
+            self.ctx.render.redraw()
+
+    def on_release(self, event):
+        # print(f"Отпускание: x={event.x}, y={event.y}")
+        self.last_mouse_pos = None
+
+    def bind(self, n):
+        canvas = self.ctx.canvas
+        canvas.bind(f"<ButtonPress-{n}>",   self.on_press) # всё равно перезаписывает <Button-{n}>
+        canvas.bind(f"<B{n}-Motion>",       self.on_move)
+        canvas.bind(f"<ButtonRelease-{n}>", self.on_release)
+        return self
+
+
+
+class Render:
+    def __init__(self, context):
+        self.ctx = context
+        self.width = self.height = 640
+
+        self.last_time = time.time()
+        self.frame_count = 0
+
+        canvas = tk.Canvas(context.frame, width=self.width, height=self.height, bg="white")
+        canvas.pack()
+        self.canvas = canvas
+
+    def redraw(self):
+        canvas = self.canvas
+        camera = self.ctx.camera
+
+        canvas.delete("circles")
+
+        central_radius = 15
+        border_width = central_radius // 2
+
+        dots = camera.project_dots(model, self.width, self.height)
+        # print((dots[0][2] * 0.5 + 0.5) * (camera.far - camera.near) + camera.near)
+        # print(1 - (dots[-1][2] * 0.5 + 0.5))
+
+        near, far, fovy_factor = camera.depth_states
+
+        pixels_per_world_unit = self.height / (2 * fovy_factor)
+        object_size = pixels_per_world_unit / 3.2
+
+        for x, y, z, color in dots:
+            depth = z * 0.5 + 0.5
+            # screen_scale = (near + depth * (far - near))
+            # circle_radius = object_size * screen_scale * fovy_factor
+            # circle_radius = object_size * pixels_per_world_unit / screen_scale
+            circle_radius = object_size * (1 - depth)
+
+            canvas.create_oval(
+                x - circle_radius, y - circle_radius,
+                x + circle_radius, y + circle_radius,
+                fill=color, outline="", tags="circles"
+            )
+
+        # cx, cy = circle_pos
+        # canvas.create_oval(
+        #     cx - central_radius, cy - central_radius,
+        #     cx + central_radius, cy + central_radius,
+        #     outline="blue", width=border_width, tags="circles"
+        # )
+        self.frame_count += 1
+
+    def init_fps(self):
+        fps_pos = (10, self.height - 10), "sw"
+        fps_pos = (10, 5),                "nw"
+        self.fps_text_id = self.ctx.canvas.create_text(*fps_pos[0], anchor=fps_pos[1], text="FPS: 0", font=("Arial", 12), fill="black")
+
+    def update_fps(self):
+        canvas = self.ctx.canvas
+
+        T = time.time()
+        elapsed = T - self.last_time
+        if elapsed >= 0.1:
+            fps = self.frame_count / elapsed
+            canvas.itemconfig(self.ctx.render.fps_text_id, text=f"FPS: {int(fps)}")
+            self.last_time = T
+            self.frame_count = 0
+        canvas.after(10, self.update_fps)
+
+        self.ctx.keyboard_handler.update_move()
+
+    def set_size(self, width, height):
+        self.canvas.config(width = width, height = height)
+        camera = self.ctx.camera
+        camera.aspect = width / height
+        camera.update_proj()
+
+        self.width = width
+        self.height = height
+        self.redraw()
+
+
+
+class Context:
+    def __init__(self, root):
+        self.root = root
+
+        frame = tk.Frame(root, padx=4, pady=4, bg="white")
+        frame.pack(side="right")
+        self.frame = frame
+
+        self.camera = Camera()
+        self.render = render = Render(self)
+        self.canvas = render.canvas
+
+        self.keyboard_handler = KeyboardHandler(self)
+        MouseHandler(self).bind(1) # ЛКМ
+        MouseHandler(self).bind(2) # СКМ
+        MouseHandler(self).bind(3) # ПКМ
+
+        render.init_fps()
+        render.redraw()
+        render.update_fps()
+
+    def focus_me(self):
+        if self.canvas["highlightbackground"] == "dodgerblue": return
+
+        for context in contexts:
+            context.canvas.config(highlightbackground = ("SystemButtonFace", "dodgerblue")[context == self])
+        self.keyboard_handler.bind()
+
+    @property
+    def width(self):
+        return (self.frame["padx"] + int(self.canvas["highlightthickness"])) * 2 + int(self.canvas["width"])
+
+    @property
+    def height(self):
+        return (self.frame["pady"] + int(self.canvas["highlightthickness"])) * 2 + int(self.canvas["height"])
+
+    def set_canvas_size(self, width, height):
+        thickness = int(self.canvas["highlightthickness"])
+        width  -= (self.frame["padx"] + thickness) * 2
+        height -= (self.frame["pady"] + thickness) * 2
+        self.render.set_size(width, height)
+
+
 
 def dist(A, B):
     x,  y,  z,  color = A
@@ -89,188 +309,58 @@ def dist(A, B):
     return hypot(x - x2, y - y2, z - z2)
 
 def init_model():
-    global model
+    dots = []
+    append = dots.append
 
     circle_count = 128
-
-    dots = []
-    R = 1
     part = 2 * pi / circle_count
     for i in range(circle_count):
         angle = i * part
-        dots.append((cos(angle) * R, sin(angle) * R, 0, ("pink", "red")[i % 2]))
+        ci = cos(angle)
+        si = sin(angle)
+        append((0, ci, si, ("pink", "red")[i % 2]))
+        append((ci, 0, si, ("lime", "green")[i % 2]))
+        append((ci, si, 0, ("aqua", "blue")[i % 2]))
     # print(dist(dots[0], dots[1])) # 0.049 шпилек между вершинами
-    for i in range(41):
-        ii = i / 20 - 1
-        dots.append((ii, -1, 0, ("aqua", "blue")[i % 2]))
-        if ii: dots.append((0, -1, ii, ("lime", "green")[i % 2]))
-    model = dots
 
-circle_pos = center, center
+    # for i in range(41):
+    #     ii = i / 20 - 1
+    #     append((ii, -1.2, 0, ("aqua", "blue")[i % 2]))
+    #     if ii: append((0, -1.2, ii, ("lime", "green")[i % 2]))
 
-def redraw():
-    global frame_count
+    return dots
 
-    canvas.delete("circles")
-
-    circle_radius = 20
-    central_radius = 15
-    border_width = central_radius // 2
-
-    dots = camera.project_dots(model, canvas_size, canvas_size)
-    # print((dots[0][2] * 0.5 + 0.5) * (camera.far - camera.near) + camera.near)
-    # print(1 - (dots[-1][2] * 0.5 + 0.5))
-
-    near, far, fovy_factor = camera.depth_states
-
-    pixels_per_world_unit = canvas_size / (2 * fovy_factor)
-    object_size = pixels_per_world_unit / 3.2
-
-    # print("pixels_per_world_unit:", pixels_per_world_unit)
-    # print("object_size:", object_size)
-
-    for x, y, z, color in dots:
-        depth = z * 0.5 + 0.5
-        # screen_scale = (near + depth * (far - near))
-        # circle_radius = object_size * screen_scale * fovy_factor
-        # circle_radius = object_size * pixels_per_world_unit / screen_scale
-        circle_radius = object_size * (1 - depth)
-
-        canvas.create_oval(
-            x - circle_radius, y - circle_radius,
-            x + circle_radius, y + circle_radius,
-            fill=color, outline="", tags="circles"
-        )
-
-    cx, cy = circle_pos
-    canvas.create_oval(
-        cx - central_radius, cy - central_radius,
-        cx + central_radius, cy + central_radius,
-        outline="blue", width=border_width, tags="circles"
-    )
-    frame_count += 1
+model = init_model()
+contexts = None
 
 
 
-fps_last_time = time.time()
-frame_count = 0
-fps_position = (10, canvas_size - 10), "sw"
-fps_position = (10, 5),                "nw"
+def main():
+    global contexts
 
-def update_fps():
-    global fps_last_time, frame_count
-    T = time.time()
-    elapsed = T - fps_last_time
-    if elapsed >= 0.1:
-        fps = frame_count / elapsed
-        canvas.itemconfig(fps_text_id, text=f"FPS: {int(fps)}")
-        fps_last_time = T
-        frame_count = 0
-    canvas.after(10, update_fps)
+    prev_width = prev_height = None
+    def on_resize(event):
+        nonlocal prev_width, prev_height
+        if event.widget == root and (event.width != prev_width or event.height != prev_height):
+            prev_width  = W = event.width
+            prev_height = H = event.height
+            # print(f"Новый размер: {W} x {H}")
+            contexts[0].set_canvas_size(W // 2, H)
+            contexts[1].set_canvas_size(W - W // 2, H)
 
-    update_move()
-
-
-
-last_mouse_pos = None
-
-def on_press(event):
-    global last_mouse_pos, circle_pos
-    last_mouse_pos = circle_pos = event.x, event.y
-    redraw()
-    # print(f"Нажатие: x={}, y={event.y}")
-def on_move(event):
-    # print(f"Движение: x={event.x}, y={event.y}")
-    global last_mouse_pos, circle_pos
-
-    if last_mouse_pos is None:
-        last_mouse_pos = event.x, event.y
-
-    x0, y0 = last_mouse_pos
-    dx = event.x - x0
-    dy = event.y - y0
-    last_mouse_pos = circle_pos = event.x, event.y
-
-    if dx or dy:
-        sensitivity = 0.4  # коэффициент чувствительности
-
-        dYaw   = dx * sensitivity
-        dPitch = dy * sensitivity
-
-        camera.rotate(dYaw, dPitch, 0)
-        redraw()
-def on_release(event):
-    global last_mouse_pos
-    last_mouse_pos = None
-    # print(f"Отпускание: x={event.x}, y={event.y}")
-
-
-
-key_state = set()
-dbg_keys = {}
-key_table = ('x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'BackSpace', 'Tab', 'x', 'x', 'Clear', 'Return', 'x', 'x', 'Shift_L', 'Control_R', 'Alt_R', 'x', 'Caps_Lock', 'x', 'x', 'x', 'x', 'x', 'x', 'Escape', 'x', 'x', 'x', 'x', 'space', 'Prior', 'Next', 'End', 'Home', 'Left', 'Up', 'Right', 'Down', 'x', 'x', 'x', 'x', 'Insert', 'Delete', 'x', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'Win_L', 'x', 'x', 'x', 'x', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'asterisk', 'plus', 'x', 'minus', 'period', 'slash', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'Num_Lock', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'semicolon', 'equal', 'comma', 'minus', 'period', 'slash', 'grave', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'bracketleft', 'backslash', 'bracketright', 'apostrophe')
-def on_key_press(event):
-    # dbg_keys[event.keycode] = event.keysym
-    key = key_table[event.keycode] if event.keycode in range(len(key_table)) else 'x'
-    key_state.add(key)
-    # print(f"[↓] {key} нажата")
-def on_key_release(event):
-    key = key_table[event.keycode] if event.keycode in range(len(key_table)) else 'x'
-    key_state.discard(key)
-    # print(f"[↑] {key} отпущена")
-
-
-
-last_time = time.time()
-def update_move():
-    global last_time
-    T = time.time()
-    dt = T - last_time
-    last_time = T
-
-    # if key_state: print(key_state)
-    speed = 3 * (2.5 if "Shift_L" in key_state or "Shift_R" in key_state else 1)
-    dx = dy = dz = 0
-
-    if "w" in key_state or "Up" in key_state: dz += 1
-    if "a" in key_state or "Left" in key_state: dx -= 1
-    if "s" in key_state or "Down" in key_state: dz -= 1
-    if "d" in key_state or "Right" in key_state: dx += 1
-    if "space" in key_state: dy += 1
-    if "Control_L" in key_state or "Control_R" in key_state: dy -= 1
-    if 27 in key_state:
-        key_table = tuple(dbg_keys.get(i, 'x') for i in range(max(keys) + 1))
-        print(key_table)
-    elif "Escape" in key_state:
-        root.destroy()
-        return
-
-    L = hypot(dx, dy, dz)
-    if L: dx /= L; dy /= L; dz /= L # нормализация вектора
-
-    if dz: camera.move_forward(dt * speed * dz)
-    if dx: camera.move_right  (dt * speed * dx)
-    if dy: camera.move_up     (dt * speed * dy)
-    if L: redraw()
-
-
-
-if __name__ == "__main__":
     root = tk.Tk()
     root.title("OpenGL-like 2D rendering")
-    canvas = tk.Canvas(root, width=canvas_size, height=canvas_size, bg="white")
-    canvas.pack()
 
-    fps_text_id = canvas.create_text(*fps_position[0], anchor=fps_position[1], text="FPS: 0", font=("Arial", 12), fill="black")
+    contexts = (
+        Context(root),
+        Context(root),
+    )
 
-    init_model()
-    redraw()
-    update_fps()
+    # root.after(100, lambda: print(root.winfo_width(), root.winfo_height()))
+    # print(contexts[0].width + contexts[1].width, contexts[0].height)
 
-    canvas.bind("<ButtonPress-1>", on_press) # всё равно перезаписывает <Button-1>
-    canvas.bind("<B1-Motion>", on_move)
-    canvas.bind("<ButtonRelease-1>", on_release)
-    root.bind("<KeyPress>", on_key_press)
-    root.bind("<KeyRelease>", on_key_release)
-
+    root.bind("<Configure>", on_resize)
     root.mainloop()
+
+if __name__ == "__main__":
+    main()
