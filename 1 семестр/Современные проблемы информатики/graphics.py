@@ -1,11 +1,11 @@
 import tkinter as tk
 from math import pi, sin, cos, hypot, tan
 import time
+
 from matrix import Matrix, pi_180
+from misc import wrap_rounded_rectangle
 
 from sortedcontainers import SortedList # pip install sortedcontainers
-
-# pi_180 = pi / 180
 
 
 
@@ -13,11 +13,16 @@ class Camera:
     def __init__(self):
         # self.x, self.y, self.z = self.pos = 0, 0, 5
         self.pos = 0, 0, 2
-        self.YPR = 0, 0, 0
+        self.YPR = -20, 30, 0
+
         self.fovy   = 90
         self.aspect = 1
         self.near   = 0.1
         self.far    = 100
+
+        self.R            = 1.5
+        self.orbital_mode = True
+
         self.update_proj()
 
     def update_proj(self):
@@ -30,6 +35,13 @@ class Camera:
 
     def update_proj_view(self):
         self.view, self.forward, self.right, self.up = Matrix.view(*self.pos, *self.YPR)
+
+        if self.orbital_mode:
+            x, y, z = self.forward
+            R = -self.R
+            self.pos = x * R, y * R, z * R
+            self.view, self.forward, self.right, self.up = Matrix.view(*self.pos, *self.YPR)
+
         self.proj_view = self.proj @ self.view
 
     def project_dots(self, dots, winX, winY):
@@ -52,14 +64,25 @@ class Camera:
         self.update_proj_view()
 
     def move_forward(self, dt):
-        dx, dy, dz = self.forward
-        self.move(dx * dt, dy * dt, dz * dt)
+        if self.orbital_mode:
+            mul = 1 + abs(dt) * 1.001
+            self.R *= 1/mul if dt > 0 else mul
+            self.update_proj_view()
+        else:
+            dx, dy, dz = self.forward
+            self.move(dx * dt, dy * dt, dz * dt)
 
     def move_right(self, dt):
+        if self.orbital_mode:
+            self.rotate(dt * -90, 0, 0)
+            return
         dx, dy, dz = self.right
         self.move(dx * dt, dy * dt, dz * dt)
 
     def move_up(self, dt):
+        if self.orbital_mode:
+            self.rotate(0, dt * 90, 0)
+            return
         # dx, dy, dz = self.up
         dx, dy, dz = 0, 1, 0 # рациональнее независимый от поворота камеры вариант
         self.move(dx * dt, dy * dt, dz * dt)
@@ -87,6 +110,9 @@ class KeyboardHandler:
         key = key_table[event.keycode] if event.keycode in range(len(key_table)) else 'x'
         self.key_state.add(key)
         # print(f"[↓] {key} нажата")
+
+        if key == "q":
+            self.ctx.render.change_orbital_mode()
 
     def on_key_release(self, event):
         key_table = KeyboardHandler.key_table
@@ -120,7 +146,7 @@ class KeyboardHandler:
             key_table = tuple(KeyboardHandler.dbg_keys.get(i, 'x') for i in range(max(keys) + 1))
             print(key_table)
         elif "Escape" in key_state:
-            root.destroy()
+            self.ctx.root.destroy()
             return
 
         L = hypot(dx, dy, dz)
@@ -188,6 +214,9 @@ class Render:
         canvas = tk.Canvas(context.frame, width=self.width, height=self.height, bg="white")
         canvas.pack()
         self.canvas = canvas
+        wrap_rounded_rectangle(canvas)
+
+        self.draw_mode_indicator()
 
     def redraw(self):
         canvas = self.canvas
@@ -228,10 +257,13 @@ class Render:
         # )
         self.frame_count += 1
 
+        canvas.tag_raise("fps")
+        canvas.tag_raise("indicator")
+
     def init_fps(self):
         fps_pos = (10, self.height - 10), "sw"
         fps_pos = (10, 5),                "nw"
-        self.fps_text_id = self.ctx.canvas.create_text(*fps_pos[0], anchor=fps_pos[1], text="FPS: 0", font=("Arial", 12), fill="black")
+        self.fps_text_id = self.ctx.canvas.create_text(*fps_pos[0], anchor=fps_pos[1], text="FPS: 0", font=("Arial", 12), fill="black", tags="fps")
 
     def update_fps(self):
         canvas = self.ctx.canvas
@@ -255,7 +287,53 @@ class Render:
 
         self.width = width
         self.height = height
+
         self.redraw()
+        self.draw_mode_indicator()
+
+    def draw_mode_indicator(self):
+        canvas = self.canvas
+        canvas.delete("indicator")
+
+        # Размеры и позиционирование
+        box_width = 100
+        box_height = 30
+        margin = 10
+        x0 = self.width - box_width - margin
+        y0 = margin
+        x1 = self.width - margin
+        y1 = y0 + box_height
+        mid_x = (x0 + x1) // 2
+
+        # Цвета
+        bg_color     = "#2c2c2c"
+        border_color = "#555"
+        text_color   = "#888"
+
+        # Рисуем фон
+        canvas.create_rectangle(x0, y0, x1, y1, radius=11, fill=bg_color, outline=border_color, width=1, tags="indicator")
+
+        # Вертикальная линия
+        canvas.create_rectangle(mid_x-1, y0, mid_x+1, y1, fill=border_color, tags="indicator")
+
+        # Подсветка активного режима
+        mode = self.ctx.camera.orbital_mode
+        if mode:
+            canvas.create_rectangle(mid_x+4, y0+3, x1-3, y1-2, radius=10, fill="#00afff", outline="#0070ff", width=2, tags="indicator")
+        else:
+            canvas.create_rectangle(x0+3, y0+3, mid_x-3, y1-2, radius=10, fill="#00afff", outline="#0070ff", width=2, tags="indicator")
+
+        # Текст
+        canvas.create_text((x0 + mid_x) // 2, y0 + box_height // 2 - 1, text="fps", fill=text_color if mode else "#c6e7ff", font=("Segoe UI", 12, "bold"), tags="indicator")
+        canvas.create_text((mid_x + x1) // 2, y0 + box_height // 2 - 1, text="orb", fill="#c6e7ff" if mode else text_color, font=("Segoe UI", 12, "bold"), tags="indicator")
+
+    def change_orbital_mode(self):
+        camera = self.ctx.camera
+        camera.orbital_mode = not camera.orbital_mode
+        camera.update_proj_view()
+        self.redraw()
+        self.draw_mode_indicator()
+        
 
 
 
@@ -281,11 +359,20 @@ class Context:
         render.update_fps()
 
     def focus_me(self):
-        if self.canvas["highlightbackground"] == "dodgerblue": return
+        if self.is_focused: return
 
         for context in contexts:
             context.canvas.config(highlightbackground = ("SystemButtonFace", "dodgerblue")[context == self])
         self.keyboard_handler.bind()
+
+    @property
+    def is_focused(self):
+        self.canvas["highlightbackground"] == "dodgerblue"
+
+    @staticmethod
+    def focused():
+        for context in contexts:
+            if context.is_focused: return context
 
     @property
     def width(self):
@@ -318,15 +405,21 @@ def init_model():
         angle = i * part
         ci = cos(angle)
         si = sin(angle)
-        append((0, ci, si, ("pink", "red")[i % 2]))
+        append((0, ci, si, ("pink", "red")  [i % 2]))
         append((ci, 0, si, ("lime", "green")[i % 2]))
-        append((ci, si, 0, ("aqua", "blue")[i % 2]))
+        append((ci, si, 0, ("aqua", "blue") [i % 2]))
     # print(dist(dots[0], dots[1])) # 0.049 шпилек между вершинами
 
     # for i in range(41):
     #     ii = i / 20 - 1
     #     append((ii, -1.2, 0, ("aqua", "blue")[i % 2]))
     #     if ii: append((0, -1.2, ii, ("lime", "green")[i % 2]))
+
+    for i in range(1, 11):
+        ii = i / 20
+        append((ii, 0, 0, ("pink", "red")  [i % 2]))
+        append((0, ii, 0, ("lime", "green")[i % 2]))
+        append((0, 0, ii, ("aqua", "blue") [i % 2]))
 
     return dots
 
