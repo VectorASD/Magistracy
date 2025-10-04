@@ -210,6 +210,7 @@ class Render:
 
         self.last_time = time.time()
         self.frame_count = 0
+        self.fps_text_id = None
 
         canvas = tk.Canvas(context.frame, width=self.width, height=self.height, bg="white")
         canvas.pack()
@@ -260,13 +261,13 @@ class Render:
         canvas.tag_raise("fps")
         canvas.tag_raise("indicator")
 
-    def init_fps(self):
-        fps_pos = (10, self.height - 10), "sw"
-        fps_pos = (10, 5),                "nw"
-        self.fps_text_id = self.ctx.canvas.create_text(*fps_pos[0], anchor=fps_pos[1], text="FPS: 0", font=("Arial", 12), fill="black", tags="fps")
-
     def update_fps(self):
         canvas = self.ctx.canvas
+
+        if self.fps_text_id is None:
+            fps_pos = (10, self.height - 10), "sw"
+            fps_pos = (10, 5),                "nw"
+            self.fps_text_id = canvas.create_text(*fps_pos[0], anchor=fps_pos[1], text="FPS: 0", font=("Arial", 12), fill="black", tags="fps")
 
         T = time.time()
         elapsed = T - self.last_time
@@ -354,7 +355,6 @@ class Context:
         MouseHandler(self).bind(2) # СКМ
         MouseHandler(self).bind(3) # ПКМ
 
-        render.init_fps()
         render.redraw()
         render.update_fps()
 
