@@ -30,6 +30,15 @@ def needs_parentheses(expr):
 LOG_MUL = False
 LOG_ADD = False
 
+def on_log_mul():
+    global LOG_MUL
+    LOG_MUL = True
+    def wrap(x):
+        global LOG_MUL
+        LOG_MUL = False
+        return x
+    return wrap
+
 class Symbolic:
     _match = re.compile(r"^(-?\d+(?:\.\d*)?)\*?(.*)$").match
 
@@ -49,21 +58,24 @@ class Symbolic:
             if match:
                 num = match.group(1)
                 self.coeff = (float if "." in num else int)(num)
-                self.var = match.group(2).strip()
-                if not self.var: self.var = None
+                var = match.group(2).strip()
+                if needs_parentheses(var):
+                    self.coeff = 1
+                    var = value
             # Отдельный случай: "-x"
             elif value.startswith("-"):
                 self.coeff = -1
-                self.var = value[1:]
+                var = value[1:]
             # Обычный случай: "x"
             else:
                 self.coeff = 1
-                self.var = value
-            if not self.var: self.var = None
+                var = value
+            if not var: var = None
+            self.var = var
         else:
             raise TypeError(f"Symbolic accepts int or str, not {type(value).__name__!r}")
 
-    def __str__(self):
+    def __repr__(self):
         if self.coeff == 0:
             return "0"
         if self.var is None:
@@ -91,12 +103,13 @@ class Symbolic:
             total = self.coeff + other.coeff
             if total == 0:
                 return Symbolic(0)
-            elif total == 1:
+            if total == 1:
                 return Symbolic(self.var)
-            elif total == -1:
-                return Symbolic("-" + self.var)
-            else:
-                return Symbolic(f"{total}*{self.var}")
+            var = self.var
+            if needs_parentheses(var): var = f"({var})"
+            if total == -1:
+                return Symbolic(f"-{var}")
+            return Symbolic(f"{total}*{var}")
 
         if self.var is None:
             const = self.coeff
@@ -133,13 +146,15 @@ class Symbolic:
         if isinstance(other, (int, float)):
             if self.coeff == 0 or other == 0:
                 return Symbolic(0)
+            if other == 1:
+                return self
             if self.var is None:
                 return Symbolic(self.coeff * other)
 
             result_coeff = self.coeff * other
 
             var_expr = clean(self.var)
-            if result_coeff < 0 and needs_parentheses(var_expr):
+            if needs_parentheses(var_expr):
                 var_expr = f"({var_expr})"
 
             sign = "-" if result_coeff < 0 else ""
@@ -196,7 +211,22 @@ def MetaMatrix(*rows):
 
 
 
+def test():
+    global LOG_MUL, LOG_ADD
+    # vec = tuple(map(Symbolic, ("r00", "r01", "r02", "r00*X + r01*Y + r02*Z")))
+    vec = tuple(map(Symbolic, ("r00", "r01", "r02", "-r00*X - r01*Y - r02*Z")))
+    inv_vec = Symbolic("X"), Symbolic("Y"), Symbolic("Z"), -1
+    LOG_MUL = LOG_ADD = True
+    print(vec)
+    print(inv_vec)
+    print("S:", sum(a * b for a, b in zip(vec, inv_vec)))
+    LOG_MUL = LOG_ADD = False
+
+
+
 if __name__ == "__main__":
+    # test(); exit()
+
     A = Symbolic("cP*sY*sR + sP*cR")
     print("A:  ", A);
     A *= -1;   print("*-1:", A)
@@ -227,13 +257,21 @@ if __name__ == "__main__":
         (0, 0, "-FN", "-2fn"), # -FN = -(far+near)/(far-near)
         (0, 0, -1, 0)          # -2fn = -2*far*near/(far-near)
     )
-    """
-    (r00, r01, r02), (r10, r11, r12), (r20, r21, r22) = view.mat
-    view = Matrix((r00, r01, r02, 0), (r10, r11, r12, 0), (r20, r21, r22, 0), (0, 0, 0, 1))
+    # (r00, r01, r02), (r10, r11, r12), (r20, r21, r22) = view.mat
+    view = MetaMatrix(
+        ("r00", "r01", "r02", 0),
+        ("r10", "r11", "r12", 0),
+        ("r20", "r21", "r22", 0),
+        (0, 0, 0, 1)
+    ) @ MetaMatrix(
+        (1, 0, 0, "-X"),
+        (0, 1, 0, "-Y"),
+        (0, 0, 1, "-Z"),
+        (0, 0, 0, 1)
+    )
     print(proj("proj"))
     print(view("view"))
     print((proj @ view)("proj@view"))
-    """
 
     inv_proj = MetaMatrix(
         ("1/F_A", 0, 0, 0),
@@ -243,4 +281,22 @@ if __name__ == "__main__":
     )
     print((proj @ inv_proj)("proj@proj⁻¹"))
     print((inv_proj @ proj)("proj⁻¹@proj"))
+
+    inv_view = MetaMatrix(
+        ("r00", "r10", "r20", "X"),
+        ("r01", "r11", "r21", "Y"),
+        ("r02", "r12", "r22", "Z"),
+        (0, 0, 0, 1)
+    )
+    print(inv_view("inv_view"))
+    print((view @ inv_view)("view@view⁻¹"))
+    # print((inv_view @ view)("view⁻¹@view"))
+
+    """
+Я не просто вычислил view @ view⁻¹, а ещё и раскрыл геометрическую структуру:
+Пифагорова диагональ → единичные векторы
+Dot-продукты         → ортогональность
+Сдвиг                → компенсация (поворот и трансляция инвертируются независимо)
+Всё вместе           → аффинная структура
+    """
 
