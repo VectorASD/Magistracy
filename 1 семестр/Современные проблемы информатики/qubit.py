@@ -157,11 +157,11 @@ class Qubit:
 
 s2 = 2 ** 0.5
 s3 = 3 ** 0.5
-Q_0   = Qubit(  1,    0)
-Q_30  = Qubit( s3/2,  0.5)
-Q_45  = Qubit(  1/s2, 1/s2)
-Q_60  = Qubit(  0.5, s3/2)
-Q_90  = Qubit(  0,    1)
+Q_0   = Qubit( 1,    0)
+Q_30  = Qubit(s3/2,  0.5)
+Q_45  = Qubit( 1/s2, 1/s2)
+Q_60  = Qubit( 0.5, s3/2)
+Q_90  = Qubit( 0,    1)
 
 Q_180 = Qubit( -1,     0)    # = Q_0
 Q_210 = Qubit(-s3/2,  -0.5)  # = Q_30

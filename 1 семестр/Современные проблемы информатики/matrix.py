@@ -1,6 +1,6 @@
 from misc import float_eq, edge_enumerate
 from number_decorator import decorate_num, exists_decor
-from math import pi, tan, sin, cos
+from math import pi, tan, sin, cos, hypot
 
 from qubit import Qubit, Q_0, s2
 
@@ -129,6 +129,25 @@ class Matrix:
         self.letter = letter
         return self
 
+    @property
+    def is_rotation_orthonormal(self, eps=1e-6):
+        mat = self.mat
+        r00, r01, r02, _ = mat[0]
+        r10, r11, r12, _ = mat[1]
+        r20, r21, r22, _ = mat[2]
+
+        # Проверка нормированности
+        if abs(hypot(r00, r01, r02) - 1) > eps: return False
+        if abs(hypot(r10, r11, r12) - 1) > eps: return False
+        if abs(hypot(r20, r21, r22) - 1) > eps: return False
+
+        # Проверка ортогональности
+        if abs(r00*r10 + r01*r11 + r02*r12) > eps: return False
+        if abs(r00*r20 + r01*r21 + r02*r22) > eps: return False
+        if abs(r10*r20 + r11*r21 + r12*r22) > eps: return False
+
+        return True
+
     @staticmethod
     def test():
         print("\n~~~ test Matrix ~~~\n")
@@ -146,13 +165,13 @@ class Matrix:
         print(Matrix.view(0, 0, 0,  0,  0, 60)[0]("R-rot")) # sR = √3/2; cR = 1/2
         view, F, R, U = Matrix.view(-30, 0, 0, 0, 90, 0)
         proj_view = proj @ view
-        print(proj("proj"))
-        print(view("view"))
-        print(proj_view("p@v"))
+        print(proj("proj"), "affin:", proj.is_rotation_orthonormal)
+        print(view("view"), "affin:", view.is_rotation_orthonormal)
+        print(proj_view("p@v"), "affin:", proj_view.is_rotation_orthonormal)
         print("Forward:", F)
         print("Right:",   R)
         print("Up:",      U)
-        print(proj_view.project(5, 5/2, 0, 64, 64))
+        print(proj_view.project(5, 5/2, 0, "color", 64, 64))
 
 I   = Matrix((1, 0), (0, 1))
 NOT = Matrix((0, 1), (1, 0))
