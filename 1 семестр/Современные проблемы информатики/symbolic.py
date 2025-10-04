@@ -271,7 +271,6 @@ if __name__ == "__main__":
     )
     print(proj("proj"))
     print(view("view"))
-    print((proj @ view)("proj@view"))
 
     inv_proj = MetaMatrix(
         ("1/F_A", 0, 0, 0),
@@ -279,6 +278,7 @@ if __name__ == "__main__":
         (0, 0, 0, -1),
         (0, 0, "-1/(2fn)", "FN/(2fn)")
     )
+    print(inv_proj("proj⁻¹"))
     print((proj @ inv_proj)("proj@proj⁻¹"))
     print((inv_proj @ proj)("proj⁻¹@proj"))
 
@@ -288,7 +288,7 @@ if __name__ == "__main__":
         ("r02", "r12", "r22", "Z"),
         (0, 0, 0, 1)
     )
-    print(inv_view("inv_view"))
+    print(inv_view("view⁻¹"))
     print((view @ inv_view)("view@view⁻¹"))
     # print((inv_view @ view)("view⁻¹@view"))
 
@@ -300,3 +300,10 @@ Dot-продукты         → ортогональность
 Всё вместе           → аффинная структура
     """
 
+    print()
+    proj_view = proj @ view
+    print(proj_view("proj@view")) # цель №1
+    inv_proj_view = inv_view @ inv_proj
+    print(inv_proj_view("view⁻¹@proj⁻¹")) # цель №2
+
+    print((proj_view @ inv_proj_view).mat[2][2]) # ???

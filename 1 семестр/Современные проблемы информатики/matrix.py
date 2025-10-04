@@ -75,12 +75,12 @@ class Matrix:
     @staticmethod
     def perspective(fovy, aspect, near, far):
         fovy = ctg(fovy * pi_180 / 2) # inverted fovy_factor
-        return Matrix(*(
+        return Matrix(
             (fovy / aspect, 0, 0, 0),
             (0, fovy, 0, 0),
             (0, 0, -(far + near) / (far - near), -2 * far * near / (far - near)),
             (0, 0, -1, 0)
-        ))
+        )
 
     @staticmethod
     def view(x, y, z, yaw, pitch, roll):
@@ -125,6 +125,22 @@ class Matrix:
         # z = 1 (близко)
         # z > 1 (за камерой)
 
+    def unproject(self, x, y, proj, winX, winY):
+        x = x * (2 / winX) - 1
+        y = 1 - y * (2 / winY)
+
+        z_view = 1
+        row2 = proj.mat[2]
+        z = row2[2] - row2[3] / z_view
+        # Фактически, в формулу уже вшито отрицание: z = -z
+        # Это необходимо из-за особенности view_proj@view_proj⁻¹ = почти I
+        # Т.к. в I-матрице на z появляется отрицание, хоть и в символических рассчётах ничего подобного нет
+
+        x, y, z, w = self * (x, y, z, 1)
+        if w:
+            return x/w, y/w, z/w
+        return 0, 0, 2, color
+
     def __call__(self, letter):
         self.letter = letter
         return self
@@ -149,6 +165,32 @@ class Matrix:
         return True
 
     @staticmethod
+    def fast_inv_proj_view(fovy, aspect, near, far, X, Y, Z, yaw, pitch, roll):
+        yaw   *= pi_180
+        pitch *= pi_180
+        roll  *= pi_180
+        sY, cY = sin(yaw),   cos(yaw)
+        sP, cP = sin(pitch), cos(pitch)
+        sR, cR = sin(roll),  cos(roll)
+
+        r00, r01, r02 = cY*cR,             -cY*sR,            sY
+        r10, r11, r12 = sP*sY*cR + cP*sR,  -sP*sY*sR + cP*cR, -sP*cY
+        r20, r21, r22 = -cP*sY*cR + sP*sR, cP*sY*sR + sP*cR,  cP*cY
+
+        fovy = ctg(fovy * pi_180 / 2) # inverted fovy_factor
+        F_A  = fovy / aspect
+        FN   = -(far + near) / (far - near)
+        _2fn = -2 * far * near / (far - near)
+        FN_2fn = FN / _2fn
+        m2fn   = -_2fn
+        return Matrix(
+            (r00/F_A, r10/fovy, X/m2fn, X*FN_2fn -r20),
+            (r01/F_A, r11/fovy, Y/m2fn, Y*FN_2fn -r21),
+            (r02/F_A, r12/fovy, Z/m2fn, Z*FN_2fn -r22),
+            (0,       0,        1/m2fn, FN_2fn),
+        )
+
+    @staticmethod
     def test():
         print("\n~~~ test Matrix ~~~\n")
         print(H("H"))
@@ -167,11 +209,28 @@ class Matrix:
         proj_view = proj @ view
         print(proj("proj"), "affin:", proj.is_rotation_orthonormal)
         print(view("view"), "affin:", view.is_rotation_orthonormal)
-        print(proj_view("p@v"), "affin:", proj_view.is_rotation_orthonormal)
+        print(proj_view("proj@view"), "affin:", proj_view.is_rotation_orthonormal)
         print("Forward:", F)
         print("Right:",   R)
         print("Up:",      U)
-        print(proj_view.project(5, 5/2, 0, "color", 64, 64))
+        projected = proj_view.project(5, 5/2, 0, "color", 64, 64)
+        print("projected:", projected)
+
+        print()
+        view, F, R, U = Matrix.view(-30, 15, -40, 24, 85, 78)
+        proj_view = proj @ view
+        print(proj_view("proj@view"))
+
+        inv_proj_view = Matrix.fast_inv_proj_view(90, 1, 0.01, 100, -30, 15, -40, 24, 85, 78)
+        print(inv_proj_view("(proj@view)⁻¹"))
+
+        print((proj_view @ inv_proj_view)("final-test"))
+        # final-test = ⎧1, 0, 0 , 0⎫
+        #              ⎪0, 1, 0 , 0⎪
+        #              ⎪0, 0, -1, 0⎪ Вот такой вот поворот!!! Z инвертирована... но это нормально...
+        #              ⎩0, 0, 0 , 1⎭
+
+
 
 I   = Matrix((1, 0), (0, 1))
 NOT = Matrix((0, 1), (1, 0))

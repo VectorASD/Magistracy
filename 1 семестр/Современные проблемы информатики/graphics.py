@@ -4,6 +4,7 @@ import time
 
 from matrix import Matrix, pi_180
 from misc import wrap_rounded_rectangle
+from geometry import distance, intersect_unit_sphere
 
 from sortedcontainers import SortedList # pip install sortedcontainers
 
@@ -43,6 +44,7 @@ class Camera:
             self.view, self.forward, self.right, self.up = Matrix.view(*self.pos, *self.YPR)
 
         self.proj_view = self.proj @ self.view
+        self.inv_proj_view = Matrix.fast_inv_proj_view(self.fovy, self.aspect, self.near, self.far, *self.pos, *self.YPR)
 
     def project_dots(self, dots, winX, winY):
         project = self.proj_view.project
@@ -50,6 +52,8 @@ class Camera:
             (dot for dot in (project(*dot, winX, winY) for dot in dots) if dot[2] <= 1),
             key = lambda p: -p[2], # сортировка по Z по убыванию
         )
+    def unproject(self, x, y, winX, winY):
+        return self.inv_proj_view.unproject(x, y, self.proj, winX, winY)
 
     def move_to(self, x, y, z):
         self.pos = x, y, z
@@ -165,16 +169,36 @@ class MouseHandler:
         self.ctx = context
         self.last_mouse_pos = None
 
+    def ray_handler(self, x, y):
+        if self.button != 1: return
+
+        render = self.ctx.render
+        dot = self.ctx.camera.unproject(x, y, render.width, render.height)
+        intersections = intersect_unit_sphere(*self.ctx.camera.pos, *dot)
+        # интересное наблюдение: intersections[0] всегда выдаёт точку, что ближе всего к камере, а intersections[1] наоборот
+
+        render.markers[0] = (dot,)
+        render.markers[1] = intersections
+        render.redraw()
+        # print(distance(render.marker_pos, self.ctx.camera.pos))
+        return True
+
     def on_press(self, event):
-        # print(f"Нажатие: x={}, y={event.y}")
-        self.last_mouse_pos = event.x, event.y
-        self.ctx.render.redraw()
         self.ctx.focus_me()
 
+        if self.ray_handler(event.x, event.y): return
+        # print(f"Нажатие: x={}, y={event.y}")
+
+        self.last_mouse_pos = event.x, event.y
+        self.ctx.render.redraw()
+
     def on_move(self, event):
+        if self.ray_handler(event.x, event.y): return
         # print(f"Движение: x={event.x}, y={event.y}")
+
         if self.last_mouse_pos is None:
-            self.last_mouse_pos = event.x, event.y
+            # self.last_mouse_pos = event.x, event.y
+            return
 
         x0, y0 = self.last_mouse_pos
         dx = event.x - x0
@@ -195,6 +219,8 @@ class MouseHandler:
         self.last_mouse_pos = None
 
     def bind(self, n):
+        self.button = n
+
         canvas = self.ctx.canvas
         canvas.bind(f"<ButtonPress-{n}>",   self.on_press) # всё равно перезаписывает <Button-{n}>
         canvas.bind(f"<B{n}-Motion>",       self.on_move)
@@ -212,6 +238,8 @@ class Render:
         self.frame_count = 0
         self.fps_text_id = None
 
+        self.markers = {}
+
         canvas = tk.Canvas(context.frame, width=self.width, height=self.height, bg="white")
         canvas.pack()
         self.canvas = canvas
@@ -224,9 +252,6 @@ class Render:
         camera = self.ctx.camera
 
         canvas.delete("circles")
-
-        central_radius = 15
-        border_width = central_radius // 2
 
         dots = camera.project_dots(model, self.width, self.height)
         # print((dots[0][2] * 0.5 + 0.5) * (camera.far - camera.near) + camera.near)
@@ -250,12 +275,17 @@ class Render:
                 fill=color, outline="", tags="circles"
             )
 
-        # cx, cy = circle_pos
-        # canvas.create_oval(
-        #     cx - central_radius, cy - central_radius,
-        #     cx + central_radius, cy + central_radius,
-        #     outline="blue", width=border_width, tags="circles"
-        # )
+        markers = tuple((*dot, None) for dots in self.markers.values() for dot in dots)
+        dots = camera.project_dots(markers, self.width, self.height)
+        for x, y, z, _ in dots:
+            depth = z * 0.5 + 0.5
+            circle_radius = object_size * (1 - depth)
+            canvas.create_oval(
+                x - circle_radius, y - circle_radius,
+                x + circle_radius, y + circle_radius,
+                outline="magenta", width=circle_radius // 2, tags="circles"
+            )
+
         self.frame_count += 1
 
         canvas.tag_raise("fps")
@@ -331,6 +361,7 @@ class Render:
     def change_orbital_mode(self):
         camera = self.ctx.camera
         camera.orbital_mode = not camera.orbital_mode
+        camera.R = hypot(*camera.pos)
         camera.update_proj_view()
         self.redraw()
         self.draw_mode_indicator()
@@ -390,11 +421,6 @@ class Context:
 
 
 
-def dist(A, B):
-    x,  y,  z,  color = A
-    x2, y2, z2, color = B
-    return hypot(x - x2, y - y2, z - z2)
-
 def init_model():
     dots = []
     append = dots.append
@@ -408,7 +434,7 @@ def init_model():
         append((0, ci, si, ("pink", "red")  [i % 2]))
         append((ci, 0, si, ("lime", "green")[i % 2]))
         append((ci, si, 0, ("aqua", "blue") [i % 2]))
-    # print(dist(dots[0], dots[1])) # 0.049 шпилек между вершинами
+    # print(distance(dots[0], dots[1])) # 0.049 шпилек между вершинами
 
     # for i in range(41):
     #     ii = i / 20 - 1
