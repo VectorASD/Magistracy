@@ -4,7 +4,7 @@ import time
 
 from matrix import Matrix, pi_180
 from misc import wrap_rounded_rectangle
-from geometry import distance, intersect_unit_sphere
+from geometry import distance
 
 
 
@@ -162,20 +162,15 @@ class MouseHandler:
     def __init__(self, context):
         self.ctx = context
         self.last_mouse_pos = None
+        self.ray_cb = None
 
     def ray_handler(self, x, y):
-        if self.button != 1: return
+        if self.ray_cb is None: return
 
         render = self.ctx.render
         dot = self.ctx.camera.unproject(x, y, render.viewport)
-        intersections = intersect_unit_sphere(*self.ctx.camera.pos, *dot)
-        # интересное наблюдение: intersections[0] всегда выдаёт точку, что ближе всего к камере, а intersections[1] наоборот
-
-        render.markers[0] = (dot,)
-        render.markers[1] = intersections
-        render.redraw()
-        # print(distance(render.marker_pos, self.ctx.camera.pos))
-        return True
+        # print(distance(dot, self.ctx.camera.pos))
+        return self.ray_cb(self, dot)
 
     def on_press(self, event):
         self.ctx.focus_me()
@@ -232,7 +227,9 @@ class Render:
         self.frame_count = 0
         self.fps_text_id = None
 
+        self.model   = ()
         self.markers = {}
+        self.lines   = {}
 
         vp = self.viewport
         canvas = tk.Canvas(context.frame, width=vp[0]+vp[2], height=vp[1]+vp[3], bg="white")
@@ -242,15 +239,31 @@ class Render:
 
         self.draw_mode_indicator()
 
+    def set_line(self, id, start, end, size, size_end, color, color_end):
+        def maker():
+            x,  y,  z  = start
+            x2, y2, z2 = end
+            dx, dy, dz = x2 - x, y2 - y, z2 - z
+            count = round((hypot(dx, dy, dz) - size_end) / size)
+            misc = (color, size, 0)
+            for i in range(count):
+                i /= count
+                yield x + i*dx, y + i*dy, z + i*dz, misc
+            yield x2, y2, z2, (color_end, size_end, 1)
+        self.lines[id] = tuple(maker())
+
+    def remove_line(self, id):
+        try: del self.lines[id]
+        except KeyError: return False
+        return True
+
     def redraw(self):
         canvas = self.canvas
         camera = self.ctx.camera
 
         canvas.delete("circles")
 
-        markers = ((*dot, ("magenta", 3.2, 1)) for dots in self.markers.values() for dot in dots)
-
-        dots = camera.project_dots((model, markers), self.viewport)
+        dots = camera.project_dots((self.model, self.markers, self.lines), self.viewport)
         # print((dots[0][2] * 0.5 + 0.5) * (camera.far - camera.near) + camera.near)
         # print(1 - (dots[-1][2] * 0.5 + 0.5))
 
@@ -260,7 +273,9 @@ class Render:
 
         for x, y, z, (color, size, type) in dots:
             depth = 0.5 - z * 0.5
-            radius = pixels_per_world_unit / size * depth
+            # 0.05 -> 3.2
+            # 0.1  -> 1.6
+            radius = pixels_per_world_unit * (size * 6.25) * depth
 
             if type:
                 canvas.create_oval(
@@ -360,7 +375,10 @@ class Render:
 
 
 class Context:
+    contexts = []
     def __init__(self, root):
+        Context.contexts.append(self)
+
         self.root = root
 
         frame = tk.Frame(root, padx=4, pady=4, bg="white")
@@ -372,9 +390,12 @@ class Context:
         self.canvas = render.canvas
 
         self.keyboard_handler = KeyboardHandler(self)
-        MouseHandler(self).bind(1) # ЛКМ
-        MouseHandler(self).bind(2) # СКМ
-        MouseHandler(self).bind(3) # ПКМ
+        self.mouse_handlers = (
+            None,
+            MouseHandler(self).bind(1), # ЛКМ
+            MouseHandler(self).bind(2), # СКМ
+            MouseHandler(self).bind(3), # ПКМ
+        )
 
         render.redraw()
         render.update_fps()
@@ -382,7 +403,7 @@ class Context:
     def focus_me(self):
         if self.is_focused: return
 
-        for context in contexts:
+        for context in Context.contexts:
             context.canvas.config(highlightbackground = ("SystemButtonFace", "dodgerblue")[context == self])
         self.keyboard_handler.bind()
 
@@ -392,7 +413,7 @@ class Context:
 
     @staticmethod
     def focused():
-        for context in contexts:
+        for context in Context.contexts:
             if context.is_focused: return context
 
     @property
@@ -409,15 +430,20 @@ class Context:
         height -= (self.frame["pady"] + thickness) * 2
         self.render.set_size(width, height)
 
+    def set_ray_cb(self, buttons, ray_cb):
+        if type(buttons) is int: buttons = (buttons,)
+        for button in buttons:
+            self.mouse_handlers[button].ray_cb = ray_cb
 
 
-def init_model():
+
+def default_model():
     dots = []
     append = dots.append
 
-    red   = ("pink", 3.2, 0), ("red",   3.2, 0)
-    green = ("lime", 3.2, 0), ("green", 3.2, 0)
-    blue  = ("aqua", 3.2, 0), ("blue",  3.2, 0)
+    red   = ("pink", 0.05, 0), ("red",   0.05, 0)
+    green = ("lime", 0.05, 0), ("green", 0.05, 0)
+    blue  = ("aqua", 0.05, 0), ("blue",  0.05, 0)
 
     circle_count = 128
     part = 2 * pi / circle_count
@@ -443,37 +469,8 @@ def init_model():
 
     return dots
 
-model = init_model()
-contexts = None
 
-
-
-def main():
-    global contexts
-
-    prev_width = prev_height = None
-    def on_resize(event):
-        nonlocal prev_width, prev_height
-        if event.widget == root and (event.width != prev_width or event.height != prev_height):
-            prev_width  = W = event.width
-            prev_height = H = event.height
-            # print(f"Новый размер: {W} x {H}")
-            contexts[0].set_canvas_size(W // 2, H)
-            contexts[1].set_canvas_size(W - W // 2, H)
-
-    root = tk.Tk()
-    root.title("OpenGL-like 2D rendering")
-
-    contexts = (
-        Context(root),
-        Context(root),
-    )
-
-    # root.after(100, lambda: print(root.winfo_width(), root.winfo_height()))
-    # print(contexts[0].width + contexts[1].width, contexts[0].height)
-
-    root.bind("<Configure>", on_resize)
-    root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    import main
+    main.main()

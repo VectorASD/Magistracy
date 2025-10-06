@@ -1,6 +1,7 @@
 from misc import float_eq, edge_enumerate
 from number_decorator import decorate_num, exists_decor
 from math import pi, tan, sin, cos, hypot
+from types import GeneratorType
 
 from qubit import Qubit, Q_0, s2
 
@@ -118,18 +119,14 @@ class Matrix:
             (0,   0,   0,   1),
         ), forward, right, up
 
-    def project(self, dots_arr, viewport):
+    def project(self, dots, viewport):
         dx, dy, width, height = viewport
-        hdx = dx / 2
-        hdy = dy / 2
-        hw = width  / 2
-        hh = height / 2
-
         result = SortedList(key = lambda p: -p[2]) # сортировка по Z по убыванию
-        add_dot = result.add
+        locals = dx / 2, dy / 2, width / 2, height / 2, result.add
 
-        for dots in dots_arr:
-            for x, y, z, misc in dots:
+        def projector(arr):
+            hdx, hdy, hw, hh, add_dot = locals
+            for x, y, z, misc in arr:
                 x, y, z, w = self * (x, y, z, 1)
                 if w:
                     z /= w
@@ -139,6 +136,26 @@ class Matrix:
                             (1 - y / w) * hh + hdy,
                             z, misc
                         ))
+        def finder(dots):
+            # print(dots)
+            T = type(dots)
+            if T is GeneratorType:
+                projector(dots)
+            elif T is dict:
+                for dot in dots.values(): finder(dot)
+            elif dots:
+                first = dots[0]
+                T2 = type(first)
+                if T2 is tuple and first and type(first[0]) in (int, float):
+                    projector(dots)
+                elif T2 in (int, float):
+                    projector((dots,))
+                else:
+                    for dot in dots: finder(dot)
+
+        finder(dots)
+        # for dots in dots_arr:
+        #     if type(dots) is dict: dots = dots.values()
         return result
         # z = -1 (далеко)
         # z = 1 (близко)
