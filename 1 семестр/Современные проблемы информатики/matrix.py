@@ -4,6 +4,8 @@ from math import pi, tan, sin, cos, hypot
 
 from qubit import Qubit, Q_0, s2
 
+from sortedcontainers import SortedList # pip install sortedcontainers
+
 pi_2   = pi / 2
 pi_180 = pi / 180
 
@@ -116,21 +118,38 @@ class Matrix:
             (0,   0,   0,   1),
         ), forward, right, up
 
-    def project(self, x, y, z, color, winX, winY):
-        x, y, z, w = self * (x, y, z, 1)
-        if w:
-            return (x / w + 1) * (winX / 2), (1 - y / w) * (winY / 2), z / w, color
-        return 0, 0, 2, color
+    def project(self, dots_arr, viewport):
+        dx, dy, width, height = viewport
+        hdx = dx / 2
+        hdy = dy / 2
+        hw = width  / 2
+        hh = height / 2
+
+        result = SortedList(key = lambda p: -p[2]) # сортировка по Z по убыванию
+        add_dot = result.add
+
+        for dots in dots_arr:
+            for x, y, z, misc in dots:
+                x, y, z, w = self * (x, y, z, 1)
+                if w:
+                    z /= w
+                    if z <= 1:
+                        add_dot((
+                            (x / w + 1) * hw + hdx,
+                            (1 - y / w) * hh + hdy,
+                            z, misc
+                        ))
+        return result
         # z = -1 (далеко)
         # z = 1 (близко)
         # z > 1 (за камерой)
 
-    def unproject(self, x, y, proj, winX, winY):
-        x = x * (2 / winX) - 1
-        y = 1 - y * (2 / winY)
+    def unproject(self, x, y, proj, viewport):
+        row2, z_view = proj.mat[2], 1
+        dx, dy, width, height = viewport
 
-        z_view = 1
-        row2 = proj.mat[2]
+        x = (x - dx/2) * (2 / width) - 1
+        y = 1 - (y - dy/2) * (2 / height)
         z = row2[2] - row2[3] / z_view
         # Фактически, в формулу уже вшито отрицание: z = -z
         # Это необходимо из-за особенности view_proj@view_proj⁻¹ = почти I
@@ -213,7 +232,7 @@ class Matrix:
         print("Forward:", F)
         print("Right:",   R)
         print("Up:",      U)
-        projected = proj_view.project(5, 5/2, 0, "color", 64, 64)
+        projected = proj_view.project([[(5, 5/2, 0, "misc")]], (0, 0, 64, 64))
         print("projected:", projected)
 
         print()

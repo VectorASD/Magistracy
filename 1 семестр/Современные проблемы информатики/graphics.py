@@ -6,8 +6,6 @@ from matrix import Matrix, pi_180
 from misc import wrap_rounded_rectangle
 from geometry import distance, intersect_unit_sphere
 
-from sortedcontainers import SortedList # pip install sortedcontainers
-
 
 
 class Camera:
@@ -46,14 +44,10 @@ class Camera:
         self.proj_view = self.proj @ self.view
         self.inv_proj_view = Matrix.fast_inv_proj_view(self.fovy, self.aspect, self.near, self.far, *self.pos, *self.YPR)
 
-    def project_dots(self, dots, winX, winY):
-        project = self.proj_view.project
-        return SortedList(
-            (dot for dot in (project(*dot, winX, winY) for dot in dots) if dot[2] <= 1),
-            key = lambda p: -p[2], # сортировка по Z по убыванию
-        )
-    def unproject(self, x, y, winX, winY):
-        return self.inv_proj_view.unproject(x, y, self.proj, winX, winY)
+    def project_dots(self, dots_arr, viewport):
+        return self.proj_view.project(dots_arr, viewport)
+    def unproject(self, x, y, viewport):
+        return self.inv_proj_view.unproject(x, y, self.proj, viewport)
 
     def move_to(self, x, y, z):
         self.pos = x, y, z
@@ -173,7 +167,7 @@ class MouseHandler:
         if self.button != 1: return
 
         render = self.ctx.render
-        dot = self.ctx.camera.unproject(x, y, render.width, render.height)
+        dot = self.ctx.camera.unproject(x, y, render.viewport)
         intersections = intersect_unit_sphere(*self.ctx.camera.pos, *dot)
         # интересное наблюдение: intersections[0] всегда выдаёт точку, что ближе всего к камере, а intersections[1] наоборот
 
@@ -232,7 +226,7 @@ class MouseHandler:
 class Render:
     def __init__(self, context):
         self.ctx = context
-        self.width = self.height = 640
+        self.viewport = 0, 50, 640, 640
 
         self.last_time = time.time()
         self.frame_count = 0
@@ -240,7 +234,8 @@ class Render:
 
         self.markers = {}
 
-        canvas = tk.Canvas(context.frame, width=self.width, height=self.height, bg="white")
+        vp = self.viewport
+        canvas = tk.Canvas(context.frame, width=vp[0]+vp[2], height=vp[1]+vp[3], bg="white")
         canvas.pack()
         self.canvas = canvas
         wrap_rounded_rectangle(canvas)
@@ -253,38 +248,32 @@ class Render:
 
         canvas.delete("circles")
 
-        dots = camera.project_dots(model, self.width, self.height)
+        markers = ((*dot, ("magenta", 3.2, 1)) for dots in self.markers.values() for dot in dots)
+
+        dots = camera.project_dots((model, markers), self.viewport)
         # print((dots[0][2] * 0.5 + 0.5) * (camera.far - camera.near) + camera.near)
         # print(1 - (dots[-1][2] * 0.5 + 0.5))
 
         near, far, fovy_factor = camera.depth_states
 
-        pixels_per_world_unit = self.height / (2 * fovy_factor)
-        object_size = pixels_per_world_unit / 3.2
+        pixels_per_world_unit = self.viewport[3] / (2 * fovy_factor)
 
-        for x, y, z, color in dots:
-            depth = z * 0.5 + 0.5
-            # screen_scale = (near + depth * (far - near))
-            # circle_radius = object_size * screen_scale * fovy_factor
-            # circle_radius = object_size * pixels_per_world_unit / screen_scale
-            circle_radius = object_size * (1 - depth)
+        for x, y, z, (color, size, type) in dots:
+            depth = 0.5 - z * 0.5
+            radius = pixels_per_world_unit / size * depth
 
-            canvas.create_oval(
-                x - circle_radius, y - circle_radius,
-                x + circle_radius, y + circle_radius,
-                fill=color, outline="", tags="circles"
-            )
-
-        markers = tuple((*dot, None) for dots in self.markers.values() for dot in dots)
-        dots = camera.project_dots(markers, self.width, self.height)
-        for x, y, z, _ in dots:
-            depth = z * 0.5 + 0.5
-            circle_radius = object_size * (1 - depth)
-            canvas.create_oval(
-                x - circle_radius, y - circle_radius,
-                x + circle_radius, y + circle_radius,
-                outline="magenta", width=circle_radius // 2, tags="circles"
-            )
+            if type:
+                canvas.create_oval(
+                    x - radius, y - radius,
+                    x + radius, y + radius,
+                    outline=color, width = radius//2, tags="circles"
+                )
+            else:
+                canvas.create_oval(
+                    x - radius, y - radius,
+                    x + radius, y + radius,
+                    fill=color, outline="", tags="circles"
+                )
 
         self.frame_count += 1
 
@@ -295,8 +284,9 @@ class Render:
         canvas = self.ctx.canvas
 
         if self.fps_text_id is None:
-            fps_pos = (10, self.height - 10), "sw"
-            fps_pos = (10, 5),                "nw"
+            vp = self.viewport
+            fps_pos = (10, vp[1]+vp[3] - 10), "sw"
+            fps_pos = (10, 10),               "nw"
             self.fps_text_id = canvas.create_text(*fps_pos[0], anchor=fps_pos[1], text="FPS: 0", font=("Arial", 12), fill="black", tags="fps")
 
         T = time.time()
@@ -316,8 +306,7 @@ class Render:
         camera.aspect = width / height
         camera.update_proj()
 
-        self.width = width
-        self.height = height
+        self.viewport = self.viewport[0], self.viewport[1], width, height
 
         self.redraw()
         self.draw_mode_indicator()
@@ -326,14 +315,15 @@ class Render:
         canvas = self.canvas
         canvas.delete("indicator")
 
+        dx, dy, width, height = self.viewport
+
         # Размеры и позиционирование
         box_width = 100
         box_height = 30
-        margin = 10
-        x0 = self.width - box_width - margin
-        y0 = margin
-        x1 = self.width - margin
-        y1 = y0 + box_height
+        marginX = 10
+        marginY = (dy - box_height) // 2
+        x0, x1 = width - box_width - marginX, width - marginX
+        y0, y1 = marginY, marginY + box_height
         mid_x = (x0 + x1) // 2
 
         # Цвета
@@ -425,15 +415,19 @@ def init_model():
     dots = []
     append = dots.append
 
+    red   = ("pink", 3.2, 0), ("red",   3.2, 0)
+    green = ("lime", 3.2, 0), ("green", 3.2, 0)
+    blue  = ("aqua", 3.2, 0), ("blue",  3.2, 0)
+
     circle_count = 128
     part = 2 * pi / circle_count
     for i in range(circle_count):
         angle = i * part
         ci = cos(angle)
         si = sin(angle)
-        append((0, ci, si, ("pink", "red")  [i % 2]))
-        append((ci, 0, si, ("lime", "green")[i % 2]))
-        append((ci, si, 0, ("aqua", "blue") [i % 2]))
+        append((0, ci, si, red  [i % 2]))
+        append((ci, 0, si, green[i % 2]))
+        append((ci, si, 0, blue [i % 2]))
     # print(distance(dots[0], dots[1])) # 0.049 шпилек между вершинами
 
     # for i in range(41):
@@ -443,9 +437,9 @@ def init_model():
 
     for i in range(1, 11):
         ii = i / 20
-        append((ii, 0, 0, ("pink", "red")  [i % 2]))
-        append((0, ii, 0, ("lime", "green")[i % 2]))
-        append((0, 0, ii, ("aqua", "blue") [i % 2]))
+        append((ii, 0, 0, red  [i % 2]))
+        append((0, ii, 0, green[i % 2]))
+        append((0, 0, ii, blue [i % 2]))
 
     return dots
 

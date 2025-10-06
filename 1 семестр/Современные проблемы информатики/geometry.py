@@ -15,14 +15,17 @@ def intersect_unit_sphere(cam_x, cam_y, cam_z, px, py, pz):
 
     # Коэффициенты квадратного уравнения
     b = 2 * (cam_x * dx + cam_y * dy + cam_z * dz)
-    c = cam_x * cam_x + cam_y * cam_y + cam_z * cam_z - 1
-    discriminant = b * b - 4 * c
+    c = cam_x ** 2 + cam_y ** 2 + cam_z ** 2 - 1
+    discriminant = b ** 2 - 4 * c
 
     if discriminant < 0:
         return () # Нет пересечений
 
-    sqrt_d = discriminant ** 0.5
-    t1 = (-b - sqrt_d) / 2
+    if discriminant:
+        sqrt_d = discriminant ** 0.5
+        t1 = (-b - sqrt_d) / 2
+    else: t1 = -b / 2
+
     first = (cam_x + t1 * dx, cam_y + t1 * dy, cam_z + t1 * dz)
 
     if discriminant:
