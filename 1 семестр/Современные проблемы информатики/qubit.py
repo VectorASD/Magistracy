@@ -63,10 +63,14 @@ class Qubit:
                \n      {'     ' if div_mode else ''}⎩ {a1.rjust(size)} ⎭"
         # Cascadia Mono, 14px, no bold
 
-    def measure(self, count = 64):
+    def measure_str(self, count = 64):
         w0 = abs(self.a0) ** 2
         # w1 = abs(self.a1) ** 2
-        return "".join("01"[random() > w0] for i in range(count))
+        return "".join("01"[random() >= w0] for i in range(count))
+
+    def measure(self, count = 64):
+        w0 = abs(self.a0) ** 2
+        return tuple(random() >= w0 for i in range(count))
 
     @staticmethod
     def from_Bloch(x, y, z):
@@ -126,11 +130,11 @@ class Qubit:
 
         print(Q_45.vec_repr())
         print(Q_60.vec_repr())
-        print("measure( 0°):", Q_0.measure())
-        print("measure(30°):", Q_30.measure())
-        print("measure(45°):", Q_45.measure())
-        print("measure(60°):", Q_60.measure())
-        print("measure(90°):", Q_90.measure())
+        print("measure( 0°):", Q_0.measure_str())
+        print("measure(30°):", Q_30.measure_str())
+        print("measure(45°):", Q_45.measure_str())
+        print("measure(60°):", Q_60.measure_str())
+        print("measure(90°):", Q_90.measure_str())
 
         print("\nОсь 3d-отрисовщика (ось из иллюстраций)")
         print("+Y (+Z):", Qubit.from_Bloch(0,  1, 0)) # +Y (+Z): |φ> |0>

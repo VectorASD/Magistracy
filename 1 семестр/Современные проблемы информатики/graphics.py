@@ -387,13 +387,13 @@ class Render:
 
 class Context_3d:
     contexts = []
-    def __init__(self, root):
+    def __init__(self, root, **kwargs):
         Context_3d.contexts.append(self)
 
         self.root = root
 
         frame = tk.Frame(root, padx=4, pady=4, bg="white")
-        frame.pack(side="right")
+        frame.grid(**kwargs)
         self.frame = frame
 
         self.camera = Camera()
@@ -445,6 +445,195 @@ class Context_3d:
         if type(buttons) is int: buttons = (buttons,)
         for button in buttons:
             self.mouse_handlers[button].ray_cb = ray_cb
+
+
+
+class Context_QGA: # QuantumGridAnalyzer
+    def __init__(self, root, **kwargs):
+        self.root = root
+        self.grid_size = None
+        self.width = self.height = 320
+
+        self.selected_option = tk.StringVar(value="?")
+        self.qubit = None
+
+        frame = tk.Frame(root, padx=4, pady=4)
+        frame.grid(**kwargs)
+        self.frame = frame
+
+        self.make_control_frame(frame)
+
+        canvas = tk.Canvas(frame, bg="white", width=self.width, height=self.height)
+        canvas.grid(row=1, column=0, columnspan=3)
+        self.canvas = canvas
+
+        self.update_grid_size(16)
+        self.redraw()
+        self.bind_all_mouse_buttons()
+
+    def make_control_frame(self, frame):
+        label = tk.Label(frame, text="Размер сетки:")
+        label.grid(row=0, column=0, sticky="e")
+
+        control_frame = tk.Frame(frame)
+        control_frame.grid(row=0, column=1, sticky="w")
+        self.control_frame = control_frame
+
+        tk.Button(control_frame, text="◀◀", width=2, command=lambda: self.update_grid_size(-10)).pack(side="left")
+        tk.Button(control_frame, text="◀",  width=2, command=lambda: self.update_grid_size(-1)).pack(side="left")
+
+        size_label = tk.Label(control_frame, text="?×?", width=6)
+        size_label.pack(side="left")
+        self.size_label = size_label
+
+        tk.Button(control_frame, text="▶",  width=2, command=lambda: self.update_grid_size(1)).pack(side="left")
+        tk.Button(control_frame, text="▶▶", width=2, command=lambda: self.update_grid_size(10)).pack(side="left")
+
+        option_menu = tk.OptionMenu(frame, self.selected_option, "?")
+        option_menu.grid(row=0, column=2, sticky="e")
+        self.option_menu = option_menu
+
+    def set_size(self, width, height):
+        if height > width: height = width
+        self.canvas.config(width = width, height = height)
+        self.width = width
+        self.height = height
+        self.redraw()
+
+    def set_canvas_size(self, width, height):
+        def set_canvas_size():
+            nonlocal width, height
+            thickness = int(self.canvas["highlightthickness"])
+            width  -= (self.frame["padx"] + thickness) * 2
+            height -= (self.frame["pady"] + thickness) * 2 + max(self.control_frame.winfo_height(), self.option_menu.winfo_height())
+            self.set_size(width, height)
+
+        #self.frame.update_idletasks()
+        #self.control_frame.update_idletasks()
+        #self.option_menu.update_idletasks()
+        self.root.after_idle(set_canvas_size)
+
+    def update_grid_size(self, value):
+        old = self.grid_size
+        if old is None: new = value
+        else: new = old + value
+        new = max(1, min(new, 64))
+
+        self.grid_size = new
+        self.size_label.config(text = f"{new}×{new}")
+        self.redraw()
+
+    def redraw(self, window_size_changed = True):
+        canvas = self.canvas
+        redraw_lines = window_size_changed
+
+        if redraw_lines: canvas.delete("grid")
+        canvas.delete("quantum")
+        canvas.delete("bars")
+        canvas.delete("verdict")
+
+        bar_width = 40
+        spacing = 20
+        bottom_margin = 40
+
+        # Размеры холста
+        canvas_width = self.width
+        canvas_height = self.height
+
+        # Вычисляем доступную область под сетку
+        grid_area_width = canvas_width - spacing - bar_width * 2 - spacing
+        grid_area_height = canvas_height - bottom_margin
+
+        # Размер ячейки
+        grid_size = self.grid_size
+        cell_size = min(grid_area_width // grid_size, grid_area_height // grid_size)
+
+        # Фактические размеры сетки
+        grid_width = cell_size * grid_size
+        grid_height = cell_size * grid_size
+
+        # Смещение сетки от левого верхнего угла
+        grid_offset_x = 0
+        grid_offset_y = 0
+
+        passed_count = 0
+        total = grid_size * grid_size
+
+        if redraw_lines:
+            # Рисуем сетку через линии
+            for i in range(grid_size + 1):
+                x = grid_offset_x + i * cell_size
+                canvas.create_line(x, grid_offset_y, x, grid_offset_y + grid_height, fill="gray", tags="grid")
+
+            for j in range(grid_size + 1):
+                y = grid_offset_y + j * cell_size
+                canvas.create_line(grid_offset_x, y, grid_offset_x + grid_width, y, fill="gray", tags="grid")
+
+        qubit = self.qubit
+        if qubit:
+            # Рисуем клетки
+            samples = qubit.measure(total)
+            margin = int(cell_size > 5)
+            for y in range(grid_size):
+                for x in range(grid_size):
+                    x0 = grid_offset_x + x * cell_size
+                    y0 = grid_offset_y + y * cell_size
+                    x1 = x0 + cell_size
+                    y1 = y0 + cell_size
+
+                    if samples[x + grid_size * y]:
+                        passed_count += 1
+                        canvas.create_rectangle(x0 + 1 + margin, y0 + 1 + margin, x1 - margin, y1 - margin,
+                                                fill="green", outline="", tags="quantum")
+
+        # Бары
+        failed_count = total - passed_count
+        bar_x0 = grid_offset_x + grid_width + spacing
+        bar_x1 = bar_x0 + bar_width
+        bar2_x0 = bar_x1 + spacing
+        bar2_x1 = bar2_x0 + bar_width
+
+        failed_height = min(grid_height-2, int(grid_height * failed_count / total))
+        passed_height = min(grid_height-2, int(grid_height * passed_count / total))
+
+        canvas.create_rectangle(bar_x0, grid_height - failed_height, bar_x1, grid_height,
+                                fill="white", outline="black", tags="bars")
+        canvas.create_text((bar_x0 + bar_x1) // 2, max(grid_height - failed_height - 10, 10),
+                           text=f"{failed_count * 100 // total}%", fill="black", font=("Arial", 10), tags="bars")
+
+        canvas.create_rectangle(bar2_x0, grid_height - passed_height, bar2_x1, grid_height,
+                                fill="green", outline="black", tags="bars")
+        canvas.create_text((bar2_x0 + bar2_x1) // 2, max(grid_height - passed_height - 10, 10),
+                           text=f"{passed_count * 100 // total}%", fill="black", font=("Arial", 10), tags="bars")
+
+        # Вердикт
+        verdict = ("⚠️ Отсутсвует квантовый поток ⚠️" if self.qubit is None
+                   else "Преобладает успех" if passed_count > failed_count
+                   else "Преобладает отказ")
+        canvas.create_text(20, canvas_height - 20, text=verdict, anchor="w", font=("Arial", 12, "bold"), tags="verdict")
+
+    def set_qubits(self, options, default):
+        menu = self.option_menu["menu"]
+        menu.delete(0, "end") # Удалить старые пункты
+
+        selected_option = self.selected_option
+
+        def setter(value):
+            selected_option.set(value)
+            self.qubit = options[value]
+            self.redraw(False)
+
+        for option in options:
+            menu.add_command(label=option, command=lambda value=option: setter(value))
+
+        if selected_option.get() == "?": selected_option.set(default)
+        self.qubit = options[selected_option.get()]
+        self.redraw(False)
+
+    def bind_all_mouse_buttons(self):
+        for i in range(1, 6):
+            self.canvas.bind(f"<Button-{i}>", lambda event: self.redraw(False))
+            self.canvas.bind(f"<B{i}-Motion>", lambda event: self.redraw(False))
 
 
 
