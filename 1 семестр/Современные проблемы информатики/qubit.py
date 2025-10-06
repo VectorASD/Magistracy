@@ -11,13 +11,15 @@ class Qubit:
             raise ValueError("Состояние кватерниона должно лежать на сфере: |a0|² + |a1|² = 1")
         self.a0 = a0
         self.a1 = a1
+        self.rounding = None
+
     def vector(self):
         return self.a0, self.a1
 
     def __repr__(self):
         a0, a1 = self.a0, self.a1
 
-        signer = lambda n: "" if float_eq(abs(n), 1) else "-" if float_eq(abs(n), -1) else decorate_num(n) + ' '
+        signer = lambda n: "" if float_eq(abs(n), 1) else "-" if float_eq(abs(n), -1) else decorate_num(n, self.rounding) + ' '
 
         if float_eq(abs(a1), 0): return f"|φ> {signer(a0)}|0>"
         if float_eq(abs(a0), 0): return f"|φ> {signer(a1)}|1>"
@@ -34,7 +36,7 @@ class Qubit:
         a0 = signer(a0)
 
         a1_real = a1.real
-        a1 = "" if float_eq(abs(a1_real), 1) else decorate_num(a1) + ' '
+        a1 = "" if float_eq(abs(a1_real), 1) else decorate_num(a1, self.rounding) + ' '
         if a1.endswith("i "): a1 = a1[:-1]
 
         if   a1.startswith('-'): sign = ''
@@ -53,8 +55,8 @@ class Qubit:
             if div_mode: a0, a1 = new
         else: div_mode = False
 
-        a0 = decorate_num(a0)
-        a1 = decorate_num(a1)
+        a0 = decorate_num(a0, self.rounding)
+        a1 = decorate_num(a1, self.rounding)
         size = max(len(a0), len(a1))
         return f"      {'     ' if div_mode else ''}⎧ {a0.rjust(size)} ⎫\
                \n|φ> = {'1/√2 ' if div_mode else ''}⎪ {' ' * size} ⎪\

@@ -271,23 +271,34 @@ class Render:
 
         pixels_per_world_unit = self.viewport[3] / (2 * fovy_factor)
 
-        for x, y, z, (color, size, type) in dots:
+        for x, y, z, (color, size, T) in dots:
             depth = 0.5 - z * 0.5
             # 0.05 -> 3.2
             # 0.1  -> 1.6
             radius = pixels_per_world_unit * (size * 6.25) * depth
 
-            if type:
-                canvas.create_oval(
-                    x - radius, y - radius,
-                    x + radius, y + radius,
-                    outline=color, width = radius//2, tags="circles"
-                )
-            else:
+            if T == 0:
                 canvas.create_oval(
                     x - radius, y - radius,
                     x + radius, y + radius,
                     fill=color, outline="", tags="circles"
+                )
+            elif T == 1:
+                R1 = radius // 3
+                R2 = R1 * 2
+                canvas.create_oval(
+                    x - R2, y - R2,
+                    x + R2, y + R2,
+                    outline=color, width = R1, tags="circles"
+                )
+            else:
+                assert type(T) is str
+                font_size = max(int(radius), 1)
+                canvas.create_text(
+                    x, y,
+                    text=T, font=("Arial", font_size),
+                    fill=color, tags="circles",
+                    anchor="w"
                 )
 
         self.frame_count += 1
@@ -374,10 +385,10 @@ class Render:
 
 
 
-class Context:
+class Context_3d:
     contexts = []
     def __init__(self, root):
-        Context.contexts.append(self)
+        Context_3d.contexts.append(self)
 
         self.root = root
 
@@ -403,7 +414,7 @@ class Context:
     def focus_me(self):
         if self.is_focused: return
 
-        for context in Context.contexts:
+        for context in Context_3d.contexts:
             context.canvas.config(highlightbackground = ("SystemButtonFace", "dodgerblue")[context == self])
         self.keyboard_handler.bind()
 
@@ -413,7 +424,7 @@ class Context:
 
     @staticmethod
     def focused():
-        for context in Context.contexts:
+        for context in Context_3d.contexts:
             if context.is_focused: return context
 
     @property

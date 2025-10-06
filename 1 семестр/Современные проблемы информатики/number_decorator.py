@@ -76,22 +76,23 @@ class NumDecorator:
                 if a < b: return idx - 1
                 return idx
 
-    def check(self, num):
+    def check(self, num, rounding = None):
         if type(num) is complex:
-            if float_eq(num.imag, 0): return self.check(num.real)
+            if float_eq(num.imag, 0): return self.check(num.real, rounding)
 
             sign = num.imag < 0
 
             im = abs(num.imag)
-            imag = self.check(im)
+            imag = self.check(im, rounding)
             imag = '' if float_eq(im, 1) else f" {imag}"
             if float_eq(num.real, 0): return f"{'-' if sign else ''}i{imag}"
 
-            real = self.check(num.real)
+            real = self.check(num.real, rounding)
             return f"{real} {'-' if sign else '+'}i{imag}"
 
         idx = self.get_idx(num)
         if idx is not None: return self.strs[idx]
+        if rounding is not None: return str(round(num, rounding))
         return str(num)
 
     def exists(self, *nums):
