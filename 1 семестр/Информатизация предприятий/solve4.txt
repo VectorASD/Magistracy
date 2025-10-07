@@ -1,38 +1,72 @@
-Задания на построение запросов с использованием операции JOIN
-1.	Путем самосоединения таблицы HR.EMPLOYEES построить список сотрудников, которые приняты на работу раньше своего прямого руководителя. Ограничить список сотрудни-ками, у которых стаж работы выше 17 лет.
-2.	Путем самосоединения таблицы EMPLOYEES получить список сотрудников с указанием для каждого из них фамилии, имени и телефонного номера его непосредственного начальника. Включить в список даже тех сотрудников, у которых нет начальников в шта-те компании.
-3.	Путем соединения таблиц HR.DEPARTMENTS и HR.EMPLOYEES построить список депар-таментов, для которых руководитель департамента имеет стаж работы более 16 лет. В списке отобразить название департамента, FIRST_NAME и LAST_NAME руководите-ля, его оклад.
-4.	Путем соединения таблиц HR.DEPARTMENTS и HR.EMPLOYEES построить список, в кото-ром по каждому департаменту отобразить название департамента (DEPARTMENT_NAME) и данные о его руководителе – FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, SALARY.
-5.	Путем соединения таблиц HR.DEPARTMENTS и HR.EMPLOYEES отобразить полные дан-ные о департаментах, в каждом из которых работает более 5 сотрудников.
-6.	Путем соединения таблиц HR.DEPARTMENTS и HR.EMPLOYEES отобразить полные дан-ные о департаментах, в которых максимальная зарплата выше 10000.
-7.	Путем соединения таблиц HR.DEPARTMENTS и HR.EMPLOYEES отобразить полные дан-ные о департаментах, в которых минимальная зарплата ниже 5000.
-8.	Путем соединения таблиц HR.DEPARTMENTS и HR.EMPLOYEES получить список департа-ментов, указав по каждому департаменту среднюю зарплату сотрудников и количество сотрудников, получающих комиссионную надбавку.
-9.	Путем соединения таблиц HR.DEPARTMENTS и HR.EMPLOYEES получить список департа-ментов, указав по каждому департаменту число работающих сотрудников и общий фонд зарплаты. Список должен включать даже те департаменты, для которых данные о со-трудниках отсутствуют.
-10.	Путем соединения таблиц HR.JOB_HISTORY и HR.EMPLOYEES отобразить из таблицы HR.JOB_HISTORY записи, относящиеся к сотрудникам, которые в настоящее время полу-чают заработную плату выше 15000.
-11.	Путем соединения таблиц HR.JOB_HISTORY и HR.EMPLOYEES отобразить «карьерную лестницу» сотрудников, которые в настоящее время получают месячную зарплату выше 15000.
-12.	Путем соединения таблиц HR.LOCATIONS, HR.DEPARTMENTS и HR.EMPLOYEES отобразить полные данные о расположении рабочего места сотрудника с идентификатором 105.
-13.	Путем соединения таблиц HR.EMPLOYEES и HR.DEPARTMENTS сформировать список, в котором для каждого сотрудника отобразить имя, фамилию, номер телефона, номер от-дела и полное название отдела. Список ограничить сотрудниками, у которых стаж рабо-ты выше 16 лет.
-14.	Путем соединения таблиц HR.EMPLOYEES и HR.DEPARTMENTS получить список департа-ментов (с указанием DEPARTMENT_ID и DEPARTMENT_NAME) и для каждого департа-мента найти количество сотрудников
-15.	Путем соединения таблиц HR.EMPLOYEES и HR.DEPARTMENTS сформировать список со-трудников, которые являются руководителями департаментов. Список должен содер-жать имя и фамилию, оклад, идентификатор департамента, номер телефона и e-mail.
-16.	Путем соединения таблиц HR.EMPLOYEES и HR.DEPARTMENTS получить список сотрудни-ков для департаментов, у которых код местоположения (LOCATION_ID) отличается от 1500, 1700 и 2500.
-17.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS получить список сотрудников, для которых POSTAL_CODE=’26192’.
-18.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS получить список сотрудников, у которых рабочие места располагаются в Торонто (CITY=’Toronto’).
-19.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS получить список, в котором для каждого сотрудника отобразить имя и фамилию, полное название департамента, город и код страны. Список ограничить кодами страны CA и DE.
-20.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS посчитать, сколько сотрудников работает в разных странах.
+Построение запросов с использованием операции JOIN
+
+2.	Путем самосоединения таблицы EMPLOYEES получить список сотрудников с указанием для каждого из них фамилии, имени и телефонного номера его непосредственного начальника. Включить в список даже тех сотрудников, у которых нет начальников в штате компании.
+
+SELECT e.EMPLOYEE_ID, e.FIRST_NAME, e.LAST_NAME,
+       m.FIRST_NAME MANAGER_FIRST_NAME,
+       m.LAST_NAME MANAGER_LAST_NAME,
+       m.PHONE_NUMBER MANAGER_PHONE
+FROM HR.EMPLOYEES e
+  LEFT JOIN HR.EMPLOYEES m ON e.MANAGER_ID = m.EMPLOYEE_ID; -- Левое соединение, чтобы включить сотрудников без менеджера
+
+10.	Путем соединения таблиц HR.JOB_HISTORY и HR.EMPLOYEES отобразить из таблицы HR.JOB_HISTORY записи, относящиеся к сотрудникам, которые в настоящее время получают заработную плату выше 15000.
+
+SELECT jh.*
+FROM HR.JOB_HISTORY jh
+  JOIN HR.EMPLOYEES e ON jh.EMPLOYEE_ID = e.EMPLOYEE_ID -- Прямое соединение по EMPLOYEE_ID
+WHERE e.SALARY > 15000;
+
+14.	Путем соединения таблиц HR.EMPLOYEES и HR.DEPARTMENTS получить список департаментов (с указанием DEPARTMENT_ID и DEPARTMENT_NAME) и для каждого департамента найти количество сотрудников.
+
+SELECT d.DEPARTMENT_ID, d.DEPARTMENT_NAME, COUNT(e.EMPLOYEE_ID) NUM_EMPLOYEES
+FROM HR.DEPARTMENTS d
+  LEFT JOIN HR.EMPLOYEES e ON d.DEPARTMENT_ID = e.DEPARTMENT_ID -- Левое соединение, чтобы включить департаменты без сотрудников
+GROUP BY d.DEPARTMENT_ID, d.DEPARTMENT_NAME;
+
 21.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS посчитать средний стаж сотрудников, которые работают в разных странах.
-22.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS посчитать среднюю зарплату сотрудников, которые работают в разных странах.
-23.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS посчитать, сколько сотрудников работает в разных городах.
-24.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS посчитать среднюю зарплату сотрудников, которые работают в разных городах.
+
+SELECT l.COUNTRY_ID,
+       (SELECT inner_c.COUNTRY_NAME
+        FROM HR.COUNTRIES inner_c
+        WHERE inner_c.COUNTRY_ID = l.COUNTRY_ID) COUNTRY_NAME, -- корреляция
+       ROUND(AVG(SYSDATE - e.HIRE_DATE)) AVG_TENURE
+FROM HR.EMPLOYEES e
+  JOIN HR.DEPARTMENTS d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+  JOIN HR.LOCATIONS l ON d.LOCATION_ID = l.LOCATION_ID
+GROUP BY l.COUNTRY_ID
+ORDER BY AVG_TENURE; -- так можно!
+
+Вариант с соединением, что не совсем по заданию:
+
+SELECT c.COUNTRY_NAME, ROUND(AVG(SYSDATE - e.HIRE_DATE)) AVG_TENURE
+FROM HR.EMPLOYEES e
+  JOIN HR.DEPARTMENTS d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+  JOIN HR.LOCATIONS l ON d.LOCATION_ID = l.LOCATION_ID
+  JOIN HR.COUNTRIES c ON l.COUNTRY_ID = c.COUNTRY_ID
+GROUP BY c.COUNTRY_NAME
+ORDER BY AVG_TENURE;
+
 25.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS посчитать средний стаж сотрудников, которые работают в разных городах.
-26.	Путем соединения таблиц HR.DEPARTMENTS, HR.LOCATIONS и HR.COUNTRIES построить список, в котором по каждому департаменту отобразить название департамента (DE-PARTMENT_NAME) и данные о его размещении – страна и город. Исключить из списка департаменты, в которых отсутствуют руководители.
-27.	Путем соединения таблиц HR.DEPARTMENTS, HR.LOCATIONS и HR.COUNTRIES получить список департаментов, которые размещаются на территории Объединенного Королев-ства (COUNTRY_NAME = ’United Kingdom’).
-28.	Путем соединения таблиц HR.DEPARTMENTS, HR.LOCATIONS, HR.COUNTRIES и HR.REGIONS получить список департаментов (с указанием department_id и depart-ment_name), которые размещаются на территории Европы (region_name ='Europe').
-29.	Путем соединения таблиц HR.JOB_HISTORY и HR.JOBS построить список, в котором отоб-разить EMPLOYEE_ID, DEPARTMENT_ID, название должности (JOB_TITLE) и продолжи-тельность интервала времени, в течение которого сотрудник занимал эту должность. Список упорядочить по коду сотрудника (EMPLOYEE_ID).
-30.	Путем соединения таблиц HR.DEPARTMENTS, HR.EMPLOYEES и HR.LOCATIONS построить список, в котором по каждому департаменту отобразить название департамента (DE-PARTMENT_NAME), город, в котором он размещается, и данные о его руководителе – FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER.
-31.	Путем соединения таблиц HR.EMPLOYEES и HR.JOBS построить список, в котором отобра-зить названия должностей и средний оклад по каждой должности. Ограничить список должностями, для которых средний оклад находится в интервале от 5000 до 15000.
-32.	Путем соединения таблиц HR.DEPARTMENTS и HR.LOCATIONS получить список департа-ментов, которые размещены на территории США (COUNTRY_ID ='US').
-33.	Путем соединения таблиц HR.EMPLOYEES и HR.DEPARTMENTS получить список сотрудни-ков, которые относятся к службам Marketing, Sales и IT.
-34.	Путем соединения таблиц HR.DEPARTMENTS и HR.EMPLOYEES получить список департа-ментов, указав по каждому из них количество сотрудников, принятых на работу в пери-од с 2005 по 2007 годы.
-35.	Путем соединения таблиц HR.EMPLOYEES, HR.JOB_HISTORY и HR.JOBS сформировать список, отображающий EMPLOYEE_ID, FIRST_NAME, LAST_NAME и название должности (JOB_TITLE), которую в прошлом сотрудник занимал на время не более одного года.
 
+SELECT l.LOCATION_ID, l.CITY, ROUND(AVG(SYSDATE - e.HIRE_DATE)) AS AVG_TENURE
+FROM HR.EMPLOYEES e
+  JOIN HR.DEPARTMENTS d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
+  JOIN HR.LOCATIONS l ON d.LOCATION_ID = l.LOCATION_ID
+GROUP BY l.LOCATION_ID, l.CITY -- в качестве дополнительной защиты от городов-одноимёнников, лучше всего использовать l.LOCATION_ID вместо l.CITY... Также, найден баг, что заставляет указывать l.CITY в группировку, даже если l.LOCATION_ID - Primary Key и повторов кортежей быть не может!
+ORDER BY AVG_TENURE;
 
+29.	Путем соединения таблиц HR.JOB_HISTORY и HR.JOBS построить список, в котором отобразить EMPLOYEE_ID, DEPARTMENT_ID, название должности (JOB_TITLE) и продолжительность интервала времени, в течение которого сотрудник занимал эту должность. Список упорядочить по коду сотрудника (EMPLOYEE_ID).
+
+SELECT jh.EMPLOYEE_ID, jh.DEPARTMENT_ID, j.JOB_TITLE,
+       jh.END_DATE - jh.START_DATE "DURATION"
+FROM HR.JOB_HISTORY jh
+  JOIN HR.JOBS j ON jh.JOB_ID = j.JOB_ID
+ORDER BY jh.EMPLOYEE_ID;
+
+31.	Путем соединения таблиц HR.EMPLOYEES и HR.JOBS построить список, в котором отобразить названия должностей и средний оклад по каждой должности. Ограничить список должностями, для которых средний оклад находится в интервале от 5000 до 15000.
+
+SELECT j.JOB_TITLE, ROUND(AVG(e.SALARY)) AS AVG_SALARY
+FROM HR.EMPLOYEES e
+JOIN HR.JOBS j ON e.JOB_ID = j.JOB_ID
+GROUP BY j.JOB_TITLE
+HAVING AVG(e.SALARY) BETWEEN 5000 AND 15000;
