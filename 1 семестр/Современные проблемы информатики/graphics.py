@@ -1,6 +1,6 @@
 import tkinter as tk
 from math import pi, sin, cos, hypot, tan
-import time
+from time import time
 
 from matrix import Matrix, pi_180
 from misc import wrap_rounded_rectangle
@@ -99,7 +99,7 @@ class KeyboardHandler:
 
     def __init__(self, context):
         self.ctx = context
-        self.last_time = time.time()
+        self.last_time = time()
         self.key_state = set()
 
     def on_key_press(self, event):
@@ -125,7 +125,7 @@ class KeyboardHandler:
         return self
 
     def update_move(self):
-        T = time.time()
+        T = time()
         dt = T - self.last_time
         self.last_time = T
 
@@ -164,6 +164,12 @@ class MouseHandler:
         self.last_mouse_pos = None
         self.ray_cb = None
 
+        self.press_time = 0
+        self.press_mouse_pos = None
+        self.threshold_time = 0.5 # секунды
+        self.threshold_dist = 64  # пикселей
+        self.moved = False
+
     def ray_handler(self, x, y):
         if self.ray_cb is None: return
 
@@ -175,6 +181,10 @@ class MouseHandler:
     def on_press(self, event):
         self.ctx.focus_me()
 
+        self.press_time = time()
+        self.press_mouse_pos = event.x, event.y
+        self.moved = False
+
         if self.ray_handler(event.x, event.y): return
         # print(f"Нажатие: x={}, y={event.y}")
 
@@ -182,6 +192,11 @@ class MouseHandler:
         self.ctx.render.redraw()
 
     def on_move(self, event):
+        pos = self.press_mouse_pos
+        if pos is not None:
+            dpos = hypot(pos[0] - event.x, pos[1] - event.y)
+            if dpos > self.threshold_dist: self.moved = True
+
         if self.ray_handler(event.x, event.y): return
         # print(f"Движение: x={event.x}, y={event.y}")
 
@@ -205,7 +220,23 @@ class MouseHandler:
 
     def on_release(self, event):
         # print(f"Отпускание: x={event.x}, y={event.y}")
-        self.last_mouse_pos = None
+        pos = self.press_mouse_pos
+        if pos is not None and not self.moved:
+            dt = time() - self.press_time
+            dpos = hypot(pos[0] - event.x, pos[1] - event.y)
+            if dt <= self.threshold_time and dpos <= self.threshold_dist:
+                # print("CLICK!")
+                self.ctx.render.handle_click(event.x, event.y)
+
+        self.last_mouse_pos = self.press_mouse_pos = None
+
+    def on_zoom(self, event):
+        self.ctx.focus_me()
+
+        up = hasattr(event, "delta") and event.delta > 0 or event.num == 5
+        # print("Scroll:", "up" if up else "down")
+        self.ctx.camera.move_forward(0.25 * (1 if up else -1) * (1 if self.ctx.camera.orbital_mode else 2))
+        self.ctx.render.redraw()
 
     def bind(self, n):
         self.button = n
@@ -214,6 +245,13 @@ class MouseHandler:
         canvas.bind(f"<ButtonPress-{n}>",   self.on_press) # всё равно перезаписывает <Button-{n}>
         canvas.bind(f"<B{n}-Motion>",       self.on_move)
         canvas.bind(f"<ButtonRelease-{n}>", self.on_release)
+
+        # Windows/macOS
+        canvas.bind("<MouseWheel>", self.on_zoom)
+        # Linux-проблема
+        canvas.bind("<Button-4>", self.on_zoom)
+        canvas.bind("<Button-5>", self.on_zoom)
+
         return self
 
 
@@ -223,13 +261,14 @@ class Render:
         self.ctx = context
         self.viewport = 0, 50, 640, 640
 
-        self.last_time = time.time()
+        self.last_time = time()
         self.frame_count = 0
         self.fps_text_id = None
 
         self.model   = ()
         self.markers = {}
         self.lines   = {}
+        self.click_handlers = {}
 
         vp = self.viewport
         canvas = tk.Canvas(context.frame, width=vp[0]+vp[2], height=vp[1]+vp[3], bg="white")
@@ -315,7 +354,7 @@ class Render:
             fps_pos = (10, 10),               "nw"
             self.fps_text_id = canvas.create_text(*fps_pos[0], anchor=fps_pos[1], text="FPS: 0", font=("Arial", 12), fill="black", tags="fps")
 
-        T = time.time()
+        T = time()
         elapsed = T - self.last_time
         if elapsed >= 0.1:
             fps = self.frame_count / elapsed
@@ -359,6 +398,7 @@ class Render:
 
         # Рисуем фон
         canvas.create_rectangle(x0, y0, x1, y1, radius=11, fill=bg_color, outline=border_color, width=1, tags="indicator")
+        self.click_handlers["orbital_mode"] = range(x0, x1+1), range(y0, y1+1), self.change_orbital_mode
 
         # Вертикальная линия
         canvas.create_rectangle(mid_x-1, y0, mid_x+1, y1, fill=border_color, tags="indicator")
@@ -381,7 +421,10 @@ class Render:
         camera.update_proj_view()
         self.redraw()
         self.draw_mode_indicator()
-        
+
+    def handle_click(self, x, y):
+        for x_range, y_range, cb in self.click_handlers.values():
+            if x in x_range and y in y_range: cb()
 
 
 
@@ -599,12 +642,12 @@ class Context_QGA: # QuantumGridAnalyzer
         canvas.create_rectangle(bar_x0, grid_height - failed_height, bar_x1, grid_height,
                                 fill="white", outline="black", tags="bars")
         canvas.create_text((bar_x0 + bar_x1) // 2, max(grid_height - failed_height - 10, 10),
-                           text=f"{failed_count * 100 // total}%", fill="black", font=("Arial", 10), tags="bars")
+                           text=f"{round(failed_count * 100 / total)}%", fill="black", font=("Arial", 10), tags="bars")
 
         canvas.create_rectangle(bar2_x0, grid_height - passed_height, bar2_x1, grid_height,
                                 fill="green", outline="black", tags="bars")
         canvas.create_text((bar2_x0 + bar2_x1) // 2, max(grid_height - passed_height - 10, 10),
-                           text=f"{passed_count * 100 // total}%", fill="black", font=("Arial", 10), tags="bars")
+                           text=f"{round(passed_count * 100 / total)}%", fill="black", font=("Arial", 10), tags="bars")
 
         # Вердикт
         verdict = ("⚠️ Отсутсвует квантовый поток ⚠️" if self.qubit is None
