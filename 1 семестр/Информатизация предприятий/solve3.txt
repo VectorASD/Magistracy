@@ -71,8 +71,8 @@ FROM HR.DEPARTMENTS d
 WHERE d.LOCATION_ID IN ( -- FK, без корреляции
     SELECT middle_l.LOCATION_ID
     FROM HR.LOCATIONS middle_l
-    WHERE middle_l.COUNTRY_ID = ( -- FK, без корреляции
-        SELECT inner_c.COUNTRY_ID -- PK, IN не требуется, достаточно '='
+    WHERE middle_l.COUNTRY_ID IN ( -- FK, без корреляции
+        SELECT inner_c.COUNTRY_ID -- PK
         FROM HR.COUNTRIES inner_c
         WHERE inner_c.COUNTRY_NAME LIKE '%United Kingdom%' -- United Kingdom of Great Britain and Northern Ireland
     )
@@ -84,4 +84,4 @@ SELECT d.DEPARTMENT_ID, d.DEPARTMENT_NAME, d.MANAGER_ID, d.LOCATION_ID
 FROM HR.DEPARTMENTS d
 JOIN HR.LOCATIONS l ON d.LOCATION_ID = l.LOCATION_ID
 JOIN HR.COUNTRIES c ON l.COUNTRY_ID = c.COUNTRY_ID
-WHERE c.COUNTRY_NAME LIKE '%United Kingdom%';
+WHERE c.COUNTRY_NAME LIKE '%United Kingdom%'
