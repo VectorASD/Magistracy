@@ -1,8 +1,11 @@
 from misc import float_eq, edge_enumerate
 from number_decorator import decorate_num, exists_decor
-from math import pi, tan, sin, cos
+from math import pi, tan, sin, cos, hypot
+from types import GeneratorType
 
 from qubit import Qubit, Q_0, s2
+
+from sortedcontainers import SortedList # pip install sortedcontainers
 
 pi_2   = pi / 2
 pi_180 = pi / 180
@@ -75,12 +78,12 @@ class Matrix:
     @staticmethod
     def perspective(fovy, aspect, near, far):
         fovy = ctg(fovy * pi_180 / 2) # inverted fovy_factor
-        return Matrix(*(
+        return Matrix(
             (fovy / aspect, 0, 0, 0),
             (0, fovy, 0, 0),
             (0, 0, -(far + near) / (far - near), -2 * far * near / (far - near)),
             (0, 0, -1, 0)
-        ))
+        )
 
     @staticmethod
     def view(x, y, z, yaw, pitch, roll):
@@ -116,18 +119,112 @@ class Matrix:
             (0,   0,   0,   1),
         ), forward, right, up
 
-    def project(self, x, y, z, color, winX, winY):
-        x, y, z, w = self * (x, y, z, 1)
-        if w:
-            return (x / w + 1) * (winX / 2), (1 - y / w) * (winY / 2), z / w, color
-        return 0, 0, 2, color
+    def project(self, dots, viewport):
+        dx, dy, width, height = viewport
+        result = SortedList(key = lambda p: -p[2]) # сортировка по Z по убыванию
+        locals = dx / 2, dy / 2, width / 2, height / 2, result.add
+
+        def projector(arr):
+            hdx, hdy, hw, hh, add_dot = locals
+            for x, y, z, misc in arr:
+                x, y, z, w = self * (x, y, z, 1)
+                if w:
+                    z /= w
+                    if z <= 1:
+                        add_dot((
+                            (x / w + 1) * hw + hdx,
+                            (1 - y / w) * hh + hdy,
+                            z, misc
+                        ))
+        def finder(dots):
+            # print(dots)
+            T = type(dots)
+            if T is GeneratorType:
+                projector(dots)
+            elif T is dict:
+                for dot in dots.values(): finder(dot)
+            elif dots:
+                first = dots[0]
+                T2 = type(first)
+                if T2 is tuple and first and type(first[0]) in (int, float):
+                    projector(dots)
+                elif T2 in (int, float):
+                    projector((dots,))
+                else:
+                    for dot in dots: finder(dot)
+
+        finder(dots)
+        # for dots in dots_arr:
+        #     if type(dots) is dict: dots = dots.values()
+        return result
         # z = -1 (далеко)
         # z = 1 (близко)
         # z > 1 (за камерой)
 
+    def unproject(self, x, y, proj, viewport):
+        row2, z_view = proj.mat[2], 1
+        dx, dy, width, height = viewport
+
+        x = (x - dx/2) * (2 / width) - 1
+        y = 1 - (y - dy/2) * (2 / height)
+        z = row2[2] - row2[3] / z_view
+        # Фактически, в формулу уже вшито отрицание: z = -z
+        # Это необходимо из-за особенности view_proj@view_proj⁻¹ = почти I
+        # Т.к. в I-матрице на z появляется отрицание, хоть и в символических рассчётах ничего подобного нет
+
+        x, y, z, w = self * (x, y, z, 1)
+        if w:
+            return x/w, y/w, z/w
+        return 0, 0, 2, color
+
     def __call__(self, letter):
         self.letter = letter
         return self
+
+    @property
+    def is_rotation_orthonormal(self, eps=1e-6):
+        mat = self.mat
+        r00, r01, r02, _ = mat[0]
+        r10, r11, r12, _ = mat[1]
+        r20, r21, r22, _ = mat[2]
+
+        # Проверка нормированности
+        if abs(hypot(r00, r01, r02) - 1) > eps: return False
+        if abs(hypot(r10, r11, r12) - 1) > eps: return False
+        if abs(hypot(r20, r21, r22) - 1) > eps: return False
+
+        # Проверка ортогональности
+        if abs(r00*r10 + r01*r11 + r02*r12) > eps: return False
+        if abs(r00*r20 + r01*r21 + r02*r22) > eps: return False
+        if abs(r10*r20 + r11*r21 + r12*r22) > eps: return False
+
+        return True
+
+    @staticmethod
+    def fast_inv_proj_view(fovy, aspect, near, far, X, Y, Z, yaw, pitch, roll):
+        yaw   *= pi_180
+        pitch *= pi_180
+        roll  *= pi_180
+        sY, cY = sin(yaw),   cos(yaw)
+        sP, cP = sin(pitch), cos(pitch)
+        sR, cR = sin(roll),  cos(roll)
+
+        r00, r01, r02 = cY*cR,             -cY*sR,            sY
+        r10, r11, r12 = sP*sY*cR + cP*sR,  -sP*sY*sR + cP*cR, -sP*cY
+        r20, r21, r22 = -cP*sY*cR + sP*sR, cP*sY*sR + sP*cR,  cP*cY
+
+        fovy = ctg(fovy * pi_180 / 2) # inverted fovy_factor
+        F_A  = fovy / aspect
+        FN   = -(far + near) / (far - near)
+        _2fn = -2 * far * near / (far - near)
+        FN_2fn = FN / _2fn
+        m2fn   = -_2fn
+        return Matrix(
+            (r00/F_A, r10/fovy, X/m2fn, X*FN_2fn -r20),
+            (r01/F_A, r11/fovy, Y/m2fn, Y*FN_2fn -r21),
+            (r02/F_A, r12/fovy, Z/m2fn, Z*FN_2fn -r22),
+            (0,       0,        1/m2fn, FN_2fn),
+        )
 
     @staticmethod
     def test():
@@ -146,13 +243,30 @@ class Matrix:
         print(Matrix.view(0, 0, 0,  0,  0, 60)[0]("R-rot")) # sR = √3/2; cR = 1/2
         view, F, R, U = Matrix.view(-30, 0, 0, 0, 90, 0)
         proj_view = proj @ view
-        print(proj("proj"))
-        print(view("view"))
-        print(proj_view("p@v"))
+        print(proj("proj"), "affin:", proj.is_rotation_orthonormal)
+        print(view("view"), "affin:", view.is_rotation_orthonormal)
+        print(proj_view("proj@view"), "affin:", proj_view.is_rotation_orthonormal)
         print("Forward:", F)
         print("Right:",   R)
         print("Up:",      U)
-        print(proj_view.project(5, 5/2, 0, 64, 64))
+        projected = proj_view.project([[(5, 5/2, 0, "misc")]], (0, 0, 64, 64))
+        print("projected:", projected)
+
+        print()
+        view, F, R, U = Matrix.view(-30, 15, -40, 24, 85, 78)
+        proj_view = proj @ view
+        print(proj_view("proj@view"))
+
+        inv_proj_view = Matrix.fast_inv_proj_view(90, 1, 0.01, 100, -30, 15, -40, 24, 85, 78)
+        print(inv_proj_view("(proj@view)⁻¹"))
+
+        print((proj_view @ inv_proj_view)("final-test"))
+        # final-test = ⎧1, 0, 0 , 0⎫
+        #              ⎪0, 1, 0 , 0⎪
+        #              ⎪0, 0, -1, 0⎪ Вот такой вот поворот!!! Z инвертирована... но это нормально...
+        #              ⎩0, 0, 0 , 1⎭
+
+
 
 I   = Matrix((1, 0), (0, 1))
 NOT = Matrix((0, 1), (1, 0))

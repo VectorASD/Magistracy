@@ -16,11 +16,11 @@ class NumDecorator:
             *((i / j ** 0.5, f"{i}/√{j}") for i in without_0 for j in primes),
 
             *((-i ** 0.5, f"-√{i}") for i in primes),
-            *((i ** 0.5, f"√{i}") for i in primes),
+            *(( i ** 0.5,  f"√{i}") for i in primes),
             *((-i ** 0.5 / j, f"-√{i}/{j}") for i in primes for j in range(2, 33)),
-            *((i ** 0.5 / j, f"√{i}/{j}") for i in primes for j in range(2, 33)),
+            *(( i ** 0.5 / j,  f"√{i}/{j}") for i in primes for j in range(2, 33)),
 
-            *((i * pi, f"{i}π") for i in without_0),
+            *((i * pi,     f"{i}π")     for i in without_0),
             *((i * pi / j, f"{i}π/{j}") for i in without_0 for j in range(2, 33) if gcd(i, j) == 1),
 
             *((i / (j * pi), f"{i}/{j}π") for i in without_0 for j in range(2, 33) if gcd(i, j) == 1),
@@ -40,22 +40,22 @@ class NumDecorator:
 
     def repeats(self):
         for num, strs in self.counter.items():
-            if len(strs) > 1: print(f"{num}: {strs}")
+            if len(strs) > 1: print(f"{num:.9f}: {strs}")
         """
-        -4.123105625617661: ['-17/√17', '-√17']
-        -3.3166247903554: ['-11/√11', '-√11']
-        -2.23606797749979: ['-5/√5', '-√5']
-        -0.30151134457776363: ['-1/√11', '-√11/11']
-        -0.2773500981126146: ['-1/√13', '-√13/13']
-        -0.24253562503633297: ['-1/√17', '-√17/17']
-        -0.18569533817705186: ['-1/√29', '-√29/29']
-        0.30151134457776363: ['1/√11', '√11/11']
-        0.2773500981126146: ['1/√13', '√13/13']
-        0.24253562503633297: ['1/√17', '√17/17']
-        0.18569533817705186: ['1/√29', '√29/29']
-        2.23606797749979: ['5/√5', '√5']
-        3.3166247903554: ['11/√11', '√11']
-        4.123105625617661: ['17/√17', '√17']
+        -4.123105626: ['-17/√17', '-√17']
+        -3.316624790: ['-11/√11', '-√11']
+        -2.236067977: ['-5/√5', '-√5']
+        -0.301511345: ['-1/√11', '-√11/11']
+        -0.277350098: ['-1/√13', '-√13/13']
+        -0.242535625: ['-1/√17', '-√17/17']
+        -0.185695338: ['-1/√29', '-√29/29']
+        0.301511345: ['1/√11', '√11/11']
+        0.277350098: ['1/√13', '√13/13']
+        0.242535625: ['1/√17', '√17/17']
+        0.185695338: ['1/√29', '√29/29']
+        2.236067977: ['5/√5', '√5']
+        3.316624790: ['11/√11', '√11']
+        4.123105626: ['17/√17', '√17']
         """
 
     def get_idx(self, num):
@@ -76,28 +76,59 @@ class NumDecorator:
                 if a < b: return idx - 1
                 return idx
 
-    def check(self, num):
+    def check(self, num, rounding = None):
+        if type(num) is complex:
+            if float_eq(num.imag, 0): return self.check(num.real, rounding)
+
+            sign = num.imag < 0
+
+            im = abs(num.imag)
+            imag = self.check(im, rounding)
+            imag = '' if float_eq(im, 1) else f" {imag}"
+            if float_eq(num.real, 0): return f"{'-' if sign else ''}i{imag}"
+
+            real = self.check(num.real, rounding)
+            return f"{real} {'-' if sign else '+'}i{imag}"
+
         idx = self.get_idx(num)
         if idx is not None: return self.strs[idx]
+        if rounding is not None: return str(round(num, rounding))
         return str(num)
 
     def exists(self, *nums):
-        return all(self.get_idx(num) is not None for num in nums)
+        return all((
+            self.get_idx(num)      is not None   if type(num) is not complex else
+            # self.get_idx(num.real) is not None   if float_eq(num.imag, 0) else
+            # self.get_idx(num.imag) is not None   if float_eq(num.real, 0) else
+            self.get_idx(num.real) is not None and self.get_idx(num.imag) is not None
+        ) for num in nums)
 
     def test(self):
+        self.repeats()
+        print()
+
         for i in decorator.nums[:4]:
             print(self.check(i - EPS/2), self.check(i), self.check(i + EPS/2))
         for i in decorator.nums[-4:]:
             print(self.check(i - EPS/2), self.check(i), self.check(i + EPS/2))
+        print()
+
         print(decorate_num(1/2**0.5)) # 1/√2
         print(exists_decor(1/2**0.5)) # True
         print(exists_decor(12345))    # False
+        print(decorate_num(complex(123,    1/2**0.5))) # 123 +i 1/√2
+        print(decorate_num(complex(123,   -1/2**0.5))) # 123 -i 1/√2
+        print(decorate_num(complex(EPS/2,  1/2**0.5))) # i 1/√2
+        print(decorate_num(complex(EPS/2, -1/2**0.5))) # -i 1/√2
+        print(decorate_num(complex( 1/2**0.5, EPS/2))) # 1/√2
+        print(decorate_num(complex(-1/2**0.5, EPS/2))) # -1/√2
+        print(decorate_num(complex(EPS/2,      1)))    # i
+        print(decorate_num(complex(EPS/2,     -1)))    # -i
 
 decorator = NumDecorator()
 decorate_num = decorator.check
 exists_decor = decorator.exists
 
 if __name__ == "__main__":
-    decorator.repeats()
     decorator.test()
 
