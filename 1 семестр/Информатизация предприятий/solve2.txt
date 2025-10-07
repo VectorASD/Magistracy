@@ -22,23 +22,47 @@ GROUP BY MANAGER_ID;
 
 13.)	По данным из таблицы HR.EMPLOYEES сформировать список должностей с указанием job_id, количества сотрудников и средней зарплаты. При формировании списка ограничиться только должностями, у которых максимальная зарплата превышает 8000.
 
-
+SELECT JOB_ID, COUNT(*) NUM_EMPLOYEES, ROUND(AVG(SALARY)) AVG_SALARY
+FROM HR.EMPLOYEES
+GROUP BY JOB_ID
+HAVING MAX(SALARY) > 8000;
 
 14.)	По данным из таблицы HR.EMPLOYEES сформировать список должностей, для которых средняя зарплата превышает 10000.
 
-
+SELECT JOB_ID, ROUND(AVG(SALARY)) AVG_SALARY
+FROM HR.EMPLOYEES
+GROUP BY JOB_ID
+HAVING AVG(SALARY) > 10000;
 
 15.)	По данным из таблицы HR.EMPLOYEES сформировать список должностей, для которых количество сотрудников, получающих зарплату от 7000 до 15000, не меньше 3.
 
-
+SELECT JOB_ID, COUNT(*) NUM_EMPLOYEES
+FROM HR.EMPLOYEES
+WHERE SALARY BETWEEN 7000 AND 15000
+GROUP BY JOB_ID
+HAVING COUNT(*) >= 3;
 
 25.)	Записи из таблицы HR.EMPLOYEES сгруппировать по коду департамента (DEPARTMENT_ID) и размеру комиссионной надбавки (COMMISSION_PCT), вычислить количество записей в 
 
-
+SELECT DEPARTMENT_ID, COMMISSION_PCT, COUNT(*) NUM_EMPLOYEES
+FROM HR.EMPLOYEES
+WHERE HIRE_DATE >= TO_DATE('2006-01-01', 'YYYY-MM-DD')
+GROUP BY DEPARTMENT_ID, COMMISSION_PCT
+ORDER BY DEPARTMENT_ID;
 
 29.)	По данным из таблицы HR.EMPLOYEES посчитать, сколько сотрудников было принято на работу во 2-й половине каждого месяца в течение 2005-го года (см. подсказку).
 
-
+SELECT TO_CHAR(HIRE_DATE, 'MM') MONTH, COUNT(*) NUM_EMPLOYEES
+FROM HR.EMPLOYEES
+WHERE TO_CHAR(HIRE_DATE, 'YYYY') = '2015' -- нет людей, пришедших в компанию в 2005 году...
+  AND TO_NUMBER(TO_CHAR(HIRE_DATE, 'DD')) > 15 -- могут быть и другие механизмы понимания "вторая половина месяца"
+GROUP BY TO_CHAR(HIRE_DATE, 'MM')
+ORDER BY TO_CHAR(HIRE_DATE, 'MM');
 
 39.)	По данным из таблицы HR.EMPLOYEES сформировать список департаментов (DEPARTMENT_ID), для которых количество сотрудников, получающих месячную зарплату в размере от 7000 до 10000, меньше 4.
 
+SELECT DEPARTMENT_ID, COUNT(*) NUM_EMPLOYEES
+FROM HR.EMPLOYEES
+WHERE SALARY BETWEEN 7000 AND 10000
+GROUP BY DEPARTMENT_ID
+HAVING COUNT(*) < 4;
