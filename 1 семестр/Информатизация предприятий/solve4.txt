@@ -48,11 +48,11 @@ ORDER BY AVG_TENURE;
 
 25.	Путем соединения таблиц HR.EMPLOYEES, HR.DEPARTMENTS и HR.LOCATIONS посчитать средний стаж сотрудников, которые работают в разных городах.
 
-SELECT l.LOCATION_ID, l.CITY, ROUND(AVG(SYSDATE - e.HIRE_DATE)) AS AVG_TENURE
+SELECT l.LOCATION_ID, l.CITY, ROUND(AVG(SYSDATE - e.HIRE_DATE)) AVG_TENURE
 FROM HR.EMPLOYEES e
   JOIN HR.DEPARTMENTS d ON e.DEPARTMENT_ID = d.DEPARTMENT_ID
   JOIN HR.LOCATIONS l ON d.LOCATION_ID = l.LOCATION_ID
-GROUP BY l.LOCATION_ID, l.CITY -- в качестве дополнительной защиты от городов-одноимёнников, лучше всего использовать l.LOCATION_ID вместо l.CITY... Также, найден баг, что заставляет указывать l.CITY в группировку, даже если l.LOCATION_ID - Primary Key и повторов кортежей быть не может!
+GROUP BY l.LOCATION_ID, l.CITY -- в качестве дополнительной защиты от городов-одноимёнников, лучше всего использовать l.LOCATION_ID вместо l.CITY...
 ORDER BY AVG_TENURE;
 
 29.	Путем соединения таблиц HR.JOB_HISTORY и HR.JOBS построить список, в котором отобразить EMPLOYEE_ID, DEPARTMENT_ID, название должности (JOB_TITLE) и продолжительность интервала времени, в течение которого сотрудник занимал эту должность. Список упорядочить по коду сотрудника (EMPLOYEE_ID).
@@ -65,7 +65,7 @@ ORDER BY jh.EMPLOYEE_ID;
 
 31.	Путем соединения таблиц HR.EMPLOYEES и HR.JOBS построить список, в котором отобразить названия должностей и средний оклад по каждой должности. Ограничить список должностями, для которых средний оклад находится в интервале от 5000 до 15000.
 
-SELECT j.JOB_TITLE, ROUND(AVG(e.SALARY)) AS AVG_SALARY
+SELECT j.JOB_TITLE, ROUND(AVG(e.SALARY)) AVG_SALARY
 FROM HR.EMPLOYEES e
   JOIN HR.JOBS j ON e.JOB_ID = j.JOB_ID
 GROUP BY j.JOB_TITLE

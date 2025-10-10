@@ -42,7 +42,7 @@ WHERE SALARY BETWEEN 7000 AND 15000
 GROUP BY JOB_ID
 HAVING COUNT(*) >= 3;
 
-25.)	Записи из таблицы HR.EMPLOYEES сгруппировать по коду департамента (DEPARTMENT_ID) и размеру комиссионной надбавки (COMMISSION_PCT), вычислить количество записей в 
+25.)	Записи из таблицы HR.EMPLOYEES сгруппировать по коду департамента (DEPARTMENT_ID) и размеру комиссионной надбавки (COMMISSION_PCT), вычислить количество записей в каждой группе. Ограничиться только сотрудниками, которые приняты на работу с начала 2006 г., и произвести сортировку по столбцу DEPARTMENT_ID.
 
 SELECT DEPARTMENT_ID, COMMISSION_PCT, COUNT(*) NUM_EMPLOYEES
 FROM HR.EMPLOYEES
