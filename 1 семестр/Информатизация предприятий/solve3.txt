@@ -1,0 +1,87 @@
+Построение вложенных запросов
+
+1.	Используя таблицу HR.EMPLOYEES, отобразить данные о сотрудниках (EMPLOYEE_ID, FIRST_NAME, LAST_NAME), каждый из которых принят на работу раньше своего прямого руководителя (MANAGER_ID). При формировании списка ограничиться департаментами с номерами 30, 40, 50 и 70.
+
+SELECT e.EMPLOYEE_ID, e.FIRST_NAME, e.LAST_NAME
+FROM HR.EMPLOYEES e
+WHERE e.DEPARTMENT_ID IN (30, 40, 50, 70)
+  AND e.HIRE_DATE < (
+    SELECT inner_e.HIRE_DATE
+    FROM HR.EMPLOYEES inner_e
+    WHERE inner_e.EMPLOYEE_ID = e.MANAGER_ID -- FK + корреляция
+  );
+
+4.	С помощью таблицы HR.EMPLOYEES построить список сотрудников, у которых отклонение от среднего оклада не превышает 2000.
+
+SELECT e.EMPLOYEE_ID, e.FIRST_NAME, e.LAST_NAME, e.SALARY
+FROM HR.EMPLOYEES e
+WHERE ABS(e.SALARY - (
+    SELECT AVG(inner_e.SALARY)
+    FROM HR.EMPLOYEES inner_e -- без корреляции
+)) <= 2000;
+
+8.	Используя таблицу HR.EMPLOYEES, отобразить данные о сотрудниках (имя и фамилия, оклад, идентификатор департамента, номер телефона и e-mail), каждый из которых является менеджером для более 5 подчиненных.
+
+SELECT e.FIRST_NAME, e.LAST_NAME, e.SALARY, e.DEPARTMENT_ID, e.PHONE_NUMBER, e.EMAIL
+FROM HR.EMPLOYEES e
+WHERE e.EMPLOYEE_ID IN ( -- без корреляции
+    SELECT inner_e.MANAGER_ID -- FK
+    FROM HR.EMPLOYEES inner_e
+    WHERE inner_e.MANAGER_ID IS NOT NULL
+    GROUP BY inner_e.MANAGER_ID
+    HAVING COUNT(*) > 5
+);
+
+16.	С помощью таблицы HR.EMPLOYEES построить список сотрудников, у которых стаж работы в компании выше среднего стажа. В этом списке для каждого сотрудника также указать, сколько ему не хватает до максимального стажа.
+
+SELECT e.EMPLOYEE_ID, e.FIRST_NAME, e.LAST_NAME,
+       TRUNC(SYSDATE - e.HIRE_DATE) DAYS_WORKED,
+       (SELECT MAX(SYSDATE - inner_e.HIRE_DATE) FROM HR.EMPLOYEES inner_e) - (SYSDATE - e.HIRE_DATE) "DAYS_TO_MAX" -- без корреляции
+FROM HR.EMPLOYEES e
+WHERE SYSDATE - e.HIRE_DATE > ( -- без корреляции
+    SELECT AVG(SYSDATE - inner_e.HIRE_DATE)
+    FROM HR.EMPLOYEES inner_e
+);
+
+23.	Используя таблицу HR.DEPARTMENTS, отобразить полные данные о департаментах, которые размещаются там же, где департамент с номером 90. Исключить из рассмотрения департаменты, для которых не указан код руководителя.
+
+SELECT d.*
+FROM HR.DEPARTMENTS d
+WHERE d.LOCATION_ID = ( -- без корреляции
+    SELECT inner_d.LOCATION_ID
+    FROM HR.DEPARTMENTS inner_d
+    WHERE inner_d.DEPARTMENT_ID = 90
+)
+AND d.MANAGER_ID IS NOT NULL;
+
+31.	Используя таблицы HR.DEPARTMENTS и HR.EMPLOYEES, отобразить полные данные о департаментах, в которых руководитель (MANAGER_ID) имеет стаж работы выше 5 лет.
+
+SELECT d.*
+FROM HR.DEPARTMENTS d
+WHERE d.MANAGER_ID IN ( -- FK, без корреляции
+    SELECT inner_e.EMPLOYEE_ID
+    FROM HR.EMPLOYEES inner_e
+    WHERE SYSDATE - inner_e.HIRE_DATE > 365 * 5
+);
+
+44.	Используя таблицы HR.DEPARTMENTS, HR.LOCATIONS и HR.COUNTRIES, получить список департаментов, которые размещаются на территории Объединенного Королевства (COUNTRY_NAME = ’United Kingdom’).
+
+SELECT d.DEPARTMENT_ID, d.DEPARTMENT_NAME, d.MANAGER_ID, d.LOCATION_ID
+FROM HR.DEPARTMENTS d
+WHERE d.LOCATION_ID IN ( -- FK, без корреляции
+    SELECT middle_l.LOCATION_ID
+    FROM HR.LOCATIONS middle_l
+    WHERE middle_l.COUNTRY_ID IN ( -- FK, без корреляции
+        SELECT inner_c.COUNTRY_ID -- PK
+        FROM HR.COUNTRIES inner_c
+        WHERE inner_c.COUNTRY_NAME LIKE '%United Kingdom%' -- United Kingdom of Great Britain and Northern Ireland
+    )
+);
+
+что аналогично использованию JOIN-ON-соединений:
+
+SELECT d.DEPARTMENT_ID, d.DEPARTMENT_NAME, d.MANAGER_ID, d.LOCATION_ID
+FROM HR.DEPARTMENTS d
+  JOIN HR.LOCATIONS l ON d.LOCATION_ID = l.LOCATION_ID
+  JOIN HR.COUNTRIES c ON l.COUNTRY_ID = c.COUNTRY_ID
+WHERE c.COUNTRY_NAME LIKE '%United Kingdom%';

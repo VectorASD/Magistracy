@@ -1,0 +1,64 @@
+Построение простых запросов
+
+3.)	Используя месячную зарплату сотрудника (столбец SALARY в таблице HR.EMPLOYEES), вычислить годовой доход для каждого из них.
+
+SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, SALARY*12 "ANNUAL_SALARY"
+FROM HR.EMPLOYEES;
+
+11.)	По таблице HR.EMPLOYEES получить список сотрудников, у которых в фамилии (LAST_NAME) предпоследние символы – en.
+
+SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME
+FROM HR.EMPLOYEES
+WHERE SUBSTR(LAST_NAME, -2, 2) = 'en';
+
+20.)	По таблице HR.EMPLOYEES получить список сотрудников, у которых код должности (JOB_ID) имеет значение IT_PROG или SA_MAN, с указанием фамилии сотрудника (LAST_NAME) и даты приема на работу (HIRE_DATE).
+
+SELECT LAST_NAME, HIRE_DATE
+FROM HR.EMPLOYEES
+WHERE JOB_ID IN ('IT_PROG', 'SA_MAN');
+
+24.)	Из таблицы HR.EMPLOYEES выбрать данные по сотрудникам департамента с номером 30, у которых отсутствует комиссионная надбавка и зарплата (SALARY) не превышает 5000.
+
+SELECT EMPLOYEE_ID, FIRST_NAME, LAST_NAME, SALARY, DEPARTMENT_ID
+FROM HR.EMPLOYEES
+WHERE COMMISSION_PCT IS NULL AND SALARY <= 5000 AND DEPARTMENT_ID = 30;
+
+26.)	По таблице HR.EMPLOYEES получить список сотрудников, у которых в имени (FIRST_NAME) отсутствует заданная буква (независимо от её написания). В списке отобразить имя и фамилию сотрудника (через точку), дату приема на работу и номер департамента. Список отсортировать по убыванию номера департамента.
+
+SELECT CONCAT(FIRST_NAME, '.', LAST_NAME) "FULL_NAME", HIRE_DATE, DEPARTMENT_ID
+FROM HR.EMPLOYEES
+WHERE LOWER(FIRST_NAME) NOT LIKE '%a%'
+ORDER BY DEPARTMENT_ID DESC;
+
+Ещё один вариант конкатенации:
+FIRST_NAME || '.' || LAST_NAME "FULL_NAME"
+
+27.)	По таблице HR.EMPLOYEES получить список сотрудников, которыми руководят менеджеры с номерами 120, 103 и 145. В списке отобразить имя и фамилию сотрудника (через точку), адрес электронной почты и зарплату.
+
+SELECT CONCAT(FIRST_NAME, '.', LAST_NAME) "FULL_NAME", EMAIL, SALARY
+FROM HR.EMPLOYEES
+WHERE MANAGER_ID IN (120, 103, 145);
+
+32.)	По данным из таблицы HR.EMPLOYEES получить список неповторяющихся значений для столбца FIRST_NAME.
+
+SELECT DISTINCT FIRST_NAME
+FROM HR.EMPLOYEES
+ORDER BY FIRST_NAME;
+
+35.)	По данным из таблицы HR.JOBS вычислить разницу между максимальной и минимальной зарплатой для каждой должности. Сделать сортировку по увеличению разницы.
+
+SELECT JOB_ID, MAX_SALARY - MIN_SALARY "SALARY_DIFF"
+FROM HR.JOBS
+ORDER BY MAX_SALARY - MIN_SALARY;
+
+38.)	По данным из таблицы HR.JOBS получить список должностей, у которых максимальная зарплата (MAX_SALARY) находится в диапазоне от 10000 до 20000.
+
+SELECT JOB_TITLE, MAX_SALARY
+FROM HR.JOBS
+WHERE MAX_SALARY BETWEEN 10000 AND 20000;
+
+43.)	По данным из таблицы HR.DEPARTMENTS отобразить все сведения об отделах, которые занимаются продажами (Sales) и доставками (Shipping).
+
+SELECT *
+FROM HR.DEPARTMENTS
+WHERE DEPARTMENT_NAME IN ('Sales', 'Shipping');
