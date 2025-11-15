@@ -245,7 +245,7 @@ if __name__ == "__main__":
             stream.write(pformat(repos))
 
             result = stream.getvalue()
-            with open("stdout.txt", "w") as file:
+            with open("stdout.txt", "w", encoding="utf-8") as file:
                 file.write(result)
             # можно использовать напрямую file, вместо StringIO,
             # но, тогда, мы не сможем напечатать результат в консоль
