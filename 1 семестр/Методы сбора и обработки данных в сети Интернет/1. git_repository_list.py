@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional
 from pprint import pprint, pformat
 from io import StringIO
+import json
 
 from ASDsecrets import Storage
 
@@ -250,5 +251,8 @@ if __name__ == "__main__":
             # можно использовать напрямую file, вместо StringIO,
             # но, тогда, мы не сможем напечатать результат в консоль
             # без считывания файла...
+
+            with open("repos.json", "w", encoding="utf-8") as file:
+                json.dump(repos, file, indent=4, ensure_ascii=False, sort_keys=True)
     except Exception as e:
         print("Ошибка:", e)
