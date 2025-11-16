@@ -1,4 +1,4 @@
-def print_table(table: tuple[tuple, ...], stream):
+def print_table(table: tuple[tuple, ...], stream, middle_sep = True):
     """
     Печатает таблицу с одинаковой шириной колонок и рамками +---+.
     table: кортеж из кортежей, где первый кортеж — заголовки.
@@ -13,4 +13,5 @@ def print_table(table: tuple[tuple, ...], stream):
     for idx, row in enumerate(table):
         line = "".join(("|", *(" " + str(cell).ljust(col_widths[i]) + " |" for i, cell in enumerate(row)), "\n"))
         stream.write(line)
-        stream.write(line_separator)
+        if middle_sep or not idx: stream.write(line_separator)
+    if not middle_sep: stream.write(line_separator)
