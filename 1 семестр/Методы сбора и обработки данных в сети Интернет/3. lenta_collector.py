@@ -1,14 +1,14 @@
-from lxml import html
+from lxml import html, etree
 from time import time
 import os
 import pickle
-from pprint import pprint
+from pprint import pprint, pformat
 from io import StringIO
 import json
 import csv
 from urllib.parse import urlparse
 
-from utils import print_table
+from utils import print_table, href_to_url_wrap, iso_to_human
 
 import requests # pip install requests
 
@@ -149,7 +149,8 @@ console.log("total removed:", count);
 
 def load_lenta(table):
     text, base_url = cache.load("https://lenta.ru/", 10 * 60)
-    print("|text|:", len(text)) # 137666...
+    print("|text|:", len(text)) # 125207...
+    href_to_url = href_to_url_wrap(base_url)
 
     tree = html.fromstring(text)
     sections = tree.xpath('//div[@class="main-page"]/section[@class="main-page__section"]')
@@ -164,8 +165,7 @@ def load_lenta(table):
         print("  |cards|:", len(cards))
 
         for card in cards:
-            href = card.xpath('./@href')
-            href = (base_url + href[0] if href[0][0] == "/" else href[0]) if href and href[0] else None
+            href = href_to_url(card.xpath('./@href'))
             classes = tuple(name
                             for name in card.get("class", "").split()
                             if name.startswith("card-") or name.startswith("slider-video"))
@@ -208,15 +208,79 @@ def load_lenta(table):
 
 
 
+def load_mail_news(table, pages = 8):
+    text, base_url = cache.load("https://news.mail.ru/", 10 * 60)
+    print("|text|:", len(text)) # 326738...
+    href_to_url = href_to_url_wrap(base_url)
+
+    tree = html.fromstring(text)
+    items = tree.xpath('//div[@data-logger="news__FeedMainItem"]')
+    print("  |items|:", len(items))
+    for item in items:
+        # print(etree.tostring(item, encoding="unicode", pretty_print=True))
+        image  = item.xpath('.//picture[@data-qa="Picture"]/img/@src')[0]
+        title  = item.xpath('.//h3[@data-qa="Title"]/a/text()')[0]
+        teaser = item.xpath('.//div[@data-qa="Text"]/text()')[0].strip()
+        category, source_text = item.xpath('.//span[@data-qa="Text"]/a[contains(@href,"/")]/span[@data-qa="Text"]/text()')
+        source_link = href_to_url(item.xpath('.//a[@target="_blank"]/@href'))
+        href        = href_to_url(item.xpath('.//h3[@data-qa="Title"]/a/@href'))
+
+        subtitle = f"{category} ◯ {source_text} ({source_link}) ◯ {teaser}"
+        date = iso_to_human(item.xpath('.//time/@datetime')[0])
+
+        row = "news.mail.ru", "ARTICLE (0)", title, subtitle, date, image, href
+        table.append(row)
+
+    preload = tree.xpath('//script[@id="preload_news_main"]/text()')[0].split("=", 1)[1]
+    obj = json.loads(preload)
+    next_url = href_to_url(obj["news"]["actual"]["pager"]["next_url"])
+    print("  next_url:", next_url)
+
+    for page in range(1, pages):
+        json_data, base_url = cache.load(next_url, 10 * 60)
+        print("|json_data|:", len(json_data))
+        href_to_url = href_to_url_wrap(base_url)
+
+        obj = json.loads(json_data)["data"]
+        next_url = href_to_url(obj["pager"]["next_url"])
+        items    = obj["items"]
+
+        print("  next_url:", next_url)
+        print("  |items|:", len(items))
+        for item in items:
+            if item["content_type"] != "article":
+                print("Странный content_type:", item["content_type"])
+                pprint(item)
+            picture  = item["picture"]
+            image    = f'{picture["baseURL"]}{picture["uuid"]}/{picture["key"]}.{picture["fmt"][0]}'
+            title    = item["title"]
+            teaser   = item["description"]
+            category = item["rubric"]["title"]
+            source_text = item["source"]["title"]
+            source_link = href_to_url(item["source"]["href"])
+            href        = href_to_url(item["href"])
+
+            subtitle = f"{category} ◯ {source_text} ({source_link}) ◯ {teaser}"
+            date = iso_to_human(item["published"]["rfc3339"])
+
+            row = "news.mail.ru", f"ARTICLE ({page})", title, subtitle, date, image, href
+            table.append(row)
+
+    # return pformat(obj)
+
+
+
 if __name__ == "__main__":
     table = [("Сайт", "Тип блока", "Заголовок", "Описание", "Дата и время", "Картинка", "Ссылка")]
     load_lenta(table)
+    add = load_mail_news(table)
 
     stream = StringIO()
     print_table(table, stream, middle_sep = False)
 
     with open("stdout3.txt", "w", encoding="utf-8") as file:
         file.write(stream.getvalue())
+        # file.write(add)
     with open("news.json", "w", encoding="utf-8") as file:
         json.dump(table, file, indent=4, ensure_ascii=False)
     with open("news.csv", "w", encoding="utf-8-sig", newline="") as file:
