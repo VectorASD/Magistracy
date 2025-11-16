@@ -11,11 +11,191 @@
     [
         "lenta.ru",
         "BIG",
-        "Орбан оценил вероятность нападения России на Евросоюз",
+        "Американский авианосец зашел в Карибское море",
         null,
-        "17:02",
-        "https://icdn.lenta.ru/images/2025/11/16/15/20251116154752260/owl_article_280_8b97aa0d452e69406c7fc84587e97ec7.jpg",
-        "https://lenta.ru/news/2025/11/16/orban-otsenil-veroyatnost-napadeniya-rossii-na-evrosoyuz/"
+        "19:29",
+        "https://icdn.lenta.ru/images/2025/11/16/19/20251116193120620/owl_article_280_d3d1cf478c14892a4e57fd5dcd60141c.jpg",
+        "https://lenta.ru/news/2025/11/16/amerikanskiy-avianosets-zashel-v-karibskoe-more/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Оценены шансы «Вашингтона» выйти в плей-офф НХЛ",
+        null,
+        "19:49",
+        null,
+        "https://lenta.ru/news/2025/11/16/otseneny-shansy-vashingtona-vyyti-v-pley-off-nhl/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "В Подмосковье из-за первого гололеда произошло массовое ДТП",
+        null,
+        "19:38",
+        null,
+        "https://lenta.ru/news/2025/11/16/v-podmoskovie-iz-za-pervogo-gololeda-proizoshlo-massovoe-dtp/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Популярная певица прикрыла голую грудь пером на фото",
+        null,
+        "19:36",
+        null,
+        "https://lenta.ru/news/2025/11/16/populyarnaya-pevitsa-prikryla-goluyu-grud-perom-na-foto/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "В письмах Эпштейна нашли рассуждения о теориях заговора",
+        null,
+        "19:22",
+        null,
+        "https://lenta.ru/news/2025/11/16/epstein/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Застигнутый за просмотром эротики американский конгрессмен возложил вину на Маска",
+        null,
+        "19:21",
+        null,
+        "https://lenta.ru/news/2025/11/16/zastignutyy-za-prosmotrom-erotiki-amerikanskiy-kongressmen-vozlozhil-vinu-na-maska/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Россиян предупредили о риске сокращения жизни на 10-15 лет из-за опасного заболевания",
+        null,
+        "19:12",
+        null,
+        "https://lenta.ru/news/2025/11/16/rossiyan-predupredili-o-riske-sokrascheniya-zhizni-na-10-15-let-iz-za-opasnogo-zabolevaniya/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "В неопубликованных файлах Эпштейна найдены новые имена знаменитостей",
+        null,
+        "18:50",
+        null,
+        "https://lenta.ru/news/2025/11/16/v-neopublikovannyh-faylah-epshteyna-obnaruzheny-novye-imena-znamenitostey/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Стало известно о поведении в колонии бывшего замглавы Росприроднадзора Митволя",
+        null,
+        "18:47",
+        null,
+        "https://lenta.ru/news/2025/11/16/stalo-izvestno-o-povedenii-v-kolonii-byvshego-zamglavy-rosprirodnadzora-mitvolya/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Названы способы подготовить питомцев к зиме",
+        null,
+        "18:44",
+        null,
+        "https://lenta.ru/news/2025/11/16/pitomtsy/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Нурмагомедов прокомментировал завоевание Махачевым второго чемпионского пояса",
+        null,
+        "18:44",
+        null,
+        "https://lenta.ru/news/2025/11/16/nurmagomedov-prokommentiroval-zavoevanie-mahachevym-vtorogo-chempionskogo-poyasa/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Кардиолог назвал сохраняющие здоровье сердца продукты",
+        null,
+        "18:40",
+        null,
+        "https://lenta.ru/news/2025/11/16/kardiolog-nazval-sohranyayuschie-zdorovie-serdtsa-produkty/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Российскую актрису обманули при покупке квартиры",
+        null,
+        "18:17",
+        null,
+        "https://lenta.ru/news/2025/11/16/rossiyskuyu-aktrisu-obmanuli-pri-pokupke-kvartiry/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Умер известный российский американист",
+        null,
+        "18:12",
+        null,
+        "https://lenta.ru/news/2025/11/16/umer-izvestnyy-rossiyskiy-amerikanist/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Розенбаум захотел ударить журналиста за вопрос о квартире",
+        null,
+        "17:31",
+        null,
+        "https://lenta.ru/news/2025/11/16/rozenbaum-zahotel-udarit-zhurnalista-za-vopros-o-kvartire/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Россияне лишились элитных квартир, купленных в Египте 17 лет назад. Людей выгнали с вещами на улицу",
+        null,
+        "17:30",
+        null,
+        "https://lenta.ru/news/2025/11/16/rossiyane-lishilis-elitnyh-kvartir-kuplennyh-v-egipte-17-let-nazad-lyudey-vygnali-s-veschami-na-ulitsu/"
+    ],
+    [
+        "lenta.ru",
+        "FEATURE",
+        "Почти 200 россиян заразили гепатитом в онкоцентре, очаг нашли в кабинете КТ.",
+        "Как в России скрывали массовые вспышки болезней?",
+        "00:01",
+        "https://icdn.lenta.ru/images/2025/11/14/14/20251114140638436/owl_feature_580_869676ad65b5f46f7c29ee0587ede4e6.jpg",
+        "https://lenta.ru/articles/2025/11/16/infections/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "«Тотальная доминация»",
+        "Махачев победил Маддалену, забрав второй пояс UFC. Теперь он официально стал круче Нурмагомедова",
+        "12:38",
+        "https://icdn.lenta.ru/images/2025/11/16/09/20251116095816773/owl_article_280_ae2ad2e76783ab22a2bf2f365c9369a1.jpg",
+        "https://lenta.ru/articles/2025/11/16/legko/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Стало известно о продолжении контактов США и России по конфликту на Украине",
+        null,
+        "18:43",
+        null,
+        "https://lenta.ru/news/2025/11/16/stalo-izvestno-o-prodolzhenii-kontaktov-ssha-i-rossii-po-konfliktu-na-ukraine/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Пенсионер повернул не туда по дороге к врачу и оказался за 1600 километров от дома",
+        null,
+        "18:36",
+        null,
+        "https://lenta.ru/news/2025/11/16/pensioner-povernul-ne-tuda-po-doroge-k-vrachu-i-okazalsya-za-1600-kilometrov-ot-doma/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Россиянам назвали худшее действие при затоплении соседей",
+        null,
+        "18:30",
+        null,
+        "https://lenta.ru/news/2025/11/16/rossiyanam-nazvali-hudshee-deystvie-pri-zatoplenii-sosedey/"
     ],
     [
         "lenta.ru",
@@ -43,186 +223,6 @@
         "18:27",
         null,
         "https://lenta.ru/news/2025/11/16/gretsiya-i-ukraina-podpisali-memorandum-o-postavkah-kievu-gaza-iz-ssha/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Синоптик рассказал об аномальном декабре в Москве",
-        null,
-        "18:22",
-        null,
-        "https://lenta.ru/news/2025/11/16/sinoptik-rasskazal-ob-anomalnom-dekabre-v-moskve/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Российскую актрису обманули при покупке квартиры",
-        null,
-        "18:17",
-        null,
-        "https://lenta.ru/news/2025/11/16/rossiyskuyu-aktrisu-obmanuli-pri-pokupke-kvartiry/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Умер известный российский американист",
-        null,
-        "18:12",
-        null,
-        "https://lenta.ru/news/2025/11/16/umer-izvestnyy-rossiyskiy-amerikanist/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "В Польше высказались о намеченном в Германии аукционе с вещами узников концлагерей",
-        null,
-        "18:10",
-        null,
-        "https://lenta.ru/news/2025/11/16/v-polshe-vyskazalis-o-namechennom-v-germanii-auktsione-s-veschami-uznikov-kontslagerey/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Российского ребенка госпитализировали после укуса медузы в Малайзии",
-        null,
-        "17:56",
-        null,
-        "https://lenta.ru/news/2025/11/16/rossiyskogo-rebenka-gospitalizirovali-posle-ukusa-meduzy-v-malayzii/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Франция усомнилась в способности Украины вернуть многомиллиардный кредит",
-        null,
-        "17:55",
-        null,
-        "https://lenta.ru/news/2025/11/16/frantsiya-usomnilas-v-sposobnosti-ukrainy-vernut-mnogomilliardnyy-kredit/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Черногорцев отправят на обучение ВСУ",
-        null,
-        "17:52",
-        null,
-        "https://lenta.ru/news/2025/11/16/chernogortsev-otpravlyayut-na-obuchenie-vsu/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Психиатр раскрыл неожиданный признак шизофрении",
-        null,
-        "17:32",
-        null,
-        "https://lenta.ru/news/2025/11/16/psihiatr-raskryl-neozhidannyy-priznak-shizofrenii/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Розенбаум захотел ударить журналиста за вопрос о квартире",
-        null,
-        "17:31",
-        null,
-        "https://lenta.ru/news/2025/11/16/rozenbaum-zahotel-udarit-zhurnalista-za-vopros-o-kvartire/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Россияне лишились элитных квартир, купленных в Египте 17 лет назад. Людей выгнали с вещами на улицу",
-        null,
-        "17:30",
-        null,
-        "https://lenta.ru/news/2025/11/16/rossiyane-lishilis-elitnyh-kvartir-kuplennyh-v-egipte-17-let-nazad-lyudey-vygnali-s-veschami-na-ulitsu/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Стало известно о побеге Диброва из России",
-        null,
-        "15:03",
-        null,
-        "https://lenta.ru/news/2025/11/16/stalo-izvestno-o-pobege-dibrova-iz-rossii/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Стало известно о смерти 21-летней российской блогерши",
-        null,
-        "14:53",
-        null,
-        "https://lenta.ru/news/2025/11/16/stalo-izvestno-o-smerti-25-letney-rossiyskoy-blogershi/"
-    ],
-    [
-        "lenta.ru",
-        "FEATURE",
-        "Почти 200 россиян заразили гепатитом в онкоцентре, очаг нашли в кабинете КТ.",
-        "Как в России скрывали массовые вспышки болезней?",
-        "00:01",
-        "https://icdn.lenta.ru/images/2025/11/14/14/20251114140638436/owl_feature_580_869676ad65b5f46f7c29ee0587ede4e6.jpg",
-        "https://lenta.ru/articles/2025/11/16/infections/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "«Тотальная доминация»",
-        "Махачев победил Маддалену, забрав второй пояс UFC. Теперь он официально стал круче Нурмагомедова",
-        "12:38",
-        "https://icdn.lenta.ru/images/2025/11/16/09/20251116095816773/owl_article_280_ae2ad2e76783ab22a2bf2f365c9369a1.jpg",
-        "https://lenta.ru/articles/2025/11/16/legko/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "После пожара в российском кафе возбудили дело",
-        null,
-        "17:48",
-        null,
-        "https://lenta.ru/news/2025/11/16/posle-pozhara-v-rossiyskom-kafe-vozbudili-delo/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Оценены шансы сборной Португалии выйти на чемпионат мира-2026",
-        null,
-        "17:41",
-        null,
-        "https://lenta.ru/news/2025/11/16/otseneny-shansy-sbornoy-portugalii-vyyti-na-chempionat-mira-2026/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "МИД Франции назвал условие дальнейшей поддержки Украины",
-        null,
-        "17:39",
-        null,
-        "https://lenta.ru/news/2025/11/16/mid-frantsii-nazval-uslovie-dalneyshey-podderzhki-ukrainy/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Москвичи сделали выбор между практичностью и модой в одежде",
-        null,
-        "17:27",
-        null,
-        "https://moslenta.ru/news/lyudi/moskvichi-sdelali-vybor-mezhdu-praktichnostyu-i-modoi-v-odezhde-16-11-2025.htm"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "На Украине оценили шансы партии Порошенко нанести удар по Зеленскому",
-        null,
-        "17:25",
-        null,
-        "https://lenta.ru/news/2025/11/16/na-ukraine-otsenili-shansy-partii-poroshenko-nanesti-udar-po-zelenskomu/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Израиль отреагировал на споры о еврейском происхождении Чебурашки",
-        null,
-        "17:15",
-        null,
-        "https://lenta.ru/news/2025/11/16/izrail-otreagiroval-na-spory-o-evreyskom-proishozhdenii-cheburashki/"
     ],
     [
         "lenta.ru",
@@ -542,6 +542,249 @@
     [
         "lenta.ru",
         "MINI",
+        "Синоптик рассказал об аномальном декабре в Москве",
+        null,
+        "18:22",
+        null,
+        "https://lenta.ru/news/2025/11/16/sinoptik-rasskazal-ob-anomalnom-dekabre-v-moskve/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "В Польше высказались о намеченном в Германии аукционе с вещами узников концлагерей",
+        null,
+        "18:10",
+        null,
+        "https://lenta.ru/news/2025/11/16/v-polshe-vyskazalis-o-namechennom-v-germanii-auktsione-s-veschami-uznikov-kontslagerey/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Российского ребенка госпитализировали после укуса медузы в Малайзии",
+        null,
+        "17:56",
+        null,
+        "https://lenta.ru/news/2025/11/16/rossiyskogo-rebenka-gospitalizirovali-posle-ukusa-meduzy-v-malayzii/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Франция усомнилась в способности Украины вернуть многомиллиардный кредит",
+        null,
+        "17:55",
+        null,
+        "https://lenta.ru/news/2025/11/16/frantsiya-usomnilas-v-sposobnosti-ukrainy-vernut-mnogomilliardnyy-kredit/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Черногорцев отправят на обучение ВСУ",
+        null,
+        "17:52",
+        null,
+        "https://lenta.ru/news/2025/11/16/chernogortsev-otpravlyayut-na-obuchenie-vsu/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "После пожара в российском кафе возбудили дело",
+        null,
+        "17:48",
+        null,
+        "https://lenta.ru/news/2025/11/16/posle-pozhara-v-rossiyskom-kafe-vozbudili-delo/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "«Он излучал силу, надежность и уверенность»",
+        "Россиянин 10 лет фотографирует маяки. Как их свет изменил его жизнь?",
+        "00:01",
+        "https://icdn.lenta.ru/images/2025/10/20/12/20251020122243305/owl_article_280_d766e806db11a532a2dc764c6ab188c5.jpg",
+        "https://lenta.ru/articles/2025/11/16/lighthouse/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Оценены шансы сборной Португалии выйти на чемпионат мира-2026",
+        null,
+        "17:41",
+        null,
+        "https://lenta.ru/news/2025/11/16/otseneny-shansy-sbornoy-portugalii-vyyti-na-chempionat-mira-2026/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "«Ад, кишащий педофилами»",
+        "Что на самом деле происходит в онлайн-игре Roblox, которая популярна у российских детей?",
+        "00:01, 15 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/14/13/20251114135513895/owl_article_280_186d5691169169e23f79dc1874f5ff37.jpg",
+        "https://lenta.ru/extlink/2025/11/15/roblox-roblox/?intlnk=true"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "МИД Франции назвал условие дальнейшей поддержки Украины",
+        null,
+        "17:39",
+        null,
+        "https://lenta.ru/news/2025/11/16/mid-frantsii-nazval-uslovie-dalneyshey-podderzhki-ukrainy/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Психиатр раскрыл неожиданный признак шизофрении",
+        null,
+        "17:32",
+        null,
+        "https://lenta.ru/news/2025/11/16/psihiatr-raskryl-neozhidannyy-priznak-shizofrenii/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "С начала года в России задержаны десятки топовых чиновников — губернаторов, мэров и их замов.",
+        "Что о них известно?",
+        "00:01, 6 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/10/23/16/20251023162713532/owl_article_250_1c58cb29aafc5b8fb0ec743e9497e35e.jpg",
+        "https://lenta.ru/articles/2025/11/06/aresty/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "«Нет желающих получить ядерной бомбой»",
+        "Как меняется стратегия боевых действий на Украине и что может обрушить оборону ВСУ?",
+        "00:01, 7 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/10/31/12/20251031125059148/owl_article_250_583ec9436d7efcdfc22dc7cdbd2d7a2a.jpg",
+        "https://lenta.ru/articles/2025/11/07/v-kashin/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "«Мы готовы заключить сделку»",
+        "Зачем Александр Лукашенко снова пытается наладить отношения с США и что это означает для России?",
+        "00:01, 5 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/10/21/13/20251021130035121/owl_article_250_77c0bac1181114d6d6e86ed4071d4bb0.jpg",
+        "https://lenta.ru/articles/2025/11/05/us-belorus/"
+    ],
+    [
+        "lenta.ru",
+        "WIDE",
+        "«Грабежи стали обычным явлением»",
+        "Как нацисты обращались с жителями советских деревень: уникальные кадры",
+        null,
+        "https://icdn.lenta.ru/images/2025/07/09/13/20250709130019001/owl_article_big_330_b9602364d28bfd04e1151db12d621d6d.jpg",
+        "https://lenta.ru/articles/2025/11/04/glaskovo/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "«Сделал все, что мог»",
+        "Черномырдин создал «Газпром», вел переговоры с Басаевым и сутки рулил страной. Каким он вошел в историю?",
+        "00:01, 3 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/10/24/13/20251024135459296/owl_article_250_189a784ff5c561a9bebd7ad462d4db76.jpg",
+        "https://lenta.ru/articles/2025/11/03/chernomirdin/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "Случайная встреча вскрыла прошлое телеведущего и превратила его в изгоя.",
+        "Как запустилась цепочка загадочных и необъяснимых событий?",
+        "00:01, 6 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/10/10/13/20251010135437859/owl_article_250_a16f2da17bc337096785e22970de1e98.jpg",
+        "https://lenta.ru/articles/2025/11/06/johnson/"
+    ],
+    [
+        "lenta.ru",
+        "WIDE",
+        "«Даже окруженными русские держались за свои позиции»",
+        "Как начиналось вторжение нацистов в СССР. Уникальные кадры войны",
+        null,
+        "https://icdn.lenta.ru/images/2025/11/07/17/20251107173855134/owl_article_big_330_24e3acef46e74d0b775ec74ff53b987d.jpg",
+        "https://lenta.ru/articles/2025/11/08/bondar/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "Женщины перестали бриться, а бренды зарабатывают миллионы на белье с волосами.",
+        "Почему растительность на теле стала трендом?",
+        "00:01, 7 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/06/21/20251106213444216/owl_article_250_b81d5c682ed7a80890667295dfd9dfab.jpg",
+        "https://lenta.ru/articles/2025/11/07/zhenschiny-perestali-britsya-a-brendy-vypuskayut-belie-s-feykovymi-volosami-i-zarabatyvayut-milliony/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "Валидольные бои, гранаты и топоры.",
+        "Штурмовик прошел Бахмут и описал все «как есть». Чем его история возмутила бойцов «Вагнера»?",
+        "00:01, 10 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/01/11/20251101112705444/owl_article_250_b4f0142a5c075124e9230084d6a9f017.jpg",
+        "https://lenta.ru/articles/2025/11/10/peresidok/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "Умер знаменитый телеведущий Юрий Николаев.",
+        "С его передачей «Утренняя почта» просыпалась вся страна",
+        "22:10, 4 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/05/11/20251105113028146/owl_article_250_194d60200e5131f5cbdcc6325d2677e0.jpg",
+        "https://lenta.ru/articles/2025/11/04/nikolaev/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Москвичи сделали выбор между практичностью и модой в одежде",
+        null,
+        "17:27",
+        null,
+        "https://moslenta.ru/news/lyudi/moskvichi-sdelali-vybor-mezhdu-praktichnostyu-i-modoi-v-odezhde-16-11-2025.htm"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "В кино — новый «Хищник».",
+        "Почему его уже называют лучшим фильмом в истории культовой франшизы?",
+        "00:01, 15 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/14/13/20251114135351861/owl_article_280_e77ff716f4a6eb48406891792a4c521b.jpg",
+        "https://lenta.ru/articles/2025/11/15/predator/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "На Украине оценили шансы партии Порошенко нанести удар по Зеленскому",
+        null,
+        "17:25",
+        null,
+        "https://lenta.ru/news/2025/11/16/na-ukraine-otsenili-shansy-partii-poroshenko-nanesti-udar-po-zelenskomu/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Израиль отреагировал на споры о еврейском происхождении Чебурашки",
+        null,
+        "17:15",
+        null,
+        "https://lenta.ru/news/2025/11/16/izrail-otreagiroval-na-spory-o-evreyskom-proishozhdenii-cheburashki/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "«Ставили на колени и затягивали петлю»",
+        "Банда Ключевских не щадила ни своих, ни чужих и 10 лет держала в страхе Забайкалье",
+        "00:01, 15 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/14/15/20251114151724793/owl_article_280_6434cc3d44d8df91360a156fd69ca83b.jpg",
+        "https://lenta.ru/extlink/2025/11/15/kluchevskie/?intlnk=true"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
+        "Орбан оценил вероятность нападения России на Евросоюз",
+        null,
+        "17:02",
+        null,
+        "https://lenta.ru/news/2025/11/16/orban-otsenil-veroyatnost-napadeniya-rossii-na-evrosoyuz/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
         "Водолазы отчитались о результатах поисков тела ребенка в московском пруду",
         null,
         "16:57",
@@ -577,6 +820,15 @@
     ],
     [
         "lenta.ru",
+        "BIG",
+        "«Справедливое наказание для меня — расстрел»",
+        "Как главарь самой жестокой банды Забайкалья стал героем СВО и таинственно исчез?",
+        "00:01, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/12/13/20251112135403783/owl_article_280_a675c8f609b88b88118cf78f8b88293b.jpg",
+        "https://lenta.ru/articles/2025/11/14/nakazanie-eto-rasstrel/"
+    ],
+    [
+        "lenta.ru",
         "MINI",
         "Врач назвал правильную последовательность действий во время принятия душа",
         null,
@@ -586,21 +838,192 @@
     ],
     [
         "lenta.ru",
+        "VIDEO",
+        "record::d8c85ecc-c528-4146-88ce-d0c60743e106",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/08/06/19/20250806193006533/preview_efdb197425c5ef5b2a90f6de32d4c9ad.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::2ffb1462-f591-48dd-acba-d7fd26eac0a2",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/07/05/14/20250705140005667/preview_c0de784499085f06f6c27956fa70af8c.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::e9903e99-3cf4-481a-b277-8fd508a7b9ea",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/02/05/21/20250205213007924/preview_9665c1db942c1a44cda5522eaf388a39.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::672260ab-5f60-4ae1-94bf-52617b16b4ca",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/08/27/19/20250827193006800/preview_cdc9742d98e4b21536c190a981ff6891.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::3268f16a-4794-4780-911f-3b45a5eaeb6b",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/11/06/20/20251106200004537/preview_134d9dbf1a3719d0a21b2d5d96511869.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::930e6015-1257-4733-b785-d3ca0f838c2c",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/11/05/19/20251105190004906/preview_a701b2b76bb498f422fd1c68005c2904.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "2056708",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2022/10/27/20/20221027203028170/preview_d65807b184213af5131f4ab2107c6f7e.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::273b99c6-11be-49b0-b701-9e6f9bae23c3",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/02/22/17/20250222173006558/preview_28c9e696f5c0951fae12f6d53625941d.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::e7cb7cd5-235a-435a-8d77-01e021300c48",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/02/14/18/20250214183010866/preview_ce0364b6da0b88b47705da68857e7cf3.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::a0a436b7-d118-4b6b-a558-133dcc1a5ee0",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/08/26/18/20250826183007882/preview_1b9cab0e4dcb99cfae518030602307db.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::b4b91dfe-ebf6-4c24-90b7-d8cac51c8382",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/05/15/19/20250515190006564/preview_48f733f734d8bc84012d16021bd15e45.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::5efb19cc-cc2a-4ac4-a45e-7ae25b852010",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/02/25/17/20250225173008293/preview_27b61573784824cdebb34e33d1060976.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::37f5f505-4e5a-4727-ad78-e874d491c52a",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/11/14/11/20251114113227586/preview_e12a4b6c483a9154eff0941fdbd955f9.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::58ae0e24-a196-4586-850b-f56db65b2bf9",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2024/12/21/16/20241221160007590/preview_552336da533f8b6b38adcf30f4624a0e.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::a1fc08a3-f9a4-450d-86af-5a04debc35d0",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/02/08/22/20250208223009703/preview_a0b6a1d2e8e5aee055f372046043278b.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::965039f6-d9a1-4a8f-8bda-3d942f093e5a",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/02/28/19/20250228193004812/preview_9cdca76bd5c83af4eea847ff419a76e6.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::d167ee44-eb67-4fc6-8d4e-389a2ec651dc",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/07/16/15/20250716151603681/preview_bd815f2f79612b5a1a66ad15c80f4761.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::d528ecb5-e32c-4a90-914e-fda0c7549ee2",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/07/07/19/20250707190006349/preview_642db8fa140cb39762718245187e4195.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::ea39cc5c-2620-49c8-9843-b91915549633",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/05/27/18/20250527180005617/preview_02418316ead5f3ee79a80fc9bbf36cb7.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
+        "VIDEO",
+        "record::362fb583-e287-453e-bcb6-c9a26d9dc0ff",
+        null,
+        null,
+        "https://icdn.lenta.ru/images/2025/09/16/17/20250916173007466/preview_d85931928c6d5d290d8944ded6a5d71c.jpg",
+        null
+    ],
+    [
+        "lenta.ru",
         "MINI",
         "«Купол Донбасса» перехватил чешские дроны",
         null,
         "16:28",
         null,
         "https://lenta.ru/news/2025/11/16/kupol-donbassa-perehvatil-cheshskie-drony/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "«Он излучал силу, надежность и уверенность»",
-        "Россиянин 10 лет фотографирует маяки. Как их свет изменил его жизнь?",
-        "00:01",
-        "https://icdn.lenta.ru/images/2025/10/20/12/20251020122243305/owl_article_280_d766e806db11a532a2dc764c6ab188c5.jpg",
-        "https://lenta.ru/articles/2025/11/16/lighthouse/"
     ],
     [
         "lenta.ru",
@@ -614,11 +1037,11 @@
     [
         "lenta.ru",
         "BIG",
-        "«Ад, кишащий педофилами»",
-        "Что на самом деле происходит в онлайн-игре Roblox, которая популярна у российских детей?",
-        "00:01, 15 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/14/13/20251114135513895/owl_article_280_186d5691169169e23f79dc1874f5ff37.jpg",
-        "https://lenta.ru/extlink/2025/11/15/roblox-roblox/?intlnk=true"
+        "«Быстро, жестко и с удовольствием»",
+        "Трамп грозит начать войну сразу с двумя странами. Почему он больше не хочет быть миротворцем?",
+        "00:01, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/12/16/20251112163310108/owl_article_280_4694597ecbbdf249d3067f5deb7a6028.jpg",
+        "https://lenta.ru/articles/2025/11/14/bystro-zhestko/"
     ],
     [
         "lenta.ru",
@@ -631,6 +1054,15 @@
     ],
     [
         "lenta.ru",
+        "BIG",
+        "Галкину грозит до трех лет тюрьмы в Израиле.",
+        "Что он сделал?",
+        "17:20, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/14/13/20251114134650943/owl_article_280_ddd6eaa29b7cf01a6d0692d37492749a.jpg",
+        "https://lenta.ru/extlink/2025/11/14/galkin/?intlnk=true"
+    ],
+    [
+        "lenta.ru",
         "MINI",
         "Во Франции предупредили об опасности приезда Зеленского к Макрону",
         null,
@@ -640,111 +1072,12 @@
     ],
     [
         "lenta.ru",
-        "WIDE",
-        "«Грабежи стали обычным явлением»",
-        "Как нацисты обращались с жителями советских деревень: уникальные кадры",
-        null,
-        "https://icdn.lenta.ru/images/2025/07/09/13/20250709130019001/owl_article_big_330_b9602364d28bfd04e1151db12d621d6d.jpg",
-        "https://lenta.ru/articles/2025/11/04/glaskovo/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "С начала года в России задержаны десятки топовых чиновников — губернаторов, мэров и их замов.",
-        "Что о них известно?",
-        "00:01, 6 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/10/23/16/20251023162713532/owl_article_250_1c58cb29aafc5b8fb0ec743e9497e35e.jpg",
-        "https://lenta.ru/articles/2025/11/06/aresty/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "Случайная встреча вскрыла прошлое телеведущего и превратила его в изгоя.",
-        "Как запустилась цепочка загадочных и необъяснимых событий?",
-        "00:01, 6 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/10/10/13/20251010135437859/owl_article_250_a16f2da17bc337096785e22970de1e98.jpg",
-        "https://lenta.ru/articles/2025/11/06/johnson/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "Валидольные бои, гранаты и топоры.",
-        "Штурмовик прошел Бахмут и описал все «как есть». Чем его история возмутила бойцов «Вагнера»?",
-        "00:01, 10 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/01/11/20251101112705444/owl_article_250_b4f0142a5c075124e9230084d6a9f017.jpg",
-        "https://lenta.ru/articles/2025/11/10/peresidok/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "Женщины перестали бриться, а бренды зарабатывают миллионы на белье с волосами.",
-        "Почему растительность на теле стала трендом?",
-        "00:01, 7 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/06/21/20251106213444216/owl_article_250_b81d5c682ed7a80890667295dfd9dfab.jpg",
-        "https://lenta.ru/articles/2025/11/07/zhenschiny-perestali-britsya-a-brendy-vypuskayut-belie-s-feykovymi-volosami-i-zarabatyvayut-milliony/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "Умер знаменитый телеведущий Юрий Николаев.",
-        "С его передачей «Утренняя почта» просыпалась вся страна",
-        "22:10, 4 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/05/11/20251105113028146/owl_article_250_194d60200e5131f5cbdcc6325d2677e0.jpg",
-        "https://lenta.ru/articles/2025/11/04/nikolaev/"
-    ],
-    [
-        "lenta.ru",
-        "WIDE",
-        "«Даже окруженными русские держались за свои позиции»",
-        "Как начиналось вторжение нацистов в СССР. Уникальные кадры войны",
-        null,
-        "https://icdn.lenta.ru/images/2025/11/07/17/20251107173855134/owl_article_big_330_24e3acef46e74d0b775ec74ff53b987d.jpg",
-        "https://lenta.ru/articles/2025/11/08/bondar/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "«Сделал все, что мог»",
-        "Черномырдин создал «Газпром», вел переговоры с Басаевым и сутки рулил страной. Каким он вошел в историю?",
-        "00:01, 3 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/10/24/13/20251024135459296/owl_article_250_189a784ff5c561a9bebd7ad462d4db76.jpg",
-        "https://lenta.ru/articles/2025/11/03/chernomirdin/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "«Мы готовы заключить сделку»",
-        "Зачем Александр Лукашенко снова пытается наладить отношения с США и что это означает для России?",
-        "00:01, 5 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/10/21/13/20251021130035121/owl_article_250_77c0bac1181114d6d6e86ed4071d4bb0.jpg",
-        "https://lenta.ru/articles/2025/11/05/us-belorus/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "«Нет желающих получить ядерной бомбой»",
-        "Как меняется стратегия боевых действий на Украине и что может обрушить оборону ВСУ?",
-        "00:01, 7 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/10/31/12/20251031125059148/owl_article_250_583ec9436d7efcdfc22dc7cdbd2d7a2a.jpg",
-        "https://lenta.ru/articles/2025/11/07/v-kashin/"
-    ],
-    [
-        "lenta.ru",
         "MINI",
         "В НАТО испугались обновленного ядерного арсенала России",
         null,
         "16:14",
         null,
         "https://lenta.ru/news/2025/11/16/v-nato-vyrazili-opaseniya-po-povodu-obnovlennogo-yadernogo-arsenala-rossii/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "В кино — новый «Хищник».",
-        "Почему его уже называют лучшим фильмом в истории культовой франшизы?",
-        "00:01, 15 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/14/13/20251114135351861/owl_article_280_e77ff716f4a6eb48406891792a4c521b.jpg",
-        "https://lenta.ru/articles/2025/11/15/predator/"
     ],
     [
         "lenta.ru",
@@ -766,15 +1099,6 @@
     ],
     [
         "lenta.ru",
-        "BIG",
-        "«Ставили на колени и затягивали петлю»",
-        "Банда Ключевских не щадила ни своих, ни чужих и 10 лет держала в страхе Забайкалье",
-        "00:01, 15 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/14/15/20251114151724793/owl_article_280_6434cc3d44d8df91360a156fd69ca83b.jpg",
-        "https://lenta.ru/extlink/2025/11/15/kluchevskie/?intlnk=true"
-    ],
-    [
-        "lenta.ru",
         "MINI",
         "Захарова высмеяла кошачью русофобию на Украине",
         null,
@@ -784,12 +1108,30 @@
     ],
     [
         "lenta.ru",
+        "BIG",
+        "Сафари на людей.",
+        "Богачам из Европы продавали туры в зону военных действий для «снайперского туризма». Что известно о расследовании?",
+        "00:01, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/13/12/20251113122656288/owl_article_280_bd10e071eed3509731cd80c7ad6d25ac.jpg",
+        "https://lenta.ru/extlink/2025/11/14/snaiperskyturizm/?intlnk=true"
+    ],
+    [
+        "lenta.ru",
         "MINI",
         "Ректор МГУ сообщил о возможности студентов стать офицерами",
         null,
         "15:44",
         null,
         "https://lenta.ru/news/2025/11/16/rektor-mgu-soobschil-o-vozmozhnosti-studentov-stat-ofitserami/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "В кино — «Иллюзия обмана 3».",
+        "Фокусники-грабители противостоят европейскому фашизму. Почему это стоит увидеть?",
+        "00:01, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/13/15/20251113152949145/owl_article_280_11a6191e6586f096b55f5ed46f9418d9.jpg",
+        "https://lenta.ru/articles/2025/11/14/nowyousee/"
     ],
     [
         "lenta.ru",
@@ -820,201 +1162,12 @@
     ],
     [
         "lenta.ru",
-        "BIG",
-        "«Справедливое наказание для меня — расстрел»",
-        "Как главарь самой жестокой банды Забайкалья стал героем СВО и таинственно исчез?",
-        "00:01, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/12/13/20251112135403783/owl_article_280_a675c8f609b88b88118cf78f8b88293b.jpg",
-        "https://lenta.ru/articles/2025/11/14/nakazanie-eto-rasstrel/"
-    ],
-    [
-        "lenta.ru",
         "MINI",
         "Аршавин назвал подходящего «Спартаку» тренера",
         null,
         "15:30",
         null,
         "https://lenta.ru/news/2025/11/16/arshavin-nazval-podhodyaschego-spartaku-trenera/"
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::a0a436b7-d118-4b6b-a558-133dcc1a5ee0",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/08/26/18/20250826183007882/preview_1b9cab0e4dcb99cfae518030602307db.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::e9903e99-3cf4-481a-b277-8fd508a7b9ea",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/02/05/21/20250205213007924/preview_9665c1db942c1a44cda5522eaf388a39.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::5efb19cc-cc2a-4ac4-a45e-7ae25b852010",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/02/25/17/20250225173008293/preview_27b61573784824cdebb34e33d1060976.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::b4b91dfe-ebf6-4c24-90b7-d8cac51c8382",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/05/15/19/20250515190006564/preview_48f733f734d8bc84012d16021bd15e45.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "2056708",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2022/10/27/20/20221027203028170/preview_d65807b184213af5131f4ab2107c6f7e.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::965039f6-d9a1-4a8f-8bda-3d942f093e5a",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/02/28/19/20250228193004812/preview_9cdca76bd5c83af4eea847ff419a76e6.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::37f5f505-4e5a-4727-ad78-e874d491c52a",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/11/14/11/20251114113227586/preview_e12a4b6c483a9154eff0941fdbd955f9.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::3268f16a-4794-4780-911f-3b45a5eaeb6b",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/11/06/20/20251106200004537/preview_134d9dbf1a3719d0a21b2d5d96511869.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::273b99c6-11be-49b0-b701-9e6f9bae23c3",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/02/22/17/20250222173006558/preview_28c9e696f5c0951fae12f6d53625941d.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::2ffb1462-f591-48dd-acba-d7fd26eac0a2",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/07/05/14/20250705140005667/preview_c0de784499085f06f6c27956fa70af8c.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::672260ab-5f60-4ae1-94bf-52617b16b4ca",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/08/27/19/20250827193006800/preview_cdc9742d98e4b21536c190a981ff6891.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::a1fc08a3-f9a4-450d-86af-5a04debc35d0",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/02/08/22/20250208223009703/preview_a0b6a1d2e8e5aee055f372046043278b.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::d8c85ecc-c528-4146-88ce-d0c60743e106",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/08/06/19/20250806193006533/preview_efdb197425c5ef5b2a90f6de32d4c9ad.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::e7cb7cd5-235a-435a-8d77-01e021300c48",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/02/14/18/20250214183010866/preview_ce0364b6da0b88b47705da68857e7cf3.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::d528ecb5-e32c-4a90-914e-fda0c7549ee2",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/07/07/19/20250707190006349/preview_642db8fa140cb39762718245187e4195.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::362fb583-e287-453e-bcb6-c9a26d9dc0ff",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/09/16/17/20250916173007466/preview_d85931928c6d5d290d8944ded6a5d71c.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::58ae0e24-a196-4586-850b-f56db65b2bf9",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2024/12/21/16/20241221160007590/preview_552336da533f8b6b38adcf30f4624a0e.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::d167ee44-eb67-4fc6-8d4e-389a2ec651dc",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/07/16/15/20250716151603681/preview_bd815f2f79612b5a1a66ad15c80f4761.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::930e6015-1257-4733-b785-d3ca0f838c2c",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/11/05/19/20251105190004906/preview_a701b2b76bb498f422fd1c68005c2904.jpg",
-        null
-    ],
-    [
-        "lenta.ru",
-        "VIDEO",
-        "record::ea39cc5c-2620-49c8-9843-b91915549633",
-        null,
-        null,
-        "https://icdn.lenta.ru/images/2025/05/27/18/20250527180005617/preview_02418316ead5f3ee79a80fc9bbf36cb7.jpg",
-        null
     ],
     [
         "lenta.ru",
@@ -1037,11 +1190,11 @@
     [
         "lenta.ru",
         "BIG",
-        "«Быстро, жестко и с удовольствием»",
-        "Трамп грозит начать войну сразу с двумя странами. Почему он больше не хочет быть миротворцем?",
-        "00:01, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/12/16/20251112163310108/owl_article_280_4694597ecbbdf249d3067f5deb7a6028.jpg",
-        "https://lenta.ru/articles/2025/11/14/bystro-zhestko/"
+        "«Он сам себя отправил бы в газовую камеру»",
+        "Анализ ДНК выявил у Гитлера редкую генетическую мутацию",
+        "07:32, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/14/07/20251114073233307/owl_article_280_8ed2d0072b42d75704fa72999352a462.jpg",
+        "https://lenta.ru/extlink/2025/11/14/on-sam-sebya-otpravil-by-v-gazovuyu-kameru/?intlnk=true"
     ],
     [
         "lenta.ru",
@@ -1055,11 +1208,11 @@
     [
         "lenta.ru",
         "BIG",
-        "Галкину грозит до трех лет тюрьмы в Израиле.",
-        "Что он сделал?",
-        "17:20, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/14/13/20251114134650943/owl_article_280_ddd6eaa29b7cf01a6d0692d37492749a.jpg",
-        "https://lenta.ru/extlink/2025/11/14/galkin/?intlnk=true"
+        "Россияне ожесточенно спорят, кого нужно спасать при пожаре: своего питомца или чужого ребенка.",
+        "Что говорит о человеке его выбор?",
+        "00:01, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/10/19/20251110191535685/owl_article_280_cc276c9e31bc6fdc725950c11bec5eca.jpg",
+        "https://lenta.ru/extlink/2025/11/14/rossiyane-ozhestochenno-sporyat-kogo-nuzhno-spasat-pri-pozhare-svoego-pitomtsa-ili-chuzhogo-rebenka/?intlnk=true"
     ],
     [
         "lenta.ru",
@@ -1082,6 +1235,24 @@
     [
         "lenta.ru",
         "MINI",
+        "Стало известно о смерти 21-летней российской блогерши",
+        null,
+        "14:53",
+        null,
+        "https://lenta.ru/news/2025/11/16/stalo-izvestno-o-smerti-25-letney-rossiyskoy-blogershi/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "«Это незабываемый опыт»",
+        "Россияне решили отказаться от химикатов на огородах и в садах. Как натуральные продукты изменили их жизнь?",
+        "09:37, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/07/07/13/20250707131953435/owl_article_280_51350a7fa7ec3cd5fa2e92b73eaf5834.jpg",
+        "https://lenta.ru/articles/2025/11/14/permaculture/"
+    ],
+    [
+        "lenta.ru",
+        "MINI",
         "Помощник Путина рассказал о сигналах из США по Украине",
         null,
         "14:45",
@@ -1099,6 +1270,15 @@
     ],
     [
         "lenta.ru",
+        "BIG",
+        "Молодежь строит бизнес с нуля.",
+        "С чего начать путь молодым предпринимателям в России?",
+        "11:30, 14 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/13/13/20251113130904917/owl_article_280_545a819acc197a29c8657e5827c19b00.jpg",
+        "https://lenta.ru/articles/2025/11/14/molodezh-stroit-biznes-s-nulya/"
+    ],
+    [
+        "lenta.ru",
         "MINI",
         "Украинский журналист возмутился русскоязычностью котов",
         null,
@@ -1108,30 +1288,12 @@
     ],
     [
         "lenta.ru",
-        "BIG",
-        "Сафари на людей.",
-        "Богачам из Европы продавали туры в зону военных действий для «снайперского туризма». Что известно о расследовании?",
-        "00:01, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/13/12/20251113122656288/owl_article_280_bd10e071eed3509731cd80c7ad6d25ac.jpg",
-        "https://lenta.ru/extlink/2025/11/14/snaiperskyturizm/?intlnk=true"
-    ],
-    [
-        "lenta.ru",
         "MINI",
         "Женщина нашла на своем чердаке любовные письма времен Первой мировой войны",
         null,
         "14:38",
         null,
         "https://lenta.ru/news/2025/11/16/zhenschina-nashla-na-svoem-cherdake-lyubovnye-pisma-vremen-pervoy-mirovoy-voyny/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "В кино — «Иллюзия обмана 3».",
-        "Фокусники-грабители противостоят европейскому фашизму. Почему это стоит увидеть?",
-        "00:01, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/13/15/20251113152949145/owl_article_280_11a6191e6586f096b55f5ed46f9418d9.jpg",
-        "https://lenta.ru/articles/2025/11/14/nowyousee/"
     ],
     [
         "lenta.ru",
@@ -1159,6 +1321,15 @@
         "14:20",
         null,
         "https://lenta.ru/news/2025/11/16/bespilotniki-predlozhili-napravit-protiv-baklanov-v-rossiyskom-regione/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "Тайник с деньгами, скрытые расщелины и ни одной зацепки.",
+        "44 дня ищут пропавшую в тайге семью россиян. Что могло с ними случиться?",
+        "00:01, 13 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/11/17/20251111173551631/owl_article_280_059bcaab3b8e0cdd950ab9b9fd99e1eb.jpg",
+        "https://lenta.ru/articles/2025/11/13/taiganavt/"
     ],
     [
         "lenta.ru",
@@ -1190,11 +1361,11 @@
     [
         "lenta.ru",
         "BIG",
-        "«Он сам себя отправил бы в газовую камеру»",
-        "Анализ ДНК выявил у Гитлера редкую генетическую мутацию",
-        "07:32, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/14/07/20251114073233307/owl_article_280_8ed2d0072b42d75704fa72999352a462.jpg",
-        "https://lenta.ru/extlink/2025/11/14/on-sam-sebya-otpravil-by-v-gazovuyu-kameru/?intlnk=true"
+        "«Вместо процветающих городов — пустота».",
+        "Жители Финляндии беднеют без россиян. Они требуют открыть границу для туристов",
+        "00:01, 13 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/12/12/20251112125828173/owl_article_280_f1d47bfa2fa7b45abd5cf51b118f6724.jpg",
+        "https://lenta.ru/extlink/2025/11/13/pustota/?intlnk=true"
     ],
     [
         "lenta.ru",
@@ -1208,11 +1379,11 @@
     [
         "lenta.ru",
         "BIG",
-        "Россияне ожесточенно спорят, кого нужно спасать при пожаре: своего питомца или чужого ребенка.",
-        "Что говорит о человеке его выбор?",
-        "00:01, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/10/19/20251110191535685/owl_article_280_cc276c9e31bc6fdc725950c11bec5eca.jpg",
-        "https://lenta.ru/extlink/2025/11/14/rossiyane-ozhestochenno-sporyat-kogo-nuzhno-spasat-pri-pozhare-svoego-pitomtsa-ili-chuzhogo-rebenka/?intlnk=true"
+        "Россию охватил «бабка-террор». Люди покупают квартиры, а потом остаются без жилья и денег.",
+        "Почему так происходит?",
+        "15:11, 7 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/10/13/20251110133643703/owl_article_280_75fa9f784a8a05438bc2faede29d5d92.jpg",
+        "https://lenta.ru/articles/2025/11/13/babka/"
     ],
     [
         "lenta.ru",
@@ -1243,15 +1414,6 @@
     ],
     [
         "lenta.ru",
-        "BIG",
-        "«Это незабываемый опыт»",
-        "Россияне решили отказаться от химикатов на огородах и в садах. Как натуральные продукты изменили их жизнь?",
-        "09:37, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/07/07/13/20250707131953435/owl_article_280_51350a7fa7ec3cd5fa2e92b73eaf5834.jpg",
-        "https://lenta.ru/articles/2025/11/14/permaculture/"
-    ],
-    [
-        "lenta.ru",
         "MINI",
         "На Западе предрекли стратегическое поражение Украины",
         null,
@@ -1271,11 +1433,11 @@
     [
         "lenta.ru",
         "BIG",
-        "Молодежь строит бизнес с нуля.",
-        "С чего начать путь молодым предпринимателям в России?",
-        "11:30, 14 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/13/13/20251113130904917/owl_article_280_545a819acc197a29c8657e5827c19b00.jpg",
-        "https://lenta.ru/articles/2025/11/14/molodezh-stroit-biznes-s-nulya/"
+        "«Покажу, кто лучший в мире»",
+        "Россиянин Махачев идет за вторым поясом UFC. Сможет ли он превзойти Хабиба Нурмагомедова?",
+        "00:01, 13 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/11/13/20251111135641608/owl_article_280_9ee0e42032d724baef8b4e162e04188e.jpg",
+        "https://lenta.ru/articles/2025/11/13/pokazhu-kto-luchshiy/"
     ],
     [
         "lenta.ru",
@@ -1285,6 +1447,15 @@
         "13:35",
         null,
         "https://lenta.ru/news/2025/11/16/v-rossii-skorrektirovali-tseny-na-12-marok-avtomobiley/"
+    ],
+    [
+        "lenta.ru",
+        "BIG",
+        "Сидни Суини обвинили в расизме из-за рекламы с ее «хорошими генами».",
+        "Реакция звезды на хейт превратилась в мем",
+        "00:01, 13 ноября 2025",
+        "https://icdn.lenta.ru/images/2025/11/11/19/20251111191838878/owl_article_280_3c1587f40859ae73e2f49c38d9c2fd37.jpg",
+        "https://lenta.ru/extlink/2025/11/13/sidni-suini-obvinili-v-rasizme-iz-za-reklamy-o-ee-horoshih-genah/?intlnk=true"
     ],
     [
         "lenta.ru",
@@ -1324,15 +1495,6 @@
     ],
     [
         "lenta.ru",
-        "BIG",
-        "Тайник с деньгами, скрытые расщелины и ни одной зацепки.",
-        "44 дня ищут пропавшую в тайге семью россиян. Что могло с ними случиться?",
-        "00:01, 13 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/11/17/20251111173551631/owl_article_280_059bcaab3b8e0cdd950ab9b9fd99e1eb.jpg",
-        "https://lenta.ru/articles/2025/11/13/taiganavt/"
-    ],
-    [
-        "lenta.ru",
         "MINI",
         "Мостовой предложил Карпину найти третью команду",
         null,
@@ -1351,168 +1513,6 @@
     ],
     [
         "lenta.ru",
-        "MINI",
-        "В Израиле оценили идею создания Палестины",
-        null,
-        "13:00",
-        null,
-        "https://lenta.ru/news/2025/11/16/v-izraile-otsenili-ideyu-sozdaniya-palestina/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "«Вместо процветающих городов — пустота».",
-        "Жители Финляндии беднеют без россиян. Они требуют открыть границу для туристов",
-        "00:01, 13 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/12/12/20251112125828173/owl_article_280_f1d47bfa2fa7b45abd5cf51b118f6724.jpg",
-        "https://lenta.ru/extlink/2025/11/13/pustota/?intlnk=true"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "В четырех регионах России пропал интернет из-за повреждения кабеля неизвестными",
-        null,
-        "13:00",
-        null,
-        "https://lenta.ru/news/2025/11/16/v-chetyreh-regionah-rossii-propal-internet-iz-za-povrezhdeniya-kabelya-neizvestnymi/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "Россию охватил «бабка-террор». Люди покупают квартиры, а потом остаются без жилья и денег.",
-        "Почему так происходит?",
-        "15:11, 7 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/10/13/20251110133643703/owl_article_280_75fa9f784a8a05438bc2faede29d5d92.jpg",
-        "https://lenta.ru/articles/2025/11/13/babka/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Расстегнутая ширинка увеличила стоимость Диброва",
-        null,
-        "12:49",
-        null,
-        "https://lenta.ru/news/2025/11/16/rasstegnutaya-shirinka-uvelichila-stoimost-dibrova/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Печально известный штурмовой полк ВСУ бросили против российских войск в районе котла",
-        null,
-        "12:51",
-        null,
-        "https://lenta.ru/news/2025/11/16/skala/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "В России рассказали о последствиях возможной операции США против Венесуэлы",
-        null,
-        "12:59",
-        null,
-        "https://lenta.ru/news/2025/11/16/v-rossii-rasskazali-o-posledstviyah-vozmozhnoy-operatsii-ssha-protiv-venesuely/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Два человека погибли при пожаре в подмосковном кафе",
-        null,
-        "12:45",
-        null,
-        "https://lenta.ru/news/2025/11/16/dva-cheloveka-pogibli-pri-pozhare-v-podmoskovnom-kafe/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "В пруду на востоке Москвы нашли мусорный пакет с останками ребенка",
-        null,
-        "12:43",
-        null,
-        "https://lenta.ru/news/2025/11/16/v-prudu-na-vostoke-moskvy-nashli-musornyy-paket-s-chelovecheskimi-ostankami/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "«Покажу, кто лучший в мире»",
-        "Россиянин Махачев идет за вторым поясом UFC. Сможет ли он превзойти Хабиба Нурмагомедова?",
-        "00:01, 13 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/11/13/20251111135641608/owl_article_280_9ee0e42032d724baef8b4e162e04188e.jpg",
-        "https://lenta.ru/articles/2025/11/13/pokazhu-kto-luchshiy/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "В Кремле высказались о сложностях в организации встречи Путина и Трампа",
-        null,
-        "12:34",
-        null,
-        "https://lenta.ru/news/2025/11/16/v-kremle-vyskazalis-o-slozhnostyah-v-organizatsii-vstrechi-putina-i-trampa/"
-    ],
-    [
-        "lenta.ru",
-        "BIG",
-        "Сидни Суини обвинили в расизме из-за рекламы с ее «хорошими генами».",
-        "Реакция звезды на хейт превратилась в мем",
-        "00:01, 13 ноября 2025",
-        "https://icdn.lenta.ru/images/2025/11/11/19/20251111191838878/owl_article_280_3c1587f40859ae73e2f49c38d9c2fd37.jpg",
-        "https://lenta.ru/extlink/2025/11/13/sidni-suini-obvinili-v-rasizme-iz-za-reklamy-o-ee-horoshih-genah/?intlnk=true"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Россиянка назвала запрещенные в Дубае безобидные привычки иностранцев",
-        null,
-        "12:34",
-        null,
-        "https://lenta.ru/news/2025/11/16/rossiyanka-nazvala-zapreschennye-v-dubae-bezobidnye-privychki-inostrantsev/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Российские войска поразили объект энергетики в Одесской области",
-        null,
-        "12:33",
-        null,
-        "https://lenta.ru/news/2025/11/16/rossiyskie-voyska-porazili-ob-ekt-energetiki-v-odesskoy-oblasti/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Названа новая уловка мошенников для ветеранов труда",
-        null,
-        "12:27",
-        null,
-        "https://lenta.ru/news/2025/11/16/nazvana-novaya-ulovka-moshennikov-dlya-veteranov-truda/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Назван срок прихода настоящей зимы в Москву",
-        null,
-        "12:25",
-        null,
-        "https://lenta.ru/news/2025/11/16/nazvan-srok-prihoda-nastoyaschey-zimy-v-moskvu/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Украина потеряла редкую военную технику в районе котла в Купянске",
-        null,
-        "12:23",
-        null,
-        "https://lenta.ru/news/2025/11/16/ukraina-poteryala-redkuyu-voennuyu-tehniku-v-rayone-kotla-v-kupyanske/"
-    ],
-    [
-        "lenta.ru",
-        "MINI",
-        "Армия России заняла два населенных пункта в Запорожской области",
-        null,
-        "12:20",
-        null,
-        "https://lenta.ru/news/2025/11/16/armiya-rossii-zanyala-dva-naselennyh-punkta-v-zaporozhskoy-oblasti/"
-    ],
-    [
-        "lenta.ru",
         "BIG",
         "«Они верят в российскую угрозу»",
         "Почему Евросоюз и Великобритания не хотят мира на Украине и чего они добиваются от России?",
@@ -1523,11 +1523,11 @@
     [
         "lenta.ru",
         "MINI",
-        "Москалькова рассказала о желании нескольких стран помочь России",
+        "В Израиле оценили идею создания Палестины",
         null,
-        "12:07",
+        "13:00",
         null,
-        "https://lenta.ru/news/2025/11/16/neskolko-stran-vyrazili-zhelanie-pomoch-rossii-s/"
+        "https://lenta.ru/news/2025/11/16/v-izraile-otsenili-ideyu-sozdaniya-palestina/"
     ],
     [
         "lenta.ru",
@@ -1541,20 +1541,83 @@
     [
         "lenta.ru",
         "MINI",
-        "В России высказались о нарастающей конфронтации с ЕС в Черном море",
+        "В четырех регионах России пропал интернет из-за повреждения кабеля неизвестными",
         null,
-        "11:39",
+        "13:00",
         null,
-        "https://lenta.ru/news/2025/11/16/v-rossii-vyskazalis-o-narastayuschey-konfrontatsii-s-es-v-chernom-more/"
+        "https://lenta.ru/news/2025/11/16/v-chetyreh-regionah-rossii-propal-internet-iz-za-povrezhdeniya-kabelya-neizvestnymi/"
     ],
     [
         "lenta.ru",
         "MINI",
-        "Названы самые вредные для сердца продукты",
+        "Расстегнутая ширинка увеличила стоимость Диброва",
         null,
-        "11:34",
+        "12:49",
         null,
-        "https://lenta.ru/news/2025/11/16/nazvany-samye-vrednye-dlya-serdtsa-produkty/"
+        "https://lenta.ru/news/2025/11/16/rasstegnutaya-shirinka-uvelichila-stoimost-dibrova/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "Актёр из «Самой обаятельной и привлекательной» Абесадзе умер в 85 лет",
+        "Общество ◯ Life.ru (https://life.ru) ◯ «Мы приносим глубочайшие соболезнования его супруге — ведущему картвелологу России Лие Башелеишвили, а также всем родным и близким Гурама Абесадзе», — написали к некрологе.",
+        "23:55, 16 ноября 2025",
+        "https://resizer.mail.ru/p/1f0c04b1-3e2c-5376-846c-a6385d96acb7/AQAGWIGK7eI0ak5pS_7HtZhVL0bp1OnCGnau1S7A9LYoZteS8g7Q3BO3J-SPHPjhaI1bllQZuyvU7Nq9sp7UlAeXxJ4.jpg",
+        "https://news.mail.ru/society/68733607/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "В США неизвестные открыли стрельбу по прохожим, погибли ребёнок и женщина",
+        "Общество ◯ Life.ru (https://life.ru) ◯ По словам местных жителей, вечером в районе прозвучала серия выстрелов, за которой последовали крики людей. Правоохранительные органы оперативно перекрыли доступ в один из жилых домов, расположенных поблизости. Инцидент произошёл непосредственно на участке 300-го квартала Чанселлор-авеню, где криминалисты обнаружили не менее 17 гильз.",
+        "23:51, 16 ноября 2025",
+        "https://resizer.mail.ru/p/a3c3a4cb-b6a5-5288-b11b-525d1db58492/AQAGWECO8TSfSoGKHzuDHoyfapB1Pv23UyQDP7vgN6KfZ-vTznJxMyfesFviIpNZ82SKFBWK2h9jPUio2t_6YO95tWc.jpg",
+        "https://news.mail.ru/society/68733587/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "На шоссе в Подмосковье из-за гололёда столкнулось минимум пять машин",
+        "Происшествия ◯ Life.ru (https://life.ru) ◯ Кадры с места массового ДТП в Подмосковье. Видео © Telegram / Mash. По данным Telegram-канала, в результате аварии один водитель грузовика оказался заблокирован в кабине. Ещё один автомобилист оказал помощь женщине, выбравшейся из искорёженной легковушки.",
+        "23:47, 16 ноября 2025",
+        "https://resizer.mail.ru/p/3a8b2203-0f01-5103-b824-2f68666815f8/AQAGjNLj8U1e6_YnafPRY5YAHUVc8hdRu17DYJVGMKn7jQUyb6V6RPqR27alXmMJUPOIOJ9xbCEcOJUJh5eZO5Au8qQ.jpg",
+        "https://news.mail.ru/incident/68733560/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "В Стамбуле опечатали отель после смерти трех туристов",
+        "Общество ◯ Газета.Ру (https://www.gazeta.ru/) ◯ Трое постояльцев гостиницы в Стамбуле, среди них двое детей, скончались. По предварительным данным, из-за отравления неизвестным веществом. По одной из версий, яд был в кулере с водой, по другой — был распылен на соседнем этаже в ходе дезинсекции. Однако в полиции считают, что эти смерти «подозрительные».",
+        "23:15, 16 ноября 2025",
+        "https://resizer.mail.ru/p/2768fc3e-2872-5ead-bcb6-26882370acf0/AQAGyUXhR9xS0pdUthQnOhj3VHrnDnSRdDTOFTnISEha2wkglKEuVn0gnvLe9bJ2AiejlVdNBTBfyyBaNETebDaQc98.jpg",
+        "https://news.mail.ru/society/68733393/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "В Ростовской области в ДТП погиб подросток",
+        "Происшествия ◯ ТАСС (https://www.tass.ru/) ◯ Подросток погиб, выехав на красный сигнал светофора на железнодорожный переезд в Ростовской области на трассе Волгоград — Каменск-Шахтинский — Луганск. Машина наехала на автоматический бордюр, опрокинулась и загорелась, сообщили в Госавтоинспекции региона.",
+        "23:06, 16 ноября 2025",
+        "https://resizer.mail.ru/p/63672b02-968a-532d-b3f2-9063ed695e10/AQAGFyl4y-Qg2aCKXIdilt4fl0BFJZYJdx_BOXjFlk67dNQSRHm3vnx21UYscE1jhLXRXwEurTfmz8WwXCUygxNGUmg.jpg",
+        "https://news.mail.ru/incident/68733220/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "В Индии задержали еще одного организатора взрыва в Нью-Дели",
+        "Происшествия ◯ ТАСС (https://www.tass.ru/) ◯ Национальное бюро расследований Индии (NIA) задержало еще одного из организаторов теракта у исторической крепости Красный Форт в Нью-Дели. Об этом сообщила газета Hindustan Times. Задержанный по имени Амир Рашид Али проживал в индийской союзной территории Джамму и Кашмир. Автомобиль Hyundai i20, использованный при нападении, был зарегистрирован на него. По данным NIA, Али прибыл в Нью-Дели, чтобы организовать приобретение автомобиля. Его арест считается крупным успехом для бюро расследований, поскольку подтверждает наличие скоординированного заговора при подготовке теракта, указывает газета.",
+        "23:05, 16 ноября 2025",
+        "https://resizer.mail.ru/p/3a619bc4-4761-5e0a-992a-f01619ab5c1d/AQAG1LJoa8OF9A8lUzq7AU2zSae0yF9tS_oyDH-L5nOShY-b-jkyTrPnP92jjxAyg3j6F0Cz49lMj0WFJ7hV69XS7XY.jpg",
+        "https://news.mail.ru/incident/68733274/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "Два человека погибли при пожаре в строящемся здании в подмосковном Видном",
+        "Происшествия ◯ РБК (https://www.rbc.ru/) ◯ В подмосковном Видном произошел пожар в строящемся здании, в результате которого погибли два человека. Об этом сообщает Следственный комитет Московской области. По данным МЧС, площадь возгорания составила 30 кв. м. СК возбудил уголовное дело по статье о причинении смерти по неосторожности двум лицам (ч.3 ст. 109 УК). Максимальное наказание по этой статье — лишение свободы на срок до четырех лет.",
+        "22:58, 16 ноября 2025",
+        "https://resizer.mail.ru/p/05d9d89d-88c4-5b79-bb78-0efd6141c0e8/AQAGqbUEVlNt9cGY4HbUk4UCseoZYQZvKDdyW5rYTpG3LdsU8yRx2N0ajA4ifsbDa_OY80Nx4j84rZsD9Yq_r3XEYt0.jpg",
+        "https://news.mail.ru/incident/68733010/"
     ],
     [
         "news.mail.ru",
@@ -1631,11 +1694,38 @@
     [
         "news.mail.ru",
         "ARTICLE (0)",
+        "Песков рассказал о дружеских отношениях Путина и Токаева",
+        "Политика ◯ © РИА Новости (https://ria.ru/) ◯ Теплые дружеские отношения президентов России и Казахстана Владимира Путина и Касым-Жомарта Токаева позволяют лидерам открыто обсуждать важные международные и региональные вопросы, заявил пресс-секретарь президента России Дмитрий Песков.",
+        "18:07, 16 ноября 2025",
+        "https://resizer.mail.ru/p/6478ab27-b4c8-5582-aed9-43979754444c/AQAG8oQ02ZPFRwSQkQjhL1LJzFF2DIeHBYg9KzkZqNFI7IrpvjZYZRvuk8hdN0zGwG1anvzwQx7Yp_oKk9_pVeglsLA.jpg",
+        "https://news.mail.ru/politics/68731273/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
         "Yle: Финляндия выслала в Россию экс-бойца ЧВК «Вагнер»",
         "Политика ◯ Газета.Ру (https://www.gazeta.ru/) ◯ Финские пограничники выслали в Россию мужчину, который просил политического убежища и заявлял о службе в ЧВК «Вагнер». Россиянина задержали в июне в городе Китеэ, он представился Евгением и заявил, что «бежал от войны». На допросе мужчина признался, что к границе его привезли друзья, а сам он рассчитывал добраться до Франции — но после задержания попросил о защите финские власти. Однако иммиграционная служба приняла решение о депортации.",
         "18:01, 16 ноября 2025",
         "https://resizer.mail.ru/p/8af9b3e5-cd12-54e9-a354-fd5fa074a66e/AQAGw_JJ4JL9sLmdDV9Hk_VssLwHHrjYLEVkeic3qkq_lAXG2--q1vjOgAkE1Z9U2aHynzOyBxRB_PmYjTm6b5R3jrE.jpg",
         "https://news.mail.ru/politics/68731309/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "В Иране назвали условие для переговоров с США",
+        "Общество ◯ ТАСС (https://www.tass.ru/) ◯ Иран будет готов к переговорам с США только в том случае, если Вашингтон изменит свой подход. Об этом сообщил журналистам источник в МИД Ирана. По его словам, Иран заинтересован в компромиссном решении, которое устроит всех. Тегеран готов сделать свою ядерную программу максимально прозрачной в обмен на снятие санкций, в таком случае все будут в выигрыше.",
+        "17:46, 16 ноября 2025",
+        "https://resizer.mail.ru/p/4ddeb17f-cc6e-5c76-8146-a6c7766337b0/AQAG_HQl_zMQA7-Hn2XO9ErysrZKUGMSQopUPsxnAQCJXz0iSYdyumBBbwkbwhGXs6xV5v0S_1s3VU5DmQIK6M54mxA.jpg",
+        "https://news.mail.ru/society/68731003/"
+    ],
+    [
+        "news.mail.ru",
+        "ARTICLE (0)",
+        "Украина договорилась о поставках газа из Греции",
+        "Общество ◯ РБК (https://www.rbc.ru/) ◯ Украина подготовила соглашение по импорту газа из Греции, чтобы компенсировать потери украинской добычи на зимний период из-за российских ударов, сообщил президент Владимир Зеленский. «Это будет еще один маршрут поставки газа — чтобы максимально обезопасить маршруты импорта газа для Украины на зиму. У нас уже есть договоренности о финансировании импорта газа, и мы покроем потребность почти в €2 млрд», — написал он в телеграм-канале.",
+        "17:27, 16 ноября 2025",
+        "https://resizer.mail.ru/p/2fd2b95a-bd73-524c-a9c2-53a626d1d4cb/AQAGKb2ra5I8MEN24N9WHxky7eSDSfvrNuPNbJyJdK6K8G-8EXyGDGwRfEbjD4-zKhl6KisU2QxiESnhhODLHMO2V7c.jpg",
+        "https://news.mail.ru/society/68730801/"
     ],
     [
         "news.mail.ru",
@@ -1648,16 +1738,16 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "В Бурятии прорвало временную дамбу",
-        "Происшествия ◯ © РИА Новости (https://ria.ru/) ◯ Временную дамбу, сооруженную во время строительства пешеходного моста, прорвало в селе Десятниково Тарбагатайского района Бурятии, угрозы населенным пунктам нет, сообщил РИА Новости представитель районной администрации.‎.",
+        "Происшествия ◯ © РИА Новости (https://ria.ru/) ◯ Временную дамбу, сооруженную во время строительства пешеходного моста, прорвало в селе Десятниково Тарбагатайского района Бурятии, угрозы населенным пунктам нет, сообщил РИА Новости представитель районной администрации..",
         "17:16, 16 ноября 2025",
         "https://resizer.mail.ru/p/ac4ed64b-e711-51ce-a529-2f52cbb11faa/AQAGeGdWJ1IpZpaO8NUsN5uTu7Y1Ow72uNPHIfu5ENylLcY0p7OtmcQT5__Jl9eDJzszfMvQeckSjK_uKHQC28lNvy4.jpg",
         "https://news.mail.ru/incident/68730840/"
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "Скандал из-за измены разгорелся посреди улицы между новосибирцами",
         "Общество ◯ Om1 Новосибирск (https://www.nsk.om1.ru) ◯ Конфликт у дома на улице Краузе закончился вызовом скорой помощи после удара одной из участниц. В ночь на 16 ноября у дома № 23 на улице Краузе в Новосибирске произошел публичный скандал между мужчиной и двумя девушками на почве ревности, сообщает Telegram-канал «Анонимный Новосибирск».",
         "16:44, 16 ноября 2025",
@@ -1666,7 +1756,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "Новосибирцев предупредили о мошенничестве при покупке билетов на транспорт",
         "Общество ◯ Комсомольская правда (https://kp.ru/) ◯ Злоумышленники создают сайты, имитирующие страницы транспортных предприятий. Жителей Новосибирской области предупредили о мошенничестве при покупке билетов на транспорт. Дело в том, что злоумышленники создают сайты, имитирующие страницы банков и транспортных предприятий, которые осуществляют пассажирские перевозки. И когда человек с помощью такого подставного сервиса покупает билет, мошенники получают данные банковской карты жертвы. Об этом сообщили в пресс-службе Управления на транспорте МВД России по Сибирскому федеральному округу.",
         "16:43, 16 ноября 2025",
@@ -1675,7 +1765,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "Младенец пострадал при столкновении двух авто в Новосибирске",
         "Происшествия ◯ Комсомольская правда (https://kp.ru/) ◯ Авария произошла в Центральном районе города. В Новосибирске в результате столкновения двух иномарок пострадал малолетний ребенок. Авария произошла 16 ноября в Центральном районе города, напротив дома № 5 на улице Военной. Об этом сообщили в пресс-службе ГАИ Новосибирской области.",
         "16:42, 16 ноября 2025",
@@ -1684,7 +1774,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "Пушков рассказал о последствиях возможной операции США против Венесуэлы",
         "Общество ◯ © РИА Новости (https://ria.ru/) ◯ Возможная операция Вашингтона против Венесуэлы ставит американского президента Дональда Трампа в непростое положение, поскольку он обещал не ввязывать США в дорогостоящие войны за рубежом, и обернуться против главы Белого дома, считает сенатор Алексей Пушков.",
         "16:40, 16 ноября 2025",
@@ -1693,7 +1783,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "Военные заняли Малую Токмачку и Ровнополье в Запорожской области",
         "СВО ◯ РБК (https://www.rbc.ru/) ◯ Российские силы освободили населенные пункты Малая Токмачка и Ровнополье в Запорожской области, сообщило Минобороны. Ма́лая Токмачка — село в Ореховском районе Запорожской области, административный центр Малотокмачанского сельсовета.",
         "16:23, 16 ноября 2025",
@@ -1702,7 +1792,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "В МВД предупредили о мошенниках, звонящих от лица горадминистрации",
         "Общество ◯ © РИА Новости (https://ria.ru/) ◯ Мошенники начали звонить россиянам от лица горадминистрации и похищать персональные данные пол предлогом регистрации в личном кабинете для получения «выплат ветеранам труда», сообщило УБК МВД России.",
         "16:08, 16 ноября 2025",
@@ -1711,7 +1801,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "Встречу Путина и Трампа отложили на какое-то время, заявил Ушаков",
         "Общество ◯ © РИА Новости (https://ria.ru/) ◯ Встречу президентов России и США Владимира Путина и Дональда Трампа на какое-то время отложили, контакты на этот счет идут, заявил помощник президента РФ Юрий Ушаков. «Договорились о встрече в Будапеште, потом встречу на какое-то время отложили. Контакты на этот счет идут», — сказал Ушаков журналисту «России 1» Павлу Зарубину.",
         "15:51, 16 ноября 2025",
@@ -1720,7 +1810,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "В Видном при пожаре в кафе погибли два человека",
         "Происшествия ◯ ТАСС (https://www.tass.ru/) ◯ В Видном Московской области два человека стали жертвами пожара, сообщает областной главк МЧС РФ. «В 21:49 поступило сообщение о пожаре по адресу: Видное, ул. Вокзальная, д. 1. На момент прибытия пожарных наблюдалось горение внутри здания на площади 30 кв. метров. В результате пожара пострадали четыре человека, из них погибли два человека», — сказал собеседник агентства.",
         "15:49, 16 ноября 2025",
@@ -1729,7 +1819,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (0)",
+        "ARTICLE (1)",
         "Newsweek: в переписке Эпштейна нашли упоминание о компромате на Трампа",
         "Политика ◯ Газета.Ру (https://www.gazeta.ru/) ◯ В опубликованной демократами переписке Джеффри Эпштейна упоминается «секс-компромат» на Дональда Трампа, с которым может быть ознакомлен Владимир Путин, пишет Newsweek. По данным журнала, речь идет о якобы имевшей место интимной связи американского лидера с человеком по прозвищу Бубба: в одном из сообщений брат Эпштейна уточняет, «есть ли фотографии» сексуального контакта у Путина. Сам Трамп назвал публикацию документов «мистификацией», призванной отвлечь внимание от провалов демократов.",
         "15:42, 16 ноября 2025",
@@ -1828,7 +1918,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "В Магадане 13-летняя девочка отбилась от напавшего на неё мужчины",
         "Происшествия ◯ Аргументы и факты (https://aif.ru/) ◯ Девочка закричала и нападавший скрылся. Мужчина попытался напасть на 13-летнюю школьницу в подъезде дома на улице Набережной реки Магаданки 12 ноября в Магадане. Девочка закричала и спугнула его. Об этом сообщили в пресс-службе УМВД России по региону.",
         "14:03, 16 ноября 2025",
@@ -1837,7 +1927,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "Синоптик рассказал о погоде в Москве на следующих выходных",
         "Общество ◯ © РИА Новости (https://ria.ru/) ◯ Ненастная и дождливая погода ожидается в Москве на следующих выходных, возможны осадки в виде снега и мокрого снега, ударят слабые заморозки, сообщил РИА Новости ведущий специалист центра погоды «Фобос» Евгений Тишковец.",
         "14:00, 16 ноября 2025",
@@ -1846,7 +1936,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "Компания LG зарегистрировала в РФ шесть товарных знаков",
         "Экономика ◯ Аргументы и факты (https://aif.ru/) ◯ Обращения по поводу регистрации шести знаков поступили в Роспатент от компании «ЭлДжи электроникс инк». Южнокорейская компания LG, производящая электронику и бытовую технику, зарегистрировала в РФ шесть знаков, которые касаются электронных и цифровых товаров, следует из электронной базы Федеральной службы по интеллектуальной собственности России (Роспатент).",
         "13:55, 16 ноября 2025",
@@ -1855,7 +1945,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "Франция отказалась принимать Зеленского: коррупционный скандал на Украине вызвал гнев у французов",
         "Политика ◯ Комсомольская правда (https://www.kp.ru) ◯ Президент Франции Эмманюэль Макрон должен учитывать, что визит киевского главаря Владимира Зеленского в Париж может использоваться для отвлечения внимания от коррупционного скандала на Украине. Об этом заявил лидер французской партии «Патриоты» Флориан Филиппо.",
         "13:51, 16 ноября 2025",
@@ -1864,7 +1954,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "На Украине началась истерика из-за тактики ВС России: «Они постоянно меняют»",
         "Политика ◯ Комсомольская правда (https://www.kp.ru) ◯ На Украине внезапно пожаловались на оригинальность российской армии. Эксперт по энергетике Геннадий Рябцев заявил, что ВС РФ постоянно «меняют тактику» при ударах по энергосистеме Незалежной. Слова аналитика прозвучали в беседе с BBC.",
         "13:49, 16 ноября 2025",
@@ -1873,7 +1963,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "Синоптик рассказал, когда в Центральную Россию придет настоящая зима",
         "Общество ◯ © РИА Новости (https://ria.ru/) ◯ Метеорологическая зима придет в Центральную Россию только с наступлением календарной зимы, до конца осени устойчивого перехода температуры через 0 в сторону отрицательных значений не ожидается, сообщил РИА Новости ведущий специалист центра погоды «Фобос» Евгений Тишковец.",
         "13:45, 16 ноября 2025",
@@ -1882,7 +1972,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "Врач рассказала, как распознать анорексию",
         "Общество ◯ © РИА Новости (https://ria.ru/) ◯ Анорексия может появиться, даже когда вес в норме, чтобы распознать заболевание, нужно обращать внимание на изменения в поведении, а не только на вес, должно насторожить резкое изменение пищевых привычек, рассказала РИА Новости заведующая кафедрой психиатрии и наркологии Сеченовского университета, заслуженный врач РФ Марина Кинкулькина.",
         "13:41, 16 ноября 2025",
@@ -1891,7 +1981,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "Что будет с человечеством при взрыве сверхновой: астроном озвучил неожиданный прогноз",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ Человечество сумеет выжить при взрыве сверхновой. Такое мнение выразил известный российский астроном Владимир Сурдин. Его слова передает «Газета.Ru».",
         "13:38, 16 ноября 2025",
@@ -1900,7 +1990,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "Два человека погибли в ДТП с автобусом и грузовиком в Белгородской области",
         "Происшествия ◯ Комсомольская правда (https://www.kp.ru) ◯ В аварии с автобусом и грузовиком в Белгородской области пострадали шесть человек. В Белгородской области произошло серьёзное ДТП с участием автобуса и грузового автомобиля. Как сообщили в региональной Госавтоинспекции, в результате столкновения два человека погибли на месте, еще шестеро получили различные травмы и были доставлены в больницы для оказания медицинской помощи.",
         "13:37, 16 ноября 2025",
@@ -1909,7 +1999,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (1)",
+        "ARTICLE (2)",
         "В Гарварде предположили, что межзвёздная комета может быть кораблём пришельцев",
         "Общество ◯ Life.ru (https://life.ru) ◯ Астрономы зафиксировали странные направленные лучи, исходящие от межзвёздного объекта 3I/ATLAS. Как сообщил профессор Гарвардского университета Ави Леб, природа этих лучей пока остаётся необъяснимой с точки зрения обычных астрономических процессов.",
         "13:35, 16 ноября 2025",
@@ -2008,7 +2098,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "В Иркутской области женщина напала на продавца после словесного конфликта",
         "Происшествия ◯ Аргументы и факты (https://aif.ru/) ◯ Покупатель накинулась на сотрудника магазина и повалила на пол, после чего скрылась. В поселке Маркова Иркутской области в магазине микрорайона Березовый произошел конфликт между продавцом и неизвестной женщиной. По данным ГУМВД, в результате нападения продавец получила травмы и была госпитализирована, а нападавшая объявлена в розыск.",
         "13:20, 16 ноября 2025",
@@ -2017,7 +2107,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "Овчинский: семь домов расселили в районе Соколиная Гора в рамках реновации",
         "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ Семь старых жилых дома полностью расселили в районе Соколиная Гора в Восточном округе Москвы в рамках реализации программы реновации, рассказал министр правительства Москвы, руководитель Департамента градостроительной политики, входящего в Комплекс градостроительной политики и строительства города Москвы, Владислав Овчинский.",
         "13:15, 16 ноября 2025",
@@ -2026,7 +2116,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "В нескольких регионах РФ зафиксированы сбои в работе интернета от «Ростелекома»",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ В ряде российских регионов пользователи столкнулись с перебоями в работе проводного интернета от оператора «Ростелеком». На это указывают данные платформ Downdetector и «Сбой.рф», отслеживающих сбои в сети.",
         "13:12, 16 ноября 2025",
@@ -2035,7 +2125,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "За срубленную в лесу елку может грозить штраф в три миллиона рублей",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ Общественный деятель, специалист по вопросам ЖКХ Дмитрий Бондарь в интервью ответил, какие последствия ждут тех, кто занимается самовольной вырубкой елок в преддверии Нового года.",
         "13:11, 16 ноября 2025",
@@ -2044,7 +2134,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "Никита Пресняков опроверг слухи о возвращении в Россию — у него другие планы",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ После развода Никиты Преснякова с Аленой Красновой все чаще обсуждается возможность его возвращения в Россию. Сейчас артист живет в Америке, но недавно его отец Владимир Пресняков не исключил такую возможность. Правда, добавил: когда будут улажены все рабочие вопросы.",
         "13:08, 16 ноября 2025",
@@ -2053,7 +2143,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "Нарколог Исаев: алкоголь даже в небольших количествах провоцирует рак",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ Врач-психиатр ответил, есть ли связь между употреблением алкоголя и онкологией. Нарколог, президент Независимой наркологической гильдии Руслан Исаев подтвердил, что спиртное приводит к развитию злокачественных новообразований и это доказанный факт.",
         "13:08, 16 ноября 2025",
@@ -2062,7 +2152,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "Южнокорейская компания LG зарегистрировала шесть товарных знаков в России",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ Южнокорейская компания LG зарегистрировала сразу шесть товарных знаков в России. Все они связаны с электроникой и цифровыми товарами. Об этом свидетельствуют данные, представленные на официальном сайте Роспатента.",
         "13:06, 16 ноября 2025",
@@ -2071,7 +2161,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "Суд в Уфе обязал клинику провести женщине ЭКО после смерти супруга",
         "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ Суд в Уфе обязал частную клинику провести женщине процедуру экстракорпорального оплодотворения после смерти ее супруга, следует из судебных материалов, оказавшихся в распоряжении РИА Новости.",
         "13:05, 16 ноября 2025",
@@ -2080,7 +2170,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "Кто царь, а кто — лузер: Рунический гороскоп на неделю с 17 по 23 ноября для всех знаков зодиака",
         "Общество ◯ Life.ru (https://life.ru) ◯ Начинается новая неделя. Какие подсказки от Вселенной можно узнать из расклада для своего знака зодиака? Рунолог Игорь Вечерский эксклюзивно для Life.ru приоткроет завесу тайны и даст нужное направление. Действовать или нет — решать вам.",
         "13:02, 16 ноября 2025",
@@ -2089,7 +2179,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (2)",
+        "ARTICLE (3)",
         "ВСУ отступают на Харьковском направлении, переодеваясь в гражданских",
         "Политика ◯ Life.ru (https://life.ru) ◯ Подразделения 57-й отдельной мотопехотной бригады ВСУ начали отступление с занимаемых позиций на Харьковском направлении. Об этом сообщают в российских силовых структурах, уточнив, что украинские военные массово переодеваются в гражданскую одежду, пытаясь скрыться под видом мирных жителей.",
         "13:00, 16 ноября 2025",
@@ -2188,16 +2278,16 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
-        "Киев ведет с США переговоры по поставкам оружия. Военная операция, день 1362-й",
-        "Политика ◯ Газета.Ру (https://www.gazeta.ru/) ◯ МИД Франции после авиаударов по Украине пообещал усилить давление на Россию. Украинский лидер Владимир Зеленский сообщил, что Киев подготовил соглашение по импорту газа из Греции, чтобы компенсировать потери украинской добычи на зимний период. Президент Финляндии Александр Стубб заявил, что власти Украины все еще ведут переговоры с США по поставкам американского оружия. «Газета.Ru» ведет хронику событий.",
+        "ARTICLE (4)",
+        "Черногория согласилась обучать армию Украины. Военная операция, день 1362-й",
+        "Политика ◯ Газета.Ру (https://www.gazeta.ru/) ◯ Парламент Черногории согласился отправить военных для участия в миссии НАТО по обучению армии Украины. Франция намерена развивать сотрудничество с Украиной в вопросах производства БПЛА, заявил глава МИД республики Жан-Ноэль Барро. По информации Reuters, Новороссийский порт вновь начал отгрузку нефти после паузы, вызванной атаками украинских ракет и беспилотников. «Газета.Ru» ведет хронику событий.",
         "12:35, 16 ноября 2025",
         "https://resizer.mail.ru/p/0af75b2a-cc3d-5868-9650-c81392a57026/AQAG1MQtyWosk9o9D9gRvKssKDr9PwWErfopByyWozuTdEQZsmCuoRpbKEPTOEn313LJ1OXGWyT_2FqMxOONe20U-HI.jpg",
         "https://news.mail.ru/politics/68728972/"
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "В Китае арестовали бывшего настоятеля монастыря Шаолинь",
         "Происшествия ◯ © РИА Новости (https://ria.ru/) ◯ Бывшего настоятеля Шаолиньского монастыря арестовали в Китае. Народная прокуратура города Синьсян китайской провинции Хэнань санкционировала арест бывшего настоятеля Шаолиньского монастыря Ши Юнсиня, подозреваемого в коррупционных преступлениях, сообщает в воскресенье Центральное телевидение Китая.",
         "12:35, 16 ноября 2025",
@@ -2206,7 +2296,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "Овечкин забросил 902-ю шайбу в регулярных чемпионатах НХЛ",
         "Общество ◯ Life.ru (https://life.ru) ◯ Несмотря на личный успех, капитан «Вашингтона» Александр Овечкин не смог привести свою команду к победе в домашнем поединке регулярного чемпионата НХЛ против «Нью-Джерси». Легендарный российский форвард пополнил свой актив очередной заброшенной шайбой и результативным пасом. Эта шайба стала для Овечкина 902-й в регулярных сезонах НХЛ, что лишь укрепило его статус рекордсмена лиги по голам.",
         "12:23, 16 ноября 2025",
@@ -2215,7 +2305,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "Русская туристка поехала в Аргентину и схватила преступника в одиночку: она действовала быстрее полиции",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ В Аргентине русская туристка самостоятельно отбилась от преступников, сбив одного из них с мотоцикла. Женщина сработала даже быстрее полиции. Об этом пишет газета La Nacion.",
         "12:23, 16 ноября 2025",
@@ -2224,7 +2314,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "Риттер: от Украины будет все больше провокаций в отношении России",
         "Политика ◯ Аргументы и факты (https://aif.ru/) ◯ Украина будет наращивать масштабы провокаций в отношении России по мере приближения к завершению конфликта, заявил информационному агентству ТАСС бывший аналитик разведки Корпуса морской пехоты США Скотт Риттер.",
         "12:20, 16 ноября 2025",
@@ -2233,7 +2323,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "В Уфе суд обязал клинику провести женщине ЭКО после смерти ее мужа",
         "Общество ◯ © РИА Новости (https://ria.ru/) ◯ Суд в Уфе по просьбе женщины обязал частную клинику провести ей ЭКО без согласия супруга, который скоропостижно скончался, говорится в судебных материалах в распоряжении РИА Новости.",
         "12:18, 16 ноября 2025",
@@ -2242,7 +2332,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "Астроном Сурдин: человечество сможет пережить вспышку сверхновой",
         "Общество ◯ Газета.Ру (https://www.gazeta.ru/) ◯ Вспышка сверхновой — одно из самых ярких явлений во Вселенной, которое позволяет отжившей свой век звезде на короткое время затмить свет целых галактик. Но что будет с Землей и человечеством, если неподалеку от Солнца взорвется одна из них? Астрономы XX века считали, что сверхновые несут колоссальную угрозу для жизни, сейчас же отношение к ним слегка поменялось. Вместе с астрономом Владимиром Сурдиным «Газета.Ru» разбиралась, может ли сверхновая положить конец человеческой цивилизации даже в гипотетических сценариях и можно ли укрыться от взрыва в бункере.",
         "12:15, 16 ноября 2025",
@@ -2251,7 +2341,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "Lancet: в мире растет количество детей, страдающих от гипертонии",
         "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ Ученые связывают эту тенденцию с ухудшением образа жизни и ростом числа случаев ожирения. Эксперты фиксируют значительное число случаев детской гипертонии. «Детская гипертония затрагивает значительную и растущую часть детского населения по всему миру», — отмечается в публикации на портале Lancet.",
         "12:14, 16 ноября 2025",
@@ -2260,7 +2350,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "Филиппо призвал отменить визит Зеленского в Париж из-за коррупционного дела",
         "Политика ◯ Аргументы и факты (https://aif.ru/) ◯ Президент Франции Эммануэль Макрон должен отменить визит главы киевского режима Владимира Зеленского из-за коррупционного скандала, разразившегося на Украине, заявил лидер французской партии «Патриоты» Флориан Филиппо.",
         "12:14, 16 ноября 2025",
@@ -2269,7 +2359,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (3)",
+        "ARTICLE (4)",
         "Бойцы ВСУ пытались убить дроном сдавшегося в плен сослуживца",
         "Политика ◯ Life.ru (https://life.ru) ◯ Украинский военнослужащий Антон Чернявский поделился шокирующими подробностями о своих сослуживцах. В беседе с РИА «Новости» пленный боец рассказал, что они предприняли попытку его ликвидации с помощью беспилотника сразу после того, как он сложил оружие перед российскими военными.",
         "12:13, 16 ноября 2025",
@@ -2368,7 +2458,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "За ночь расчёты ПВО уничтожили 57 украинских беспилотников над регионами России",
         "СВО ◯ Life.ru (https://life.ru) ◯ За прошедшую ночь расчёты противовоздушной обороны перехватили и уничтожили 57 дронов Вооружённых сил Украины (ВСУ) над регионами России. Об этом сообщила пресс-служба Минобороны РФ. Наибольшее количество беспилотников — 23 — сбили над Самарской областью. 17 БПЛА ликвидировали над Волгоградской областью. По пять дронов уничтожили над Саратовской и Ростовской областями, по три — над Курской и Воронежской областями. Ещё один украинский беспилотный летательный аппарат самолётного типа перехватили над Брянской областью.",
         "11:49, 16 ноября 2025",
@@ -2377,7 +2467,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "Российские дроны сожгли несколько машин ВСУ, пытавшихся прорваться в Купянск",
         "Политика ◯ Life.ru (https://life.ru) ◯ Расчёты FPV-дронов группировки войск «Запад» уничтожили несколько автомобилей Вооружённых сил Украины (ВСУ), которые пытались прорваться в Купянск. Кадры поражения техники обнародовало Министерство обороны России.",
         "11:40, 16 ноября 2025",
@@ -2386,7 +2476,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "В Улан-Удэ после пожара в доме трое детей попали в больницу",
         "Происшествия ◯ Аргументы и факты (https://aif.ru/) ◯ Трое детей пострадали в результате пожара, который произошёл в жилом доме в Улан-Удэ, сообщило Главное управление МЧС России по Бурятии.",
         "11:35, 16 ноября 2025",
@@ -2395,7 +2485,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "В Литве указали на нехватку финансирования оборонной сферы",
         "Политика ◯ Известия (https://iz.ru/) ◯ В Литве заметно недофинансирование военной сферы, из-за чего армия может быть вынуждена вести оборону с помощью коктейлей Молотова. Об этом 15 ноября заявил литовский генерал Раймундас Вайкшнорас в эфире радио LRT.",
         "11:34, 16 ноября 2025",
@@ -2404,7 +2494,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "Контрактники ВСУ в возрасте 18−24 лет массово дезертируют под Сумами",
         "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ Бойцы ВСУ в возрасте 18−24 лет, пришедшие на службу по контракту, массово дезертируют в районе села Садки Сумской области. Об этом сообщает Telegram-канал российской группировки войск «Север» «Северный Ветер».",
         "11:33, 16 ноября 2025",
@@ -2413,7 +2503,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "В Литве заговорили о необычном оружии для возможного конфликта с Россией",
         "Политика ◯ Life.ru (https://life.ru) ◯ Командующий Вооружёнными силами Литвы, генерал Раймундас Вайкшнорас в эфире LRT предупредил, что в случае гипотетического конфликта с Россией недостаточное финансирование армии может привести к ситуации, когда солдатам придётся использовать коктейли Молотова.",
         "11:29, 16 ноября 2025",
@@ -2422,7 +2512,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "Землетрясение магнитудой 5 произошло на Камчатке",
         "Происшествия ◯ Аргументы и факты (https://aif.ru/) ◯ Эпицентр располагался в 113 километрах от Петропавловска-Камчатского. На Камчатке зафиксировано землетрясение магнитудой 5 баллов. Об этом сообщается в Камчатском филиале Единой геофизической службы РАН. Эпицентр находился в 113 км от Петропавловска-Камчатского. Землетрясение произошло на глубине 20 км.",
         "11:29, 16 ноября 2025",
@@ -2431,7 +2521,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "Более 100 полицейских пострадали в столкновениях с молодежью в Мехико",
         "Происшествия ◯ Аргументы и факты (https://aif.ru/) ◯ 60 правоохранителей получили легкие травмы и были обработаны на месте, еще 40 человек доставлены в медицинские учреждения. В результате столкновений на молодежном антиправительственном марше в центре Мехико пострадали более 100 сотрудников полиции. Об этом сообщил министр общественной безопасности мексиканской столицы Пабло Васкес Камачо на пресс-конференции.",
         "11:25, 16 ноября 2025",
@@ -2440,7 +2530,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "Поставки пива из Евросоюза в Россию упали до минимума за десять лет",
         "Политика ◯ Комсомольская правда (https://www.kp.ru) ◯ Импорт пива из стран Европейского союза в Россию снизился до минимальных значений с начала 2015 года. В сентябре текущего года было ввезено всего три тысячи тонн. Об этом свидетельствуют данные Евростата.",
         "11:22, 16 ноября 2025",
@@ -2449,7 +2539,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (4)",
+        "ARTICLE (5)",
         "Тепло вернется: синоптик рассказал о сюрпризах погоды после первого снега",
         "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ Жители Москвы, наблюдавшие первый снег 15 ноября, не должны к нему слишком привыкать. По словам экспертов, это лишь краткосрочный визит зимы, который очень скоро сменится привычной для ноября слякотью и дождями. Подробностями о капризах погоды с читателями aif.ru поделился синоптик прогностического центра «Метео» Александр Ильин.",
         "11:20, 16 ноября 2025",
@@ -2548,7 +2638,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "Слуцкий предложил ввести дополнительный отпуск для предпенсионеров",
         "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ Депутаты ЛДПР во главе с Леонидом Слуцким подготовили законопроект, предусматривающий введение дополнительного оплачиваемого отпуска для работников предпенсионного возраста и трудящихся пенсионеров. Об этом пишет ТАСС.",
         "11:00, 16 ноября 2025",
@@ -2557,7 +2647,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "Украинская молодежь бежит из ВСУ: заключившие контракт всё чаще оставляют позиции",
         "СВО ◯ Комсомольская правда (https://www.kp.ru) ◯ Молодежь призывного возраста на Украине не спешит отдавать жизнь за страну. Солдаты возрастом от 18 до 24 лет, служащие по контракту, массово оставляют позиции. Такие случаи замечены в Сумской области. Об этом рассказали в силовых структурах РФ, цитирует ТАСС.",
         "10:53, 16 ноября 2025",
@@ -2566,7 +2656,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "В ходе беспорядков на марше «Поколения Z» в Мехико пострадали 100 полицейских",
         "Политика ◯ Life.ru (https://life.ru) ◯ В столице Мексики в субботу произошли массовые столкновения между правоохранителями и участниками антиправительственных выступлений, организованных движением «Поколение Z». По официальным данным, в результате инцидента травмы различной степени тяжести получили не менее 100 сотрудников полиции.",
         "10:51, 16 ноября 2025",
@@ -2575,7 +2665,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "Власти Венесуэлы сообщили об обрушении трёх опор ЛЭП из-за саботажа",
         "Происшествия ◯ Аргументы и факты (https://aif.ru/) ◯ Три опоры линии электропередачи обрушились в венесуэльском штате Ансоатеги в результате саботажа, сообщило министерство энергетики Венесуэлы.",
         "10:50, 16 ноября 2025",
@@ -2584,7 +2674,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "Летящая смерть: дроноводы объявили месть за казнь священника и мирных",
         "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ В зоне специальной военной операции каждый день приносит новые свидетельства чудовищных преступлений со стороны украинских боевиков. То, что еще недавно казалось немыслимым нарушением всех моральных и юридических норм, сегодня стало обычным делом для Вооруженных сил Украины (ВСУ). Ярчайшим примером бесчеловечности стала недавняя трагедия под Константиновкой в ДНР, где боевики ВСУ убили дронами семьи священника и прихожан храма.",
         "10:49, 16 ноября 2025",
@@ -2593,7 +2683,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "В Улан-Удэ возник пожар в многоэтажке, трое детей отравились угарным газом",
         "Происшествия ◯ Комсомольская правда (https://www.kp.ru) ◯ В Улан-Удэ трое детей попали в больницу с отравлением угарным газом из-за пожара в многоквартирном доме. Об этом информирует региональное МЧС. Как сообщает ведомство, в ночь на 16 ноября загорелась квартира на проспекте Строителей. Пожар был ликвидирован на площади 10 кв. м.",
         "10:48, 16 ноября 2025",
@@ -2602,7 +2692,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "В столкновениях с молодежью в Мехико пострадали более 100 полицейских",
         "Происшествия ◯ © РИА Новости (https://ria.ru/) ◯ В столкновениях с молодежью в центре Мехико пострадали более 100 полицейских. Более 100 сотрудников правопорядка пострадали при столкновениях на молодежном антиправительственном марше в центре Мехико, сообщил на пресс-конференции министр общественной безопасности столицы Пабло Васкес Камачо.",
         "10:46, 16 ноября 2025",
@@ -2611,7 +2701,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "В Киеве и ряде областей Украины объявили воздушную тревогу",
         "СВО ◯ © РИА Новости (https://ria.ru/) ◯ В Киеве и девяти областях Украины объявили воздушную тревогу. Воздушная тревога объявлена в Киеве, а также Киевской, Черкасской, Полтавской, Кировоградской, Николаевской, Днепропетровской, Харьковской, Сумской и Черниговской областях Украины, свидетельствуют данные онлайн-карты украинского министерства цифровой трансформации.",
         "10:43, 16 ноября 2025",
@@ -2620,7 +2710,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "В Австралии гоночный автомобиль врезался в толпу зрителей, есть пострадавшие",
         "Происшествия ◯ Life.ru (https://life.ru) ◯ В регионе Новый Южный Уэльс в Австралии гоночный автомобиль, участвовавший в соревнованиях, врезался в толпу зрителей. По данным телеканала 7News, в результате инцидента пострадали девять человек, один из пострадавших находится в критическом состоянии.",
         "10:42, 16 ноября 2025",
@@ -2629,7 +2719,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (5)",
+        "ARTICLE (6)",
         "Роспотребнадзор сообщил, по каким признакам можно распознать герпес",
         "Общество ◯ Life.ru (https://life.ru) ◯ По информации Роспотребнадзора, симптомы герпеса проявляются через 2−12 дней после заражения: сначала в месте проникновения вируса возникают зуд, жжение, онемение и покраснение, затем появляются сгруппированные пузырьки, наполненные жидкостью. Когда они вскрываются, на их месте появляются мелкие эрозии, которые вскоре заживают. Об этом пишет РИА «Новости».",
         "10:39, 16 ноября 2025",
@@ -2728,7 +2818,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "Иванников: боевики ВСУ превратили мирных граждан в мишени для тренировок",
         "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ Боевики ВСУ превращают мирных жителей территорий у ЛБС в живые мишени для тренировки, рассказал aif.ru советник Российской академии ракетных и артиллерийских наук, кандидат исторических наук, подполковник запаса Олег Иванников.",
         "10:08, 16 ноября 2025",
@@ -2737,7 +2827,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "Попытка спрятаться: Брижит Макрон напугала французов странным поведением",
         "Политика ◯ Аргументы и факты (https://aif.ru/) ◯ Появление Брижит Макрон на траурной церемонии в память о жертвах терактов 13 ноября в Париже вызвало бурное обсуждение во французских и международных СМИ.",
         "10:04, 16 ноября 2025",
@@ -2746,7 +2836,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "Силы ПВО отразили атаку БПЛА в четырех районах Ростовской области",
         "Происшествия ◯ Аргументы и факты (https://aif.ru/) ◯ Губернатор Ростовской области Юрий Слюсарь сообщил, что ночью над северными районами региона была успешно отражена масштабная атака беспилотников. По его словам, системы противовоздушной обороны и средства радиоэлектронной борьбы сработали в нескольких муниципалитетах.",
         "10:04, 16 ноября 2025",
@@ -2755,7 +2845,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "Мошенники внедрили использование геоданных в схемы дистанционных хищений",
         "Общество ◯ Life.ru (https://life.ru) ◯ «Зарегистрированы факты дистанционных хищений денежных средств, при которых злоумышленники, используя доверительные отношения, установленные на сайтах знакомств, получали актуальные геоданные жертвы», — предупредили в ведомстве.",
         "10:03, 16 ноября 2025",
@@ -2764,7 +2854,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "В четырех российских аэропортах приостановлен прием и выпуск рейсов",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ В России остановили работу четыре аэропорта. Временные ограничения введены, в том числе, в воздушных гаванях Уфы и Оренбурга. Они действуют с 05 утра по Москве. Такие данные опубликовала Росавиация.",
         "10:01, 16 ноября 2025",
@@ -2773,7 +2863,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "В России могут ввести отпуск для предпенсионеров и пенсионеров: что известно",
         "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ Работающим пенсионерам и гражданам предпенсионного возраста может быть предоставлен дополнительный оплачиваемый отпуск — 5 дней в год. С подобной законодательной инициативой выступила группа депутатов от ЛДПР во главе с Леонидом Слуцким. Документ, направленный в Правительство на заключение, имеется в распоряжении ТАСС.",
         "10:01, 16 ноября 2025",
@@ -2782,7 +2872,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "Политолог Соскин: беженцев с Украины начнут насильно возвращать на родину",
         "Политика ◯ Аргументы и факты (https://aif.ru/) ◯ Беженцев с Украины начнут принудительно возвращать на родину из Европы и США, заявил экс-советник Леонида Кучмы Олег Соскин.",
         "09:58, 16 ноября 2025",
@@ -2791,7 +2881,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "Уведомления об уплате налогов перестали видеть жители Новосибирска",
         "Общество ◯ Om1 Новосибирск (https://www.nsk.om1.ru) ◯ В УФНС по Новосибирской области напомнили о необходимости оплатить имущественные налоги до 1 декабря. До 1 декабря у жителей Новосибирской области осталось две недели для уплаты имущественных налогов — транспортного, земельного и налога на имущество, после чего начнется начисление пени и штрафов, сообщает пресс-служба УФНС по региону.",
         "09:55, 16 ноября 2025",
@@ -2800,7 +2890,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "Хоккеисты «Сибири» проиграли в первом матче после отставки главного тренера",
         "Общество ◯ Коммерсантъ (https://kommersant.ru) ◯ Хоккейная «Сибирь» не смогла набрать очки в первом матче после отставки главного тренера Вячеслава Буцаева. в Новосибирске она принимала московское «Динамо». Хозяева повели в счете уже на второй минуте после дальнего броска Тимура Ахиярова, но сохранить преимущество в дальнейшем не сумели. Динамовцы победили со счетом 3:2 (вторая шайба новосибирцев на счету Скотта Уилсона). Поражение стало для «Сибири» 12-м подряд, что является повторением антирекорда сезона 2008/2009.",
         "09:54, 16 ноября 2025",
@@ -2809,7 +2899,7 @@
     ],
     [
         "news.mail.ru",
-        "ARTICLE (6)",
+        "ARTICLE (7)",
         "Западное общество меняет отношение к украинцам: в Киеве назвали дальнейшие шаги Европы и США",
         "Политика ◯ Комсомольская правда (https://www.kp.ru) ◯ Граждан Украины вскоре депортируют из США и стран Европы обратно на родину. Это связано с ухудшением отношения к жителям на Западе. Так высказался бывший советник экс-президента Украины Олег Соскин в эфире YouTube.",
         "09:54, 16 ноября 2025",
@@ -2829,7 +2919,7 @@
         "news.mail.ru",
         "ARTICLE (7)",
         "В Новосибирске выставили на продажу памятник Ленину за 454 000 рублей",
-        "Общество ◯ Сиб.фм (https://sib.fm/) ◯ Памятник Ленину продают в Новосибирске. В Новосибирске появилось объявление о продаже памятника Ленину. На это обратил внимание корреспондент Сиб.фм. Фигура выполнена из алюминиевого сплава, высота около двух метров, а вес оценивается в 50−60 килограммов. Памятник находится в б/у состоянии. Стоимость составляет 454 000 рублей.",
+        "Общество ◯ Сиб.фм (https://sib.fm/) ◯ Памятник Ленину продают в Новосибирске. В Новосибирске появилось объявление о продаже памятника Ленину. На это обратил внимание корреспондент Сиб.фм. Фигура выполнена из алюминиевого сплава, высота около двух метров, а вес оценивается в 50−60 килограммов. Памятник находится в б/у состоянии. Стоимость составляет 454000 рублей.",
         "09:52, 16 ноября 2025",
         "https://resizer.mail.ru/p/31825bc1-e349-5859-b739-74e9103d53a4/AQAGUt3e9UCzxzT4SmhfOP99buFNP2Xj2_iXBecpbCG523sxu-dFTLdkjdz4FheH8fi98CRNbrpM-wWLtaLrKrxIl0Y.jpg",
         "https://news.mail.ru/society/68727492/"
@@ -2905,95 +2995,5 @@
         "09:45, 16 ноября 2025",
         "https://resizer.mail.ru/p/7fc8419a-6e9d-525d-b8ef-d0fabb172122/AQAGuNDh4cq3uLxa8lkmjQ253eCn6kdu5PjxBhvw4wz01C6l7NFibxZUBP5e2MLWn3AYgQ3yGTd3tTUHc0Di_77ERQQ.jpg",
         "https://news.mail.ru/society/68728114/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "Система предупредила о риске столкновения вертолёта и Airbus в небе над Новосибирском",
-        "Общество ◯ Сиб.фм (https://sib.fm/) ◯ В небе над Новосибирском произошел инцидент, связанный с опасным сближением двух воздушных судов. Информация об этом появилась 14 ноября в Telegram-канале «AVIAINCIDENT». Как сообщается, это произошло 11 ноября, когда при заходе на посадку в аэропорту Толмачёво сработало предупреждение комплекса средств автоматизации управления воздушным движением. Автоматика зарегистрировала риск пересечения путей вертолёта типа Ми-8 с пассажирским авиалайнером Airbus A330.",
-        "09:44, 16 ноября 2025",
-        "https://resizer.mail.ru/p/61f2129e-a0dc-5149-8a1b-ec479d8666e9/AQAGjFcn7Kyw_zBoj0_AAgEM-cE_2YpzR2I04HrBZHA9wLo8gchjA-_sPKoTYsFY66T4OI8SA88N904KPd1dmjMjpP8.jpg",
-        "https://news.mail.ru/society/68728143/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "В Бразилии назвали число погибших на Украине местных наёмников: счёт на десятки",
-        "СВО ◯ Комсомольская правда (https://www.kp.ru) ◯ Потери среди бразильских наемников в рядах ВСУ составляют как минимум 45−50 человек. Об этом сообщил офицер в запасе ВМС Бразилии и аналитик Робинсон Фариназу.",
-        "09:41, 16 ноября 2025",
-        "https://resizer.mail.ru/p/5cc387c8-3a07-5c39-a23b-3a0f303a07df/AQAGD9nBaaR6Kq_O3fH_UlT-Pc2MgumwJFZnHiTnSfG5Vej2pMzgAANgObaYcMgYACvcvuxbjmFiTgTfTyMi2EXcCqM.jpg",
-        "https://news.mail.ru/svo/68728182/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "Нардеп Олейник: Трамп решил убрать Зеленского через коррупционный скандал",
-        "Политика ◯ Аргументы и факты (https://aif.ru/) ◯ Американский президент ведет тонкую игру, чтобы убрать Зеленского через коррупционный скандал, отметил в разговоре с aif.ru экс-депутат Верховной рады Владимир Олейник.",
-        "09:38, 16 ноября 2025",
-        "https://resizer.mail.ru/p/a9795f3f-8275-5603-89b7-2684588cc0aa/AQAG2iWll6MSL0Wm8_jsrsRLGGuGYsR8KE-SxaVQc4QqRArwdwNWwuZRp46HfhbPqY54dhgcQMy4AFnfNER_CR5D9vA.png",
-        "https://news.mail.ru/politics/68728174/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "Евросоюз несёт расходы в €1 трлн из-за антироссийских санкций",
-        "Политика ◯ Life.ru (https://life.ru) ◯ Министр иностранных дел Турции Хакан Фидан, выступая на телеканале A Haber, констатировал, что введённые против России экономические ограничения оказывают негативное влияние на саму Европу, подрывая её политические и финансовые позиции.",
-        "09:36, 16 ноября 2025",
-        "https://resizer.mail.ru/p/15796eed-d423-5f30-aa8c-685bdc4eb2d1/AQAGFuhfhG09U3BmN-Ty_A-dK14BQ_vXI2oybb7s1szL3LRDMaOl2lL1yzCyhSYximGOUt6H4Vb1i2W1Cu2IdFoTQEg.png",
-        "https://news.mail.ru/politics/68728172/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "Орбан анонсировал завершение украинского конфликта: каков прогноз",
-        "Политика ◯ Комсомольская правда (https://www.kp.ru) ◯ Венгерский премьер Виктор Орбан порассуждал об урегулировании украинского конфликта. По его данным, кризис близок к завершению. Виктор Орбан заявил, что президент России Владимир Путин заинтересован в мире на Украине. Такое мнение он выразил в интервью директору медиагруппы Axel Springer Матиасу Дёпфнеру.",
-        "09:36, 16 ноября 2025",
-        "https://resizer.mail.ru/p/c23e34c7-67ea-533e-9e3f-e0873fd15f86/AQAGAocgN2O8-aXmuavX8XV5WqzZlL-XWteMNr9KptNTdkAWOjKwBYBll9PEwgekATQ7qhwkL21wRM_xFCcRQ4c_-g4.jpg",
-        "https://news.mail.ru/politics/68728170/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "Гросси рассказал, над чем бы он работал, если бы стал генсеком ООН",
-        "Политика ◯ Аргументы и факты (https://aif.ru/) ◯ Глава МАГАТЭ Рафаэль Гросси заявил, что в случае избрания на пост генерального секретаря ООН будет стремиться активно взаимодействовать с Москвой и Киевом для продвижения мирного решения украинского конфликта.",
-        "09:34, 16 ноября 2025",
-        "https://resizer.mail.ru/p/39f624c6-cece-5de5-9a4a-ee63fa96135f/AQAGnEEGOBp4riCVsNTBoP-4ay7umyJ88XwUEtqxUaemDXACY4KlPRpQCWw0FlVd-SPaE9x8K0Cr4QglqMcvdDVoLHs.png",
-        "https://news.mail.ru/politics/68728162/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "Счастливая убийца: загадка матери, месяц жившей с телом дочери в диване",
-        "Происшествия ◯ Аргументы и факты (https://aif.ru/) ◯ История, произошедшая в начале ноября в Челябинске, потрясла общественность своей жестокостью и необъяснимостью. Женщина из Башкортостана обвиняется в убийстве собственной пятилетней дочери, тело которой она спрятала внутри дивана и прожила с ним целый месяц.",
-        "09:34, 16 ноября 2025",
-        "https://resizer.mail.ru/p/deb827a1-9e56-50ac-8e74-f21449199007/AQAGKUKwXW8AdfA8E5d-_Pje9RacEAgbPIdhFpRESK4-wXDGHorvweYliXoySIee2Vi5F_5i9jJRDZ6JLGNxmy-4mVQ.png",
-        "https://news.mail.ru/incident/68728161/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "На Камчатке за сутки произошло восемь афтершоков",
-        "Общество ◯ Аргументы и факты (https://aif.ru/) ◯ Сейсмологи зарегистрировали за последние сутки на Камчатке восемь повторных подземных толчков (афтершоков), которые наблюдаются на полуострове после мощного июльского землетрясения, сообщило Главное управление МЧС России по региону.",
-        "09:30, 16 ноября 2025",
-        "https://resizer.mail.ru/p/e47f0b33-6cde-5d27-adc1-773404994e4a/AQAGu0AI7KOL62UOf63IUPCoYiWcCAkL58LSHIgyKyEZtBDSRjYwIt3jRlJKuQmyH1VXIStmxtlAozit6vwPoqIdlnY.png",
-        "https://news.mail.ru/society/68728150/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "Бельгия хочет заблокировать решение ЕС по российским активам через суд: чем это обосновали",
-        "Политика ◯ Комсомольская правда (https://www.kp.ru) ◯ В Бельгии выразили протест заявлениям лидеров стран-членов ЕС по российским активам. Они намерены конфисковать замороженные средства РФ. Однако генеральный директор бельгийской финансовой компании Euroclear Валери Урбен с этим решением не согласна. Она заявила о готовности пойти в суд для блокировки решения ЕС. Так Валери Урбен высказалась в беседе с газетой Le Monde.",
-        "09:26, 16 ноября 2025",
-        "https://resizer.mail.ru/p/b9b850f8-b0bc-5648-a466-adc608fbe429/AQAGNH60Qx2MmOBMYEPmZShM9gvBtzMCgKKY6qAxHNVIh9OzrxVsgnTflwYJ40_Cv4JBurS5bJO6GWuEVUzUQ1sfemw.jpg",
-        "https://news.mail.ru/politics/68728138/"
-    ],
-    [
-        "news.mail.ru",
-        "ARTICLE (7)",
-        "Миллионы американцев могут остаться без талонов на питание: итоги 43-дневного шатдауна",
-        "Общество ◯ Комсомольская правда (https://www.kp.ru) ◯ Администрация президента Дональда Трампа требует от штатов полного соблюдения закона, ужесточающего правила выдачи продовольственных талонов. Это может привести к потере подобной помощи для миллионов американцев. Об этом сообщает Politico.",
-        "09:26, 16 ноября 2025",
-        "https://resizer.mail.ru/p/5154372b-6e82-550a-b75d-4a0aa253e5da/AQAGWQRS6N8wnhg90KumsKZktIM25ipEBj1EBoDUcMRcnpj_01uOZWWAbq2rjC_2mGqQG23GzarWtSGrhiYtmiNQbCQ.jpg",
-        "https://news.mail.ru/society/68728137/"
     ]
 ]

@@ -8,13 +8,13 @@ from urllib.parse import urlsplit
 from math import isinf
 
 from ASDsecrets import Storage
-from utils import print_table
+from utils import print_table, NBSP
 
 import requests # pip install requests
 
-find_digits = re.compile(r'\d[\d\s\u202f]*').findall
+find_digits   = re.compile(r'\d[\d\s\u202f]*').findall
 find_currency = re.compile(r'(₽|\$|€|₴|₸|£|¥|₹|₦|₡|₱|₲|₵)').search
-find_id = re.compile(r'/vacancy/(\d+)').search
+find_id       = re.compile(r'/vacancy/(\d+)').search
 """
 ₽ — российский рубль
 $ — доллар США
@@ -114,7 +114,6 @@ params = {
 
 
 
-NBSP = '\xa0' # chr(160)
 def xpath_to_row(vac):
     title      = vac.xpath('.//span[@data-qa="serp-item__title-text"]/text()')
     link       = vac.xpath('.//a[@data-qa="serp-item__title"]/@href')

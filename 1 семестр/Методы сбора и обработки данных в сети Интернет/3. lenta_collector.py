@@ -8,7 +8,7 @@ import json
 import csv
 from urllib.parse import urlparse
 
-from utils import print_table, href_to_url_wrap, iso_to_human
+from utils import print_table, href_to_url_wrap, iso_to_human, space_cleaner
 
 import requests # pip install requests
 
@@ -23,11 +23,12 @@ class Cache:
                 current_T = time()
                 while True:
                     T, url, result = pickle.load(file)
-                    if T >= current_T: cache[url] = result
+                    if T >= current_T:
+                        cache[url] = result, T
         except (FileNotFoundError, EOFError): pass
 
     def load(self, url, time_to_life):
-        try: result = self.cache[url]; print("from CACHE"); return result
+        try: result_T = self.cache[url]; print("from CACHE"); return result_T[0]
         except KeyError: print("from NETWORK")
 
         response = requests.get(url)
@@ -44,10 +45,20 @@ class Cache:
 
     def store(self, time_to_life, url, result):
         if url not in self.cache:
-            obj = time() + time_to_life, url, result
+            T = time() + time_to_life
+            obj = T, url, result
             with open(self.path, "ab") as file:
                 pickle.dump(obj, file, protocol=4)
-            self.cache[url] = result
+            self.cache[url] = result, T
+
+    def release(self):
+        current_T = time()
+        with open(self.path + "+", "wb") as file:
+            for url, (result, T) in self.cache.items():
+                if T >= current_T:
+                    obj = T, url, result
+                    pickle.dump(obj, file, protocol=4)
+        os.replace(self.path + "+", self.path) # атомарную перезапись файла в студию! ;'-}
 
 cache = Cache(os.path.join("cache", "lenta.asd"))
 
@@ -220,7 +231,7 @@ def load_mail_news(table, pages = 8):
         # print(etree.tostring(item, encoding="unicode", pretty_print=True))
         image  = item.xpath('.//picture[@data-qa="Picture"]/img/@src')[0]
         title  = item.xpath('.//h3[@data-qa="Title"]/a/text()')[0]
-        teaser = item.xpath('.//div[@data-qa="Text"]/text()')[0].strip()
+        teaser = space_cleaner("", item.xpath('.//div[@data-qa="Text"]/text()')[0].strip())
         category, source_text = item.xpath('.//span[@data-qa="Text"]/a[contains(@href,"/")]/span[@data-qa="Text"]/text()')
         source_link = href_to_url(item.xpath('.//a[@target="_blank"]/@href'))
         href        = href_to_url(item.xpath('.//h3[@data-qa="Title"]/a/@href'))
@@ -254,7 +265,7 @@ def load_mail_news(table, pages = 8):
             picture  = item["picture"]
             image    = f'{picture["baseURL"]}{picture["uuid"]}/{picture["key"]}.{picture["fmt"][0]}'
             title    = item["title"]
-            teaser   = item["description"]
+            teaser   = space_cleaner("", item["description"])
             category = item["rubric"]["title"]
             source_text = item["source"]["title"]
             source_link = href_to_url(item["source"]["href"])
@@ -287,3 +298,5 @@ if __name__ == "__main__":
         writer = csv.writer(file, delimiter=";")
         for row in table:
             writer.writerow(row)
+
+cache.release()
