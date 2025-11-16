@@ -293,7 +293,7 @@ if __name__ == "__main__":
         table2 = tuple(
             (*row[:4], "inf" if type(row[4]) is float and isinf(row[4]) else row[4], *row[5:])
             for row in table)
-        json.dump(table2, file, indent=4, ensure_ascii=False, sort_keys=True)
+        json.dump(table2, file, indent=4, ensure_ascii=False)
 
     # "utf-8"     -> Excel не понимает эту кодировку, будет "Р’Р°РєР°РЅСЃРёСЏ"...
     # "cp1251"    -> Родная кодировка Excel, но тогда, будут испорчены символы валют...
