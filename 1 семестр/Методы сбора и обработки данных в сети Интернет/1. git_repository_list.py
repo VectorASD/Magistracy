@@ -5,6 +5,7 @@ from io import StringIO
 import json
 
 from ASDsecrets import Storage
+from utils import print_table
 
 import requests # pip install requests
 
@@ -154,23 +155,6 @@ def list_user_repos(
 
 
 
-def print_table(table: tuple[tuple, ...], stream):
-    """
-    Печатает таблицу с одинаковой шириной колонок и рамками +---+.
-    table: кортеж из кортежей, где первый кортеж — заголовки.
-    """
-    # вычисляем ширину каждой колонки
-    col_widths = [max(len(str(row[i])) for row in table) for i in range(len(table[0]))]
-
-    line_separator = "".join(("+", *("-" * (w + 2) + "+" for w in col_widths), "\n"))
-
-    # печать таблицы
-    stream.write(line_separator)
-    for idx, row in enumerate(table):
-        line = "".join(("|", *(" " + str(cell).ljust(col_widths[i]) + " |" for i, cell in enumerate(row)), "\n"))
-        stream.write(line)
-        stream.write(line_separator)
-
 def print_repos(repos, stream):
     table = (
         ("ID", "Имя", "Полное имя", "Владелец", "Приватный", "Язык", "Описание",
@@ -202,7 +186,7 @@ def print_repos(repos, stream):
 
 storage = Storage("token.asd")
 # storage.store({"token": "TOKEN"}, "secret", "token.asd")
-token = storage.load("token.asd", "token")["token"]
+token = storage.load("token.asd", "github token")["token"]
 
 session = requests.Session()
 session.headers.update({

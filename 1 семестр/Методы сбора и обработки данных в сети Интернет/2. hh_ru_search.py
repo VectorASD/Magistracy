@@ -1,13 +1,14 @@
 from pprint import pformat
 from lxml import html
 import re
+from io import StringIO
 
 from ASDsecrets import Storage
+from utils import print_table
 
 import requests # pip install requests
 
 find_digits = re.compile(r'\d[\d\s\u202f]*').findall
-find_digits2 = re.compile(r'\d+').findall # не учитывает узкие пробелы \u202f
 find_currency = re.compile(r'(₽|\$|€|₴|₸)').search
 
 
@@ -24,7 +25,7 @@ session.headers.update({
 
 storage = Storage("token.asd")
 # storage.store({"uid": "hhuid", "token": "hhtoken"}, "secret", "hh_ru.asd")
-store = storage.load("hh_ru.asd", "uid+token")
+store = storage.load("hh_ru.asd", "hh.ru uid+token")
 
 # минимальные cookies
 session.cookies.update({
@@ -70,6 +71,7 @@ root = html.fromstring(resp.content)
 
 #vacancies = root.xpath('//div[contains(@class,"vacancy-info--")]')
 vacancies = root.xpath('//div[starts-with(@class,"vacancy-info--")]')
+table = []
 for vac in vacancies:
     title = vac.xpath('.//span[@data-qa="serp-item__title-text"]/text()')
     link = vac.xpath('.//a[@data-qa="serp-item__title"]/@href')
@@ -96,7 +98,7 @@ for vac in vacancies:
                   for digits in find_digits(raw_text.split(currency, 1)[0]))
             assert len(arr) in (1, 2), (raw_text, arr)
             min_salary = arr[0]
-            max_salary = arr[1] if len(arr) > 1 else "inf"
+            max_salary = arr[1] if len(arr) > 1 else float("inf")
 
     """
     print("~~~")
@@ -107,8 +109,14 @@ for vac in vacancies:
     print(experience[0])
     print(address[0])
     """
-    line = title[0], link[0], "".join(company[:len(company) // 2]), min_salary, max_salary, currency, experience[0], address[0]
-    print(line)
+    row = title[0], link[0], "".join(company[:len(company) // 2]), min_salary, max_salary, currency, experience[0], address[0]
+    table.append(row)
+
+# import sys
+# print_table(table, sys.stdout)
+stream = StringIO()
+print_table(table, stream)
+print(stream.getvalue())
 
 # with open("stdout2.txt", "w", encoding="utf-8") as file:
 #     file.write(pformat(vacancies))
