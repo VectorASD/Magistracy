@@ -3,7 +3,9 @@ from lxml import html
 import re
 from io import StringIO
 import json
+import csv
 from urllib.parse import urlsplit
+from math import isinf
 
 from ASDsecrets import Storage
 from utils import print_table
@@ -137,7 +139,13 @@ def xpath_to_row(vac):
 
             arr = tuple(int("".join(digits.split()))
                   for digits in find_digits(raw_text.split(currency, 1)[0]))
-            assert len(arr) in (1, 2), (raw_text, arr)
+
+            if raw_text.startswith("до "):
+                assert len(arr) == 1, (raw_text, arr)
+                arr = 0, arr[0]
+            else:
+                assert len(arr) in (1, 2), (raw_text, arr)
+
             min_salary = arr[0]
             max_salary = arr[1] if len(arr) > 1 else float("inf")
 
@@ -172,6 +180,7 @@ def json_to_row(vac, query):
     max_salary = compensation.get("to", None)
     if currency:
         currency = currency_code_to_symbol[currency]
+        if min_salary is None: min_salary = 0
         if max_salary is None: max_salary = float("inf")
     """
     print("~~~")
@@ -267,7 +276,6 @@ if __name__ == "__main__":
         ("Вакансия", "URL", "Компания", "min_salary", "max_salary", "Валюта", "Опыт", "Адрес", "Сайт"),
         *(table[ID] for ID in sorted(table, reverse=True)),
     )
-    print("max_page:", max_page)
 
     # import sys
     # print_table(table, sys.stdout)
@@ -281,4 +289,16 @@ if __name__ == "__main__":
         #     file.write("\n")
         #     file.write(s)
 
-# TODO: добавить поддержку сохранения json и csv
+    with open("vacancies.json", "w", encoding="utf-8") as file:
+        table2 = tuple(
+            (*row[:4], "inf" if type(row[4]) is float and isinf(row[4]) else row[4], *row[5:])
+            for row in table)
+        json.dump(table2, file, indent=4, ensure_ascii=False, sort_keys=True)
+
+    # "utf-8"     -> Excel не понимает эту кодировку, будет "Р’Р°РєР°РЅСЃРёСЏ"...
+    # "cp1251"    -> Родная кодировка Excel, но тогда, будут испорчены символы валют...
+    # "utf-8-sig" -> В самый раз! Это UTF-8-BOM
+    with open("vacancies.csv", "w", encoding="utf-8-sig", newline="") as file:
+        writer = csv.writer(file, delimiter=";")
+        for row in table:
+            writer.writerow(row)
