@@ -9,7 +9,22 @@ from utils import print_table
 import requests # pip install requests
 
 find_digits = re.compile(r'\d[\d\s\u202f]*').findall
-find_currency = re.compile(r'(₽|\$|€|₴|₸)').search
+find_currency = re.compile(r'(₽|\$|€|₴|₸|£|¥|₹|₦|₡|₱|₲|₵)').search
+"""
+₽ — российский рубль
+$ — доллар США
+€ — евро
+₴ — украинская гривна
+₸ — казахстанский тенге
+£ — британский фунт
+¥ — китайский юань / японская иена
+₹ — индийская рупия
+₦ — нигерийская найра
+₡ — коста‑риканский колон
+₱ — филиппинское песо
+₲ — парагвайский гуарани
+₵ — ганский седи
+"""
 
 
 
@@ -51,66 +66,76 @@ params = {
 # data = data["vacancySearchResult"]["vacancies"] (массив)
 """
 
-url = "https://novosibirsk.hh.ru/search/vacancy"
-params = {
-    "text": "программист C++",
-    "salary": "",
-    "ored_clusters": "true",
-    "area": "4",
-    "hhtmFrom": "vacancy_search_list",
-    "hhtmFromLabel": "vacancy_search_line",
-}
-
-resp = session.get(url, params=params)
-print(resp.status_code)
-print(resp.url)
 
 
+def load_page(table, text, page):
+    url = "https://novosibirsk.hh.ru/search/vacancy"
+    params = {
+        "text": text,
+        "salary": "",
+        "ored_clusters": "true",
+        "area": 4,
+        "hhtmFrom": "vacancy_search_list",
+        "hhtmFromLabel": "vacancy_search_line",
+    }
+    if page > 1: params["page"] = page,
 
-root = html.fromstring(resp.content)
+    resp = session.get(url, params=params)
+    print(resp.status_code)
+    print(resp.url)
 
-#vacancies = root.xpath('//div[contains(@class,"vacancy-info--")]')
-vacancies = root.xpath('//div[starts-with(@class,"vacancy-info--")]')
-table = []
-for vac in vacancies:
-    title = vac.xpath('.//span[@data-qa="serp-item__title-text"]/text()')
-    link = vac.xpath('.//a[@data-qa="serp-item__title"]/@href')
-    company = vac.xpath('.//span[@data-qa="vacancy-serp__vacancy-employer-text"]/text()')
-    experience = vac.xpath('.//span[contains(@data-qa,"vacancy-serp__vacancy-work-experience")]/text()')
-    address = vac.xpath('.//span[@data-qa="vacancy-serp__vacancy-address"]/text()')
 
-    assert len(title) == 1
-    assert len(link) == 1
-    assert len(company) in (2, 4)
-    assert len(experience) == 2 and experience[0] == experience[1]
-    assert len(address) == 4 and all(address[0] == address[i] for i in range(1, 4))
 
-    comp_blocks = vac.xpath('.//div[starts-with(@class,"compensation-labels--")]')
-    min_salary = max_salary = currency = None
-    for block in comp_blocks:
-        raw_text = block.xpath('string(.)').strip()
-        # if "₽" in raw_text:
-        cur_match = find_currency(raw_text)
-        if cur_match:
-            currency = cur_match.group(1)
+    root = html.fromstring(resp.content)
 
-            arr = tuple(int("".join(digits.split()))
-                  for digits in find_digits(raw_text.split(currency, 1)[0]))
-            assert len(arr) in (1, 2), (raw_text, arr)
-            min_salary = arr[0]
-            max_salary = arr[1] if len(arr) > 1 else float("inf")
+    #vacancies = root.xpath('//div[contains(@class,"vacancy-info--")]')
+    vacancies = root.xpath('//div[starts-with(@class,"vacancy-info--")]')
+   
+    for vac in vacancies:
+        title      = vac.xpath('.//span[@data-qa="serp-item__title-text"]/text()')
+        link       = vac.xpath('.//a[@data-qa="serp-item__title"]/@href')
+        company    = vac.xpath('.//span[@data-qa="vacancy-serp__vacancy-employer-text"]/text()')
+        experience = vac.xpath('.//span[contains(@data-qa,"vacancy-serp__vacancy-work-experience")]/text()')
+        address    = vac.xpath('.//span[@data-qa="vacancy-serp__vacancy-address"]/text()')
 
-    """
-    print("~~~")
-    print(title[0])
-    print(link[0])
-    print("".join(company[:len(company) // 2]))
-    if currency: print(min_salary, "-", max_salary, currency)
-    print(experience[0])
-    print(address[0])
-    """
-    row = title[0], link[0], "".join(company[:len(company) // 2]), min_salary, max_salary, currency, experience[0], address[0]
-    table.append(row)
+        assert len(title)      == 1
+        assert len(link)       == 1
+        assert len(company)    in (2, 4)
+        assert len(experience) == 2 and experience[0] == experience[1]
+        assert len(address)    == 4 and all(address[0] == address[i] for i in range(1, 4))
+
+        comp_blocks = vac.xpath('.//div[starts-with(@class,"compensation-labels--")]')
+        min_salary = max_salary = currency = None
+        for block in comp_blocks:
+            raw_text = block.xpath('string(.)').strip()
+            # if "₽" in raw_text:
+            cur_match = find_currency(raw_text)
+            if cur_match:
+                currency = cur_match.group(1)
+
+                arr = tuple(int("".join(digits.split()))
+                      for digits in find_digits(raw_text.split(currency, 1)[0]))
+                assert len(arr) in (1, 2), (raw_text, arr)
+                min_salary = arr[0]
+                max_salary = arr[1] if len(arr) > 1 else float("inf")
+
+        """
+        print("~~~")
+        print(title[0])
+        print(link[0])
+        print("".join(company[:len(company) // 2]))
+        if currency: print(min_salary, "-", max_salary, currency)
+        print(experience[0])
+        print(address[0])
+        """
+        row = title[0], link[0], "".join(company[:len(company) // 2]), min_salary, max_salary, currency, experience[0], address[0], "hh.ru"
+        table.append(row)
+
+
+
+table = [("Вакансия", "URL", "Компания", "min_salary", "max_salary", "Валюта", "Опыт", "Адрес", "Сайт")]
+
+load_page(table, "программист C++", 1)
 
 # import sys
 # print_table(table, sys.stdout)
@@ -118,5 +143,9 @@ stream = StringIO()
 print_table(table, stream)
 print(stream.getvalue())
 
-# with open("stdout2.txt", "w", encoding="utf-8") as file:
-#     file.write(pformat(vacancies))
+with open("stdout2.txt", "w", encoding="utf-8") as file:
+    file.write(stream.getvalue())
+
+# TODO: написать извлечение числа страниц
+# TODO: добавить поддержку сохранения json и csv
+# TODO: добавить поддержку сайта Superjob
