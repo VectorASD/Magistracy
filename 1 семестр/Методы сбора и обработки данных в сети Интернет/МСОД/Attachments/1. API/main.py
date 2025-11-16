@@ -12,9 +12,7 @@ if response.ok:
 
 response.headers.get('Content-Type')
 
-response.text
-response.content
-response.history
 
-
-print()
+print(response.text)
+print(response.content)
+print(response.history)
