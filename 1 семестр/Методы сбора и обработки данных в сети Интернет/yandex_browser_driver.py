@@ -1,5 +1,15 @@
 import psutil
 from pprint import pprint
+import asyncio
+import fnmatch
+from inspect import iscoroutinefunction
+from typing import Callable
+
+from ASDsecrets import Storage
+
+from playwright.async_api import async_playwright # pip install playwright
+
+
 
 def find_yandex_browser_path():
     for proc in psutil.process_iter(['pid', 'name', 'exe']):
@@ -73,14 +83,6 @@ while True:
 
 
 
-import asyncio
-
-from ASDsecrets import Storage
-
-from playwright.async_api import async_playwright # pip install playwright
-
-
-
 async def run(url: str, cb):
     """
     Запускает браузер на указанном URL.
@@ -124,7 +126,9 @@ def test():
 storage = Storage("token.asd")
 # storage.to_force("cookies.asd", "cookies")
 
-async def run2(url: str):
+async def run_v2(url: str, e_path: str, e_name: str, cb_factory=None):
+    # --- куки-логика ---
+
     COOKIE_LOG = False
 
     if COOKIE_LOG:
@@ -146,49 +150,77 @@ async def run2(url: str):
         )
 
     prev_cookies = []
+    prev = set()
+    async def check_cookies(ctx):
+        nonlocal prev_cookies, prev
+
+        cookies = await ctx.cookies()
+        if cookies == prev_cookies: return
+
+        prev_cookies = cookies
+        storage.store(cookies, None, e_path, e_name)
+
+        if COOKIE_LOG:
+            log("Куки изменились!")
+            prev_upd = set()
+            for cookie in cookies:
+                key = cookie_key(cookie)
+                if key in prev: prev.discard(key)
+                else: log("+", key)
+                prev_upd.add(key)
+            for cookie in prev:
+                log("-", cookie)
+            prev = prev_upd
+
     async def monitor_cookies(ctx, interval=5):
-        nonlocal prev_cookies
+        nonlocal prev
+
         prev = set(cookie_key(cookie) for cookie in prev_cookies)
         while True:
-            cookies = await ctx.cookies()
-            if cookies != prev_cookies:
-                prev_cookies = cookies
-                storage.store(cookies, None, "cookies.asd", "cookies")
-
-                if COOKIE_LOG:
-                    log("Куки изменились!")
-                    prev_upd = set()
-                    for cookie in cookies:
-                        key = cookie_key(cookie)
-                        if key in prev: prev.discard(key)
-                        else: log("+", key)
-                        prev_upd.add(key)
-                    for cookie in prev:
-                        log("-", cookie)
-                    prev = prev_upd
+            await check_cookies(ctx)
             await asyncio.sleep(interval)
 
-    def on_close(page):
-        # print("Closed:", page)
-        # print("Осталось:", len(ctx.pages))
-        if not ctx.pages:
-            stop_future.set_result(True)
+    cookies = storage.load(e_path, e_name)
+    if False:
+        pprint(sorted((cookie["name"], cookie["domain"]) for cookie in cookies))
+        exit()
+
+    # --- dispatch-обработка ---
+
+    request_cbs = []
+    response_cbs = []
+
+    def add_cb(event_type: str, pattern: str, cb):
+        if event_type == "request":
+            cbs = request_cbs
+        elif event_type == "response":
+            cbs = response_cbs
+        else:
+            raise ValueError(f"Unknown event type: {event_type}")
+        cbs.append((pattern, cb, iscoroutinefunction(cb)))
+
+    def dispatch(cbs: list[tuple[str, Callable, bool]], event):
+        for pattern, cb, iscoroutine in cbs:
+            if fnmatch.fnmatch(event.url, pattern):
+                if iscoroutine:
+                    asyncio.create_task(cb(event))
+                else:
+                    cb(event)
 
     def on_request(req):
-        cookies = req.headers.get("cookie", ())
-        # print(f"C: {len(cookies)} {req.method} {req.url}"[:160])
-        if cookies:
-            log = f"C: {cookies}\n"
-            #print(log)
-            #file.write(log)
+        dispatch(request_cbs, req)
 
     def on_response(resp):
-        cookies = resp.headers.get("set-cookie", 0)
-        # print(f"S: {cookies} {resp.url} {resp.status}"[:160])
-        if resp.headers:
-            log = f"S: {resp.url} {resp.status} {resp.headers}\n"
-            #print(log)
-            #file.write(log)
+        dispatch(response_cbs, resp)
+
+    if cb_factory:
+        cb_factory(add_cb)
+
+    # --- обработчики страниц ---
+
+    def on_close(page):
+        if not ctx.pages:
+            stop_future.set_result(True)
 
     def on_page(page):
         # print("Новое окно:", page.url)
@@ -196,12 +228,9 @@ async def run2(url: str):
         page.on("request", on_request)
         page.on("response", on_response)
 
-    stop_future = asyncio.Future()
+    # --- главная асинхронная петля браузера (лаунчер) ---
 
-    cookies = storage.load("cookies.asd", "cookies")
-    if False:
-        pprint(sorted((cookie["name"], cookie["domain"]) for cookie in cookies))
-        exit()
+    stop_future = asyncio.Future()
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -215,7 +244,7 @@ async def run2(url: str):
         if cookies:
             await ctx.add_cookies(cookies)
             prev_cookies = cookies
-        asyncio.create_task(monitor_cookies(ctx, interval=0.1))
+        asyncio.create_task(monitor_cookies(ctx))
 
         page = await ctx.new_page() # именно это добавляет в browser.contexts первый контекст
         # ctx = browser.contexts[0] # аналог browser.new_context()
@@ -225,6 +254,8 @@ async def run2(url: str):
         # print(ctx.pages) # [<Page url='https://mail.ru/'>] (при использовании await для page.goto)
 
         await stop_future
+
+        await check_cookies(ctx)
         await p.stop()
 
     if COOKIE_LOG:
@@ -233,4 +264,7 @@ async def run2(url: str):
 
 
 if __name__ == "__main__":
-    asyncio.run(run2("https://e.mail.ru"))
+    def test_cb_factory(add_cb):
+        add_cb("request", "https://e.mail.ru/api/v*/*", lambda req: print("REQ:", req.url))
+        add_cb("response", "*vk.*/*", lambda resp: print("RESP:", resp.url, resp.status))
+    asyncio.run(run_v2("https://e.mail.ru", "cookies.asd", "cookies", test_cb_factory))
