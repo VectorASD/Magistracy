@@ -11,6 +11,193 @@
         "Сайт"
     ],
     [
+        "Системный администратор (Оловозавод)",
+        "https://novosibirsk.hh.ru/vacancy/127843904?query=Python&hhtmFrom=vacancy_search_list",
+        "Hoff Tech",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск, улица Мира, 66",
+        "hh.ru"
+    ],
+    [
+        "DevOps-инженер",
+        "https://novosibirsk.hh.ru/vacancy/127839630?query=Python&hhtmFrom=vacancy_search_list",
+        "Рекрутинговое агентство The One",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск, улица Николаева, 12",
+        "hh.ru"
+    ],
+    [
+        "QA Automation Engineer(Python)",
+        "https://novosibirsk.hh.ru/vacancy/127839524?query=Python&hhtmFrom=vacancy_search_list",
+        "ООО Бифорком Тек",
+        null,
+        null,
+        null,
+        "Опыт 3-6 лет",
+        "Новосибирск",
+        "hh.ru"
+    ],
+    [
+        "Инженер по эксплуатации информационных систем",
+        "https://novosibirsk.hh.ru/vacancy/127827017?query=Python&hhtmFrom=vacancy_search_list",
+        "ПАО Ростелеком",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Нижний Новгород",
+        "hh.ru"
+    ],
+    [
+        "Data Scientist Middle",
+        "https://novosibirsk.hh.ru/vacancy/127826273?query=Python&hhtmFrom=vacancy_search_list",
+        "Koronatech",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск, Советский район, микрорайон Академгородок, улица Мусы Джалиля, 11",
+        "hh.ru"
+    ],
+    [
+        "Специалист по развитию ИИ",
+        "https://novosibirsk.hh.ru/vacancy/127821031?query=Python&hhtmFrom=vacancy_search_list",
+        "ЕвроХим, Минерально-Химическая Компания",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск, Красный проспект, 182/1",
+        "hh.ru"
+    ],
+    [
+        "Специалист группы проактивного мониторинга",
+        "https://novosibirsk.hh.ru/vacancy/127816218?query=Python&hhtmFrom=vacancy_search_list",
+        "Экспобанк",
+        103000,
+        "inf",
+        "₽",
+        "Опыт 1-3 года",
+        "Новосибирск, Советская улица, 5",
+        "hh.ru"
+    ],
+    [
+        "Тестировщик/QA",
+        "https://novosibirsk.hh.ru/vacancy/127808632?query=Python&hhtmFrom=vacancy_search_list",
+        "АО Новосибирскэнергосбыт",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск",
+        "hh.ru"
+    ],
+    [
+        "Администратор IT-систем / SRE (GigaChat)",
+        "https://novosibirsk.hh.ru/vacancy/127806867?query=Python&hhtmFrom=vacancy_search_list",
+        "Сбер для экспертов",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск, проспект Димитрова, 2",
+        "hh.ru"
+    ],
+    [
+        "Руководитель направления (GigaChat)",
+        "https://novosibirsk.hh.ru/vacancy/127806732?query=Python&hhtmFrom=vacancy_search_list",
+        "Сбер для экспертов",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск, проспект Димитрова, 2",
+        "hh.ru"
+    ],
+    [
+        "Главный инженер по сопровождению (прикладной)",
+        "https://novosibirsk.hh.ru/vacancy/127780419?query=Python&hhtmFrom=vacancy_search_list",
+        "Сбер для экспертов",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск",
+        "hh.ru"
+    ],
+    [
+        "Middle Python-разработчик",
+        "https://novosibirsk.hh.ru/vacancy/127773533?query=Python&hhtmFrom=vacancy_search_list",
+        "Рекрутинговое агентство The One",
+        150000,
+        210000,
+        "₽",
+        "Опыт 1-3 года",
+        "Новосибирск, улица Николаева, 12",
+        "hh.ru"
+    ],
+    [
+        "Сетевой инженер",
+        "https://novosibirsk.hh.ru/vacancy/127768744?query=Python&hhtmFrom=vacancy_search_list",
+        "ООО Абарус",
+        80000,
+        100000,
+        "₽",
+        "Опыт 3-6 лет",
+        "Новосибирск, Серебренниковская улица, 23",
+        "hh.ru"
+    ],
+    [
+        "Network engineer for PreSale support / Старший сетевой инженер по поддержке PreSale (KORNFELD)",
+        "https://novosibirsk.hh.ru/vacancy/127768535?query=Python&hhtmFrom=vacancy_search_list",
+        "YADRO",
+        null,
+        null,
+        null,
+        "Опыт более 6 лет",
+        "Москва, Рочдельская улица, 15с1",
+        "hh.ru"
+    ],
+    [
+        "Application Security Engineer",
+        "https://novosibirsk.hh.ru/vacancy/127754282?query=Python&hhtmFrom=vacancy_search_list",
+        "UserGate",
+        null,
+        null,
+        null,
+        "Опыт 3-6 лет",
+        "Новосибирск, Вокзальная магистраль, 1/1",
+        "hh.ru"
+    ],
+    [
+        "Junior web-pentester",
+        "https://novosibirsk.hh.ru/vacancy/127754248?query=Python&hhtmFrom=vacancy_search_list",
+        "UserGate",
+        null,
+        null,
+        null,
+        "Без опыта",
+        "Новосибирск, улица Николаева, 11",
+        "hh.ru"
+    ],
+    [
+        "Администратор систем мониторинга (SberDevices)",
+        "https://novosibirsk.hh.ru/vacancy/127753974?query=Python&hhtmFrom=vacancy_search_list",
+        "Сбер для экспертов",
+        null,
+        null,
+        null,
+        "Опыт 1-3 года",
+        "Новосибирск, проспект Димитрова, 2",
+        "hh.ru"
+    ],
+    [
         "Product DevOps / Senior SRE / Infrastructure Reliability Engineer",
         "https://novosibirsk.hh.ru/vacancy/127746634?query=Python&hhtmFrom=vacancy_search_list",
         "Swarmica",
@@ -88,6 +275,17 @@
         "hh.ru"
     ],
     [
+        "Педагог дополнительного образования инженерно-технического кружка",
+        "https://novosibirsk.hh.ru/vacancy/127625622?query=Python&hhtmFrom=vacancy_search_list",
+        "МБУДО НР Станция Юных Натуралистов",
+        30000,
+        80000,
+        "₽",
+        "Без опыта",
+        "Новосибирск, проспект Карла Маркса",
+        "hh.ru"
+    ],
+    [
         "Ведущий Backend Разработчик Python\\Django",
         "https://novosibirsk.hh.ru/vacancy/127623615?query=Python&hhtmFrom=vacancy_search_list",
         "ООО Подумай и Возьми",
@@ -99,7 +297,7 @@
         "hh.ru"
     ],
     [
-        "Junior Технический специалист на сопровождение процессов | Разработчик | Верстальщик | Программист",
+        "Junior Технический специалист на сопровождение процессов | Системный Администратор",
         "https://novosibirsk.hh.ru/vacancy/127622327?query=Python&hhtmFrom=vacancy_search_list",
         "ИП Бонакер Александр Александрович",
         60000,
@@ -227,17 +425,6 @@
         null,
         null,
         "Опыт 3-6 лет",
-        "Новосибирск",
-        "hh.ru"
-    ],
-    [
-        "Прикладной администратор",
-        "https://novosibirsk.hh.ru/vacancy/127560424?query=Python&hhtmFrom=vacancy_search_list",
-        "Сбер для экспертов",
-        null,
-        null,
-        null,
-        "Опыт 1-3 года",
         "Новосибирск",
         "hh.ru"
     ],
@@ -550,17 +737,6 @@
         "hh.ru"
     ],
     [
-        "Python-разработчик",
-        "https://novosibirsk.hh.ru/vacancy/127356715?query=Python&hhtmFrom=vacancy_search_list",
-        "IBS",
-        null,
-        null,
-        null,
-        "Опыт 1-3 года",
-        "Новосибирск",
-        "hh.ru"
-    ],
-    [
         "Data Analyst в команду антифрода (FinTech)",
         "https://novosibirsk.hh.ru/vacancy/127353817?query=Python&hhtmFrom=vacancy_search_list",
         "Koronatech",
@@ -646,17 +822,6 @@
         null,
         "Опыт 3-6 лет",
         "город Новосибирск, Окружная улица, 29в",
-        "hh.ru"
-    ],
-    [
-        "Разработчик силовой электроники",
-        "https://novosibirsk.hh.ru/vacancy/127306534?query=Python&hhtmFrom=vacancy_search_list",
-        "IP Corporation",
-        90000,
-        "inf",
-        "₽",
-        "Опыт 1-3 года",
-        "Новосибирск, улица Плахотного, 131А",
         "hh.ru"
     ],
     [
@@ -1650,17 +1815,6 @@
         "hh.ru"
     ],
     [
-        "Тестировщик",
-        "https://novosibirsk.hh.ru/vacancy/126690244?query=Python&hhtmFrom=vacancy_search_list",
-        "Find the Job",
-        100000,
-        120000,
-        "₽",
-        "Опыт 1-3 года",
-        "Новосибирск",
-        "hh.ru"
-    ],
-    [
         "Кассир",
         "https://novosibirsk.hh.ru/vacancy/126633744?query=Python&hhtmFrom=vacancy_search_list",
         "ООО Питон",
@@ -1947,17 +2101,6 @@
         "hh.ru"
     ],
     [
-        "Инженер по безопасной разработке (Application security)",
-        "https://novosibirsk.hh.ru/vacancy/125302084?query=Python&hhtmFrom=vacancy_search_list",
-        "Koronatech",
-        null,
-        null,
-        null,
-        "Опыт 1-3 года",
-        "Новосибирск",
-        "hh.ru"
-    ],
-    [
         "IP Engineer",
         "https://novosibirsk.hh.ru/vacancy/124860840?query=Python&hhtmFrom=vacancy_search_list",
         "Coleman Group",
@@ -2013,17 +2156,6 @@
         "hh.ru"
     ],
     [
-        "Маркетолог-аналитик LAB Industries",
-        "https://novosibirsk.hh.ru/vacancy/124552841?query=Python&hhtmFrom=vacancy_search_list",
-        "LAB Industries",
-        null,
-        null,
-        null,
-        "Опыт 1-3 года",
-        "Новосибирск, улица Фрунзе",
-        "hh.ru"
-    ],
-    [
         "Аналитик Данных / Data Analyst (Fintech, Marketing & Risk)",
         "https://novosibirsk.hh.ru/vacancy/124471102?query=Python&hhtmFrom=vacancy_search_list",
         "еКапуста",
@@ -2065,17 +2197,6 @@
         null,
         "Опыт 1-3 года",
         "Новосибирск, улица Кирова, 50",
-        "hh.ru"
-    ],
-    [
-        "Team/Tech Lead Python разработки",
-        "https://novosibirsk.hh.ru/vacancy/124257726?query=Python&hhtmFrom=vacancy_search_list",
-        "ООО Майгрин Маркет",
-        250000,
-        400000,
-        "₽",
-        "Опыт 3-6 лет",
-        "Новосибирск, Советский район, микрорайон Академгородок, Инженерная улица, 7",
         "hh.ru"
     ],
     [
@@ -2152,17 +2273,6 @@
         null,
         null,
         "Опыт 3-6 лет",
-        "Новосибирск",
-        "hh.ru"
-    ],
-    [
-        "Автотестировщик в крауд-тестирование",
-        "https://novosibirsk.hh.ru/vacancy/123000595?query=Python&hhtmFrom=vacancy_search_list",
-        "Яндекс Крауд: Качество продуктов",
-        0,
-        89000,
-        "₽",
-        "Опыт 1-3 года",
         "Новосибирск",
         "hh.ru"
     ],

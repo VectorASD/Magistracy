@@ -1,4 +1,21 @@
 ﻿Вакансия;URL;Компания;min_salary;max_salary;Валюта;Опыт;Адрес;Сайт
+Системный администратор (Оловозавод);https://novosibirsk.hh.ru/vacancy/127843904?query=Python&hhtmFrom=vacancy_search_list;Hoff Tech;;;;Опыт 1-3 года;Новосибирск, улица Мира, 66;hh.ru
+DevOps-инженер;https://novosibirsk.hh.ru/vacancy/127839630?query=Python&hhtmFrom=vacancy_search_list;Рекрутинговое агентство The One;;;;Опыт 1-3 года;Новосибирск, улица Николаева, 12;hh.ru
+QA Automation Engineer(Python);https://novosibirsk.hh.ru/vacancy/127839524?query=Python&hhtmFrom=vacancy_search_list;ООО Бифорком Тек;;;;Опыт 3-6 лет;Новосибирск;hh.ru
+Инженер по эксплуатации информационных систем;https://novosibirsk.hh.ru/vacancy/127827017?query=Python&hhtmFrom=vacancy_search_list;ПАО Ростелеком;;;;Опыт 1-3 года;Нижний Новгород;hh.ru
+Data Scientist Middle;https://novosibirsk.hh.ru/vacancy/127826273?query=Python&hhtmFrom=vacancy_search_list;Koronatech;;;;Опыт 1-3 года;Новосибирск, Советский район, микрорайон Академгородок, улица Мусы Джалиля, 11;hh.ru
+Специалист по развитию ИИ;https://novosibirsk.hh.ru/vacancy/127821031?query=Python&hhtmFrom=vacancy_search_list;ЕвроХим, Минерально-Химическая Компания;;;;Опыт 1-3 года;Новосибирск, Красный проспект, 182/1;hh.ru
+Специалист группы проактивного мониторинга;https://novosibirsk.hh.ru/vacancy/127816218?query=Python&hhtmFrom=vacancy_search_list;Экспобанк;103000;inf;₽;Опыт 1-3 года;Новосибирск, Советская улица, 5;hh.ru
+Тестировщик/QA;https://novosibirsk.hh.ru/vacancy/127808632?query=Python&hhtmFrom=vacancy_search_list;АО Новосибирскэнергосбыт;;;;Опыт 1-3 года;Новосибирск;hh.ru
+Администратор IT-систем / SRE (GigaChat);https://novosibirsk.hh.ru/vacancy/127806867?query=Python&hhtmFrom=vacancy_search_list;Сбер для экспертов;;;;Опыт 1-3 года;Новосибирск, проспект Димитрова, 2;hh.ru
+Руководитель направления (GigaChat);https://novosibirsk.hh.ru/vacancy/127806732?query=Python&hhtmFrom=vacancy_search_list;Сбер для экспертов;;;;Опыт 1-3 года;Новосибирск, проспект Димитрова, 2;hh.ru
+Главный инженер по сопровождению (прикладной);https://novosibirsk.hh.ru/vacancy/127780419?query=Python&hhtmFrom=vacancy_search_list;Сбер для экспертов;;;;Опыт 1-3 года;Новосибирск;hh.ru
+Middle Python-разработчик;https://novosibirsk.hh.ru/vacancy/127773533?query=Python&hhtmFrom=vacancy_search_list;Рекрутинговое агентство The One;150000;210000;₽;Опыт 1-3 года;Новосибирск, улица Николаева, 12;hh.ru
+Сетевой инженер;https://novosibirsk.hh.ru/vacancy/127768744?query=Python&hhtmFrom=vacancy_search_list;ООО Абарус;80000;100000;₽;Опыт 3-6 лет;Новосибирск, Серебренниковская улица, 23;hh.ru
+Network engineer for PreSale support / Старший сетевой инженер по поддержке PreSale (KORNFELD);https://novosibirsk.hh.ru/vacancy/127768535?query=Python&hhtmFrom=vacancy_search_list;YADRO;;;;Опыт более 6 лет;Москва, Рочдельская улица, 15с1;hh.ru
+Application Security Engineer;https://novosibirsk.hh.ru/vacancy/127754282?query=Python&hhtmFrom=vacancy_search_list;UserGate;;;;Опыт 3-6 лет;Новосибирск, Вокзальная магистраль, 1/1;hh.ru
+Junior web-pentester;https://novosibirsk.hh.ru/vacancy/127754248?query=Python&hhtmFrom=vacancy_search_list;UserGate;;;;Без опыта;Новосибирск, улица Николаева, 11;hh.ru
+Администратор систем мониторинга (SberDevices);https://novosibirsk.hh.ru/vacancy/127753974?query=Python&hhtmFrom=vacancy_search_list;Сбер для экспертов;;;;Опыт 1-3 года;Новосибирск, проспект Димитрова, 2;hh.ru
 Product DevOps / Senior SRE / Infrastructure Reliability Engineer;https://novosibirsk.hh.ru/vacancy/127746634?query=Python&hhtmFrom=vacancy_search_list;Swarmica;;;;Опыт более 6 лет;Новосибирск;hh.ru
 Разработчик LLM RAG;https://novosibirsk.hh.ru/vacancy/127709329?query=Python&hhtmFrom=vacancy_search_list;КВАТРОМАТИК;;;;Опыт 3-6 лет;Новосибирск, Большевистская улица, 35;hh.ru
 Senior Rendering engineer C++ в 3D Карту;https://novosibirsk.hh.ru/vacancy/127703161?query=Python&hhtmFrom=vacancy_search_list;2ГИС.RnD;;;;Опыт 3-6 лет;Новосибирск, площадь Карла Маркса, 7;hh.ru
@@ -6,8 +23,9 @@ C++ Team Lead в 3D Карту;https://novosibirsk.hh.ru/vacancy/127702963?query
 Разработчик;https://novosibirsk.hh.ru/vacancy/127699423?query=Python&hhtmFrom=vacancy_search_list;Товарищ Гренкин;120000;180000;₽;Опыт 3-6 лет;Новосибирск;hh.ru
 DSP-инженер;https://novosibirsk.hh.ru/vacancy/127696427?query=Python&hhtmFrom=vacancy_search_list;ООО «Предприятие «ЭЛТЕКС»;;;;Опыт 3-6 лет;город Новосибирск, Окружная улица, 29в;hh.ru
 Senior разработчик С++ в Телеметрию;https://novosibirsk.hh.ru/vacancy/127694019?query=Python&hhtmFrom=vacancy_search_list;UserGate;;;;Опыт более 6 лет;Москва, Береговой проезд, 5Ак1;hh.ru
+Педагог дополнительного образования инженерно-технического кружка;https://novosibirsk.hh.ru/vacancy/127625622?query=Python&hhtmFrom=vacancy_search_list;МБУДО НР Станция Юных Натуралистов;30000;80000;₽;Без опыта;Новосибирск, проспект Карла Маркса;hh.ru
 Ведущий Backend Разработчик Python\Django;https://novosibirsk.hh.ru/vacancy/127623615?query=Python&hhtmFrom=vacancy_search_list;ООО Подумай и Возьми;200000;300000;₽;Опыт более 6 лет;Новосибирск;hh.ru
-Junior Технический специалист на сопровождение процессов | Разработчик | Верстальщик | Программист;https://novosibirsk.hh.ru/vacancy/127622327?query=Python&hhtmFrom=vacancy_search_list;ИП Бонакер Александр Александрович;60000;80000;₽;Опыт 1-3 года;Новосибирск, Обская улица, 46/2;hh.ru
+Junior Технический специалист на сопровождение процессов | Системный Администратор;https://novosibirsk.hh.ru/vacancy/127622327?query=Python&hhtmFrom=vacancy_search_list;ИП Бонакер Александр Александрович;60000;80000;₽;Опыт 1-3 года;Новосибирск, Обская улица, 46/2;hh.ru
 Интернет-маркетолог (медицина);https://novosibirsk.hh.ru/vacancy/127619638?query=Python&hhtmFrom=vacancy_search_list;Группа компаний Мать и дитя;;;;Опыт 3-6 лет;деревня Лапино, 1-е Успенское шоссе, 111;hh.ru
 QA инженер (+Python AT);https://novosibirsk.hh.ru/vacancy/127614633?query=Python&hhtmFrom=vacancy_search_list;Центр финансовых технологий;;;;Без опыта;Новосибирск, Советский район, микрорайон Академгородок, улица Мусы Джалиля, 11;hh.ru
 Python разработчик Middle в офис (город и Академ);https://novosibirsk.hh.ru/vacancy/127613858?query=Python&hhtmFrom=vacancy_search_list;ООО Совкомбанк Технологии;;;;Опыт 3-6 лет;Новосибирск, улица Кирова, 50;hh.ru
@@ -19,7 +37,6 @@ Data Engineer;https://novosibirsk.hh.ru/vacancy/127593209?query=Python&hhtmFrom=
 Ведущий специалист (администрирование);https://novosibirsk.hh.ru/vacancy/127592449?query=Python&hhtmFrom=vacancy_search_list;ЕВРАЗ. ИТ-специалисты;;;;Опыт 1-3 года;Новосибирск;hh.ru
 Data Scientist;https://novosibirsk.hh.ru/vacancy/127592071?query=Python&hhtmFrom=vacancy_search_list;ООО Финтехсофт;;;;Опыт 1-3 года;Новосибирск, улица Орджоникидзе, 40;hh.ru
 Инженер-программист;https://novosibirsk.hh.ru/vacancy/127564928?query=Python&hhtmFrom=vacancy_search_list;ООО Сибсайнс;;;;Опыт 3-6 лет;Новосибирск;hh.ru
-Прикладной администратор;https://novosibirsk.hh.ru/vacancy/127560424?query=Python&hhtmFrom=vacancy_search_list;Сбер для экспертов;;;;Опыт 1-3 года;Новосибирск;hh.ru
 Стажер-разработчик бэкенда;https://novosibirsk.hh.ru/vacancy/127548231?query=Python&hhtmFrom=vacancy_search_list;Яндекс;;;;Без опыта;Новосибирск;hh.ru
 Senior Python Developer (в Бильбао, Испания);https://novosibirsk.hh.ru/vacancy/127541075?query=Python&hhtmFrom=vacancy_search_list;the_covert;;;;Опыт 3-6 лет;провинция Бискайя, Басаури, Бильбао;hh.ru
 DevSecOps-инженер;https://novosibirsk.hh.ru/vacancy/127537460?query=Python&hhtmFrom=vacancy_search_list;2ГИС.Бизнес и управление;;;;Опыт 3-6 лет;Новосибирск, площадь Карла Маркса, 7;hh.ru
@@ -48,7 +65,6 @@ Python разработчик;https://novosibirsk.hh.ru/vacancy/127387947?query=
 Ведущий it-разработчик (AI) туристической платформы;https://novosibirsk.hh.ru/vacancy/127365068?query=Python&hhtmFrom=vacancy_search_list;ООО Благодар;15000;inf;₽;Опыт 1-3 года;Новосибирск;hh.ru
 Manual QA engineer;https://novosibirsk.hh.ru/vacancy/127364169?query=Python&hhtmFrom=vacancy_search_list;Центр финансовых технологий;;;;Без опыта;Новосибирск;hh.ru
 Главный специалист (аналитик данных);https://novosibirsk.hh.ru/vacancy/127362011?query=Python&hhtmFrom=vacancy_search_list;Экспобанк;140000;140000;₽;Опыт 1-3 года;Новосибирск, Советская улица, 5;hh.ru
-Python-разработчик;https://novosibirsk.hh.ru/vacancy/127356715?query=Python&hhtmFrom=vacancy_search_list;IBS;;;;Опыт 1-3 года;Новосибирск;hh.ru
 Data Analyst в команду антифрода (FinTech);https://novosibirsk.hh.ru/vacancy/127353817?query=Python&hhtmFrom=vacancy_search_list;Koronatech;;;;Опыт 1-3 года;Новосибирск;hh.ru
 Ведущий python программист/Senior;https://novosibirsk.hh.ru/vacancy/127350566?query=Python&hhtmFrom=vacancy_search_list;ООО Авантелеком;;;;Опыт более 6 лет;Новосибирск, проспект Димитрова, 1;hh.ru
 DevOps Middle (IoT);https://novosibirsk.hh.ru/vacancy/127350248?query=Python&hhtmFrom=vacancy_search_list;ООО «Предприятие «ЭЛТЕКС»;;;;Опыт 3-6 лет;город Новосибирск, Окружная улица, 29в;hh.ru
@@ -57,7 +73,6 @@ DevOps Middle (IoT);https://novosibirsk.hh.ru/vacancy/127350248?query=Python&hht
 Backend-разработчик;https://novosibirsk.hh.ru/vacancy/127339510?query=Python&hhtmFrom=vacancy_search_list;ООО «Предприятие «ЭЛТЕКС»;;;;Опыт 3-6 лет;город Новосибирск, Окружная улица, 29в;hh.ru
 Системный аналитик;https://novosibirsk.hh.ru/vacancy/127338671?query=Python&hhtmFrom=vacancy_search_list;ООО Агентство современных коммуникаций Директ Сервис;;;;Опыт 1-3 года;Новосибирск, Ядринцевская улица, 68/1;hh.ru
 DevOps Middle (Elph Services);https://novosibirsk.hh.ru/vacancy/127307634?query=Python&hhtmFrom=vacancy_search_list;ООО «Предприятие «ЭЛТЕКС»;;;;Опыт 3-6 лет;город Новосибирск, Окружная улица, 29в;hh.ru
-Разработчик силовой электроники;https://novosibirsk.hh.ru/vacancy/127306534?query=Python&hhtmFrom=vacancy_search_list;IP Corporation;90000;inf;₽;Опыт 1-3 года;Новосибирск, улица Плахотного, 131А;hh.ru
 Аналитик данных;https://novosibirsk.hh.ru/vacancy/127294177?query=Python&hhtmFrom=vacancy_search_list;Сеть магазинов цифровой и бытовой техники DNS;80500;142500;₽;Без опыта;Новосибирск, улица Федосеева, 24/3;hh.ru
 Senior Back-end developer из Новосибирска;https://novosibirsk.hh.ru/vacancy/127278449?query=Python&hhtmFrom=vacancy_search_list;ООО СофтМолл;;;;Опыт 3-6 лет;Новосибирск, улица Фрунзе, 88;hh.ru
 Преподаватель Питона/Python в колледж;https://novosibirsk.hh.ru/vacancy/127268759?query=Python&hhtmFrom=vacancy_search_list;АО ЭДУТЕХ ГРУПП;0;57000;₽;Опыт 1-3 года;Новосибирск, улица Восход, 20;hh.ru
@@ -148,7 +163,6 @@ DWH разработчик;https://novosibirsk.hh.ru/vacancy/126699647?query=Pyt
 QA Engineer (направление Unified Communications (UC));https://novosibirsk.hh.ru/vacancy/126696839?query=Python&hhtmFrom=vacancy_search_list;ООО «Предприятие «ЭЛТЕКС»;;;;Опыт 1-3 года;город Новосибирск, Окружная улица, 29в;hh.ru
 Ведущий специалист по цифровым технологиям аудита;https://novosibirsk.hh.ru/vacancy/126693802?query=Python&hhtmFrom=vacancy_search_list;Сбер для экспертов;;;;Без опыта;Новосибирск;hh.ru
 Стажер Data Science, Новосибирск;https://novosibirsk.hh.ru/vacancy/126693798?query=Python&hhtmFrom=vacancy_search_list;Сбер для экспертов;;;;Без опыта;Новосибирск;hh.ru
-Тестировщик;https://novosibirsk.hh.ru/vacancy/126690244?query=Python&hhtmFrom=vacancy_search_list;Find the Job;100000;120000;₽;Опыт 1-3 года;Новосибирск;hh.ru
 Кассир;https://novosibirsk.hh.ru/vacancy/126633744?query=Python&hhtmFrom=vacancy_search_list;ООО Питон;50000;50000;₽;Опыт 1-3 года;Новосибирск, Ядринцевская улица, 21;hh.ru
 Системный администратор Unix;https://novosibirsk.hh.ru/vacancy/126600882?query=Python&hhtmFrom=vacancy_search_list;Центр финансовых технологий;;;;Опыт 1-3 года;Новосибирск;hh.ru
 Риск-аналитик;https://novosibirsk.hh.ru/vacancy/126598758?query=Python&hhtmFrom=vacancy_search_list;Lime Credit Group;;;;Опыт 1-3 года;Новосибирск, Нижегородская улица, 6А;hh.ru
@@ -175,18 +189,15 @@ Backend разработчик в офис;https://novosibirsk.hh.ru/vacancy/125
 Middle/Senior платформенный инженер (DBaaS);https://novosibirsk.hh.ru/vacancy/125391887?query=Python&hhtmFrom=vacancy_search_list;2ГИС.RnD;;;;Опыт 3-6 лет;Новосибирск;hh.ru
 DevOps-инженер;https://novosibirsk.hh.ru/vacancy/125303006?query=Python&hhtmFrom=vacancy_search_list;Центр финансовых технологий;;;;Опыт 1-3 года;Новосибирск;hh.ru
 Прикладной администратор;https://novosibirsk.hh.ru/vacancy/125303005?query=Python&hhtmFrom=vacancy_search_list;Центр финансовых технологий;;;;Опыт 1-3 года;Новосибирск;hh.ru
-Инженер по безопасной разработке (Application security);https://novosibirsk.hh.ru/vacancy/125302084?query=Python&hhtmFrom=vacancy_search_list;Koronatech;;;;Опыт 1-3 года;Новосибирск;hh.ru
 IP Engineer;https://novosibirsk.hh.ru/vacancy/124860840?query=Python&hhtmFrom=vacancy_search_list;Coleman Group;;;;Опыт 1-3 года;Новосибирск;hh.ru
 Руководитель подразделения аналитики и BI;https://novosibirsk.hh.ru/vacancy/124820784?query=Python&hhtmFrom=vacancy_search_list;VILAVI;;;;Опыт более 6 лет;Новосибирск, улица Дуси Ковальчук, 77;hh.ru
 Специалист отдела наукометрического анализа;https://novosibirsk.hh.ru/vacancy/124809786?query=Python&hhtmFrom=vacancy_search_list;Новосибирский государственный университет;35000;35000;₽;Без опыта;Новосибирск, Советский район, микрорайон Академгородок, улица Пирогова, 1;hh.ru
 Специалист отдела наукометрического анализа;https://novosibirsk.hh.ru/vacancy/124809785?query=Python&hhtmFrom=vacancy_search_list;Новосибирский государственный университет;35000;35000;₽;Без опыта;Новосибирск, Советский район, микрорайон Академгородок, улица Пирогова, 1;hh.ru
 DevOps инженер;https://novosibirsk.hh.ru/vacancy/124712802?query=Python&hhtmFrom=vacancy_search_list;еКапуста;;;;Опыт 3-6 лет;Новосибирск;hh.ru
-Маркетолог-аналитик LAB Industries;https://novosibirsk.hh.ru/vacancy/124552841?query=Python&hhtmFrom=vacancy_search_list;LAB Industries;;;;Опыт 1-3 года;Новосибирск, улица Фрунзе;hh.ru
 Аналитик Данных / Data Analyst (Fintech, Marketing & Risk);https://novosibirsk.hh.ru/vacancy/124471102?query=Python&hhtmFrom=vacancy_search_list;еКапуста;;;;Опыт 3-6 лет;Новосибирск, Коммунистическая улица, 40;hh.ru
 Хостес;https://novosibirsk.hh.ru/vacancy/124421529?query=Python&hhtmFrom=vacancy_search_list;ООО Питон;100000;150000;₽;Без опыта;Новосибирск, Ядринцевская улица, 21;hh.ru
 Разработчик Python;https://novosibirsk.hh.ru/vacancy/124408556?query=Python&hhtmFrom=vacancy_search_list;Первая IT-компания;60000;80000;₽;Опыт 1-3 года;Владивосток;hh.ru
 Аналитик по информационной безопасности (Asset management);https://novosibirsk.hh.ru/vacancy/124385432?query=Python&hhtmFrom=vacancy_search_list;ООО Совкомбанк Технологии;;;;Опыт 1-3 года;Новосибирск, улица Кирова, 50;hh.ru
-Team/Tech Lead Python разработки;https://novosibirsk.hh.ru/vacancy/124257726?query=Python&hhtmFrom=vacancy_search_list;ООО Майгрин Маркет;250000;400000;₽;Опыт 3-6 лет;Новосибирск, Советский район, микрорайон Академгородок, Инженерная улица, 7;hh.ru
 Middle+ / Senior QA Auto Python специалист;https://novosibirsk.hh.ru/vacancy/124171892?query=Python&hhtmFrom=vacancy_search_list;ООО Линсофтверпродакшн;120000;180000;₽;Опыт более 6 лет;Новосибирск;hh.ru
 Senior cистемный архитектор;https://novosibirsk.hh.ru/vacancy/124023071?query=Python&hhtmFrom=vacancy_search_list;ООО Линсофтверпродакшн;0;500000;₽;Опыт более 6 лет;Новосибирск;hh.ru
 Ведущий дата-аналитик;https://novosibirsk.hh.ru/vacancy/123735772?query=Python&hhtmFrom=vacancy_search_list;ООО Мантера-Групп;0;150000;₽;Опыт 1-3 года;Новосибирск;hh.ru
@@ -194,7 +205,6 @@ Senior cистемный архитектор;https://novosibirsk.hh.ru/vacancy/
 Reverse - инженер [Senior];https://novosibirsk.hh.ru/vacancy/123608790?query=Python&hhtmFrom=vacancy_search_list;ООО Диплей;;;;Опыт 3-6 лет;Новосибирск;hh.ru
 Сетевой инженер VoIP;https://novosibirsk.hh.ru/vacancy/123447010?query=Python&hhtmFrom=vacancy_search_list;ООО «Предприятие «ЭЛТЕКС»;;;;Опыт 1-3 года;город Новосибирск, Окружная улица, 29в;hh.ru
 Middle/Senior DBA в команду инфраструктуры (Kubernetes);https://novosibirsk.hh.ru/vacancy/123211984?query=Python&hhtmFrom=vacancy_search_list;2ГИС.RnD;;;;Опыт 3-6 лет;Новосибирск;hh.ru
-Автотестировщик в крауд-тестирование;https://novosibirsk.hh.ru/vacancy/123000595?query=Python&hhtmFrom=vacancy_search_list;Яндекс Крауд: Качество продуктов;0;89000;₽;Опыт 1-3 года;Новосибирск;hh.ru
 DevOps Engineer;https://novosibirsk.hh.ru/vacancy/122964364?query=Python&hhtmFrom=vacancy_search_list;ARQA Technologies;;;;Опыт 1-3 года;Новосибирск, Коммунистическая улица, 2;hh.ru
 Инженер по тестированию (ручное и автоматизированное тестирование);https://novosibirsk.hh.ru/vacancy/122789808?query=Python&hhtmFrom=vacancy_search_list;ООО НПФ Гранч;;;;Опыт 1-3 года;Новосибирск, улица Королёва, 40к1;hh.ru
 С/С++ Developer (Wireless);https://novosibirsk.hh.ru/vacancy/121148330?query=Python&hhtmFrom=vacancy_search_list;ООО «Предприятие «ЭЛТЕКС»;;;;Опыт 1-3 года;город Новосибирск, Окружная улица, 29в;hh.ru

@@ -184,7 +184,7 @@ def print_repos(repos, stream):
 
 
 
-storage = Storage("token.asd", False)
+storage = Storage("token.asd")
 # storage.store({"token": "TOKEN"}, "secret", "token.asd")
 token = storage.load("token.asd", "github token")["token"]
 
