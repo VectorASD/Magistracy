@@ -1,4 +1,4 @@
-from hashlib import sha256
+from hashlib import sha256, pbkdf2_hmac
 import struct
 from time import time
 import os
@@ -71,7 +71,10 @@ def get_appdata_path() -> str:
         return os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 
 class Storage:
-    def __init__(self, name):
+    def __init__(self, name, force = True):
+        self.force = force
+        self.salt = None
+
         appdata = get_appdata_path()
         workdir = os.path.join(appdata, "ASD_storage")
         os.makedirs(workdir, exist_ok=True)
@@ -79,9 +82,14 @@ class Storage:
         self.pw_base = {}
         self.load_passwords()
 
-    @staticmethod
-    def password_to_ek(password):
-        key = sha256(password.encode("utf-8")).digest()
+    def password_to_ek(self, password):
+        if self.force:
+            salt = self.salt
+            if salt is None:
+                salt = self.salt = os.urandom(32)
+            key = pbkdf2_hmac("sha256", (password + "Силовиковые силовики").encode("utf-8") * 256, salt, 1000000, dklen=32)
+        else:
+            key = sha256(password.encode("utf-8")).digest()
         assert len(key) == 32
         return mygram.aes256_set_encryption_key(key)
 
@@ -106,35 +114,46 @@ class Storage:
 
         password = input(f"Введите пароль для {name or key!r}: ")
         eK = self.password_to_ek(password)
-        return False, mygram.aes256_set_decryption_key(eK, is_eK = True)
+        return False, eK
 
-    def store(self, obj, password, path):
+    def store(self, obj, password, path, name = None):
+        key = os.path.abspath(path)
+        if password is None:
+            _, eK = self.check_password(key, name)
+        else:
+            eK = self.password_to_ek(password)
+
         data = pickle.dumps(obj, protocol=4)
         pad = 16 - len(data) & 15
 
         data += bytes((pad,)) * pad
-        eK = self.password_to_ek(password)
         iv = bytes(randint(1, 255) for i in range(16))
 
         encoded = mygram.cbc256(data, eK, iv, True, is_eK = True)
+        if self.force:
+            salt = self.salt
+            assert isinstance(salt, bytes) and len(salt) == 32
         with open(path, "wb") as file:
             file.write(iv)
+            if self.force: file.write(salt)
             file.write(encoded)
 
-        key = os.path.abspath(path)
-        eK  = mygram.aes256_set_decryption_key(eK, is_eK = True)
         self.store_password(key, eK)
 
     def load(self, path, name = None):
-        with open(path, "rb") as file:
-            iv = file.read(16)
-            encoded = file.read()
+        try:
+            with open(path, "rb") as file:
+                iv = file.read(16)
+                if self.force: self.salt = file.read(32)
+                encoded = file.read()
+        except FileNotFoundError: return
 
         while True:
             key = os.path.abspath(path)
             stored, eK = self.check_password(key, name)
+            eK2 = mygram.aes256_set_decryption_key(eK, is_eK = True)
 
-            decoded = mygram.cbc256(encoded, eK, iv, False, is_eK = True)
+            decoded = mygram.cbc256(encoded, eK2, iv, False, is_eK = True)
 
             try:
                 # result = pickle.loads(decoded[:-decoded[-1]])
@@ -147,6 +166,21 @@ class Storage:
 
         self.store_password(key, eK)
         return result
+
+    def to_force(self, path, name = None):
+        assert not self.force, "Storage уже в режиме усиленного пароля!"
+
+        data = self.load(path, name)
+        assert data is not None
+        # print(data)
+
+        key = os.path.abspath(path)
+        self.pw_base.pop(key)
+        self.force = True
+
+        self.store(data, None, path, name)
+        print("Теперь можно сменить force на True в конструкторе Storage!")
+        exit()
 
 def test2():
     storage = Storage("test.asd")

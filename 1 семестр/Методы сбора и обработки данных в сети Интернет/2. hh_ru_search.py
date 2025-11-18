@@ -84,7 +84,7 @@ session.headers.update({
     "Accept-Language": "ru,en;q=0.9",
 })
 
-storage = Storage("token.asd")
+storage = Storage("token.asd", False)
 # storage.store({"uid": "hhuid", "token": "hhtoken"}, "secret", "hh_ru.asd")
 store = storage.load("hh_ru.asd", "hh.ru uid+token")
 
