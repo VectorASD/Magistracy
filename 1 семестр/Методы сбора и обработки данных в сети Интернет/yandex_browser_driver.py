@@ -199,19 +199,13 @@ async def run_v2(url: str, e_path: str, e_name: str, cb_factory=None):
             raise ValueError(f"Unknown event type: {event_type}")
         cbs.append((pattern, cb, iscoroutinefunction(cb)))
 
-    def dispatch(cbs: list[tuple[str, Callable, bool]], event):
+    def dispatch(cbs: list[tuple[str, Callable, bool]], event, page):
         for pattern, cb, iscoroutine in cbs:
             if fnmatch.fnmatch(event.url, pattern):
                 if iscoroutine:
-                    asyncio.create_task(cb(event))
+                    asyncio.create_task(cb(event, page))
                 else:
-                    cb(event)
-
-    def on_request(req):
-        dispatch(request_cbs, req)
-
-    def on_response(resp):
-        dispatch(response_cbs, resp)
+                    cb(event, page)
 
     if cb_factory:
         cb_factory(add_cb)
@@ -225,8 +219,8 @@ async def run_v2(url: str, e_path: str, e_name: str, cb_factory=None):
     def on_page(page):
         # print("Новое окно:", page.url)
         page.on("close", on_close)
-        page.on("request", on_request)
-        page.on("response", on_response)
+        page.on("request",  lambda req:  dispatch(request_cbs,  req,  page))
+        page.on("response", lambda resp: dispatch(response_cbs, resp, page))
 
     # --- главная асинхронная петля браузера (лаунчер) ---
 
@@ -235,7 +229,7 @@ async def run_v2(url: str, e_path: str, e_name: str, cb_factory=None):
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless        = False,
-            executable_path = browser_path
+            executable_path = browser_path,
         )
 
         ctx = await browser.new_context()

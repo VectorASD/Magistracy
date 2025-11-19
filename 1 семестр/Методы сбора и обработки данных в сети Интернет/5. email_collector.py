@@ -13,7 +13,7 @@ if DEBUG:
 client = get_MongoDB_connection()
 mails = client["email"]["mails"]
 
-async def on_smart(response):
+async def on_smart(response, page_unused):
     content = await response.json()
     body = content["body"]
     if not body: return
