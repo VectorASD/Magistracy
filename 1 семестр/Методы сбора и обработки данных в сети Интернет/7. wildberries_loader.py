@@ -4,10 +4,48 @@ import os
 import json
 
 from yandex_browser_driver import run_v2
-import requests
+
+
+
+class ProductLoader: # имитация ItemLoader из Selenium
+    def __init__(self, product: dict):
+        self.product = product
+        self.item = {}
+
+    def add_id(self):
+        self.item["id"] = int(self.product["id"])
+        return self
+
+    def add_name(self):
+        self.item["name"] = self.product.get("name", "").strip()
+        return self
+
+    def add_url(self):
+        pid = self.product["id"]
+        self.item["url"] = f"https://www.wildberries.ru/catalog/{pid}/detail.aspx"
+        return self
+
+    def add_price(self):
+        price = self.product["sizes"][0]["price"]
+        self.item["price"] = price # цена: до скидки, после скидки, за доставку и за возврат (все 4 уже в формате числа) 
+        return self
+
+    def add_pics(self):
+        self.item["pics"] = int(self.product.get("pics", 0))
+        return self
+
+    def add_img_url(self):
+        pid = self.product["id"]
+        self.item["img_url"] = id2image(pid)
+        return self
+
+    def load_item(self):
+        self.add_id().add_name().add_url().add_price().add_pics().add_img_url()
+        return self.item
+
+
 
 # log = open("log.txt", "w")
-session = requests.Session()
 
 sem = asyncio.Semaphore(16) # максимум 16 fetch-задач одновременно
 # 853 файла - 100 папок = 753 картинки за раз! Нужен ограничитель, а то страница крашется от нехватки памяти ;'-}
@@ -23,6 +61,8 @@ async def load_images(page, img_url: str, workdir: str, pics: int):
         if not os.path.exists(img_path):
             # asyncio.create_task(page.evaluate(f'console.log("{img % i}")'))
             asyncio.create_task(limited_fetch(page, img_url % i))
+
+
 
 async def on_search(response, page):
     content = await response.json()
@@ -59,8 +99,10 @@ async def on_image(response, page):
         with open(path, "wb") as file:
             file.write(body)
 
+
+
 def cb_factory(add_cb):
-    # https://www.wildberries.ru/__internal/search/exactmatch/ru/common/v18/search?
+    #   https://www.wildberries.ru/__internal/search/exactmatch/ru/common/v18/search?
     # https://www.wildberries.ru/__internal/u-search/exactmatch/ru/common/v18/search?
     add_cb("response", "https://www.wildberries.ru/__internal/*search/exactmatch/ru/common/v*/search?*", on_search)
     add_cb("response", "https://basket-??.wbbasket.ru/vol*/part*/*/images/c*x*/*.*",                     on_image)
