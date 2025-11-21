@@ -409,8 +409,7 @@ def fix_cmap(index):
 
 
 
-def check_cmap():
-    doc = pymupdf.open("search_modified_by_VectorASD.pdf")
+def check_cmap(doc):
     pdf = pymupdf._as_pdf_document(doc)
     fonts, index = xref_viewer(pdf)
     for items in index:
@@ -420,23 +419,26 @@ def check_cmap():
             pprint(items["ToUnicode"].to_bin().decode("utf-8"))
     exit()
 
-try: check_cmap()
-except pymupdf.FileNotFoundError: pass
+if __name__ == "__main__":
+    try:
+        doc = pymupdf.open("search_modified_by_VectorASD.pdf")
+        check_cmap(doc)
+    except pymupdf.FileNotFoundError: pass
 
 
 
-doc = pymupdf.open("search.pdf")
-pdf = pymupdf._as_pdf_document(doc)
-print(doc, len(doc))
+    doc = pymupdf.open("search.pdf")
+    pdf = pymupdf._as_pdf_document(doc)
+    print(doc, len(doc))
 
-# collect_font_names(doc)
-fonts, index = xref_viewer(pdf)
-# collect_bbox(doc, 116) # счёт страниц с единицы в отличие от doc[115]...
-# collect_bbox(doc, 180); exit()
-# full_draw(doc[115])
-# content_replacer(pdf, index) текст всех span заменяется на TEXT. Удобно тестировать CMAP-индексацию для поиска и копирования!
-fix_cmap(index)
+    # collect_font_names(doc)
+    fonts, index = xref_viewer(pdf)
+    # collect_bbox(doc, 116) # счёт страниц с единицы в отличие от doc[115]...
+    # collect_bbox(doc, 180); exit()
+    # full_draw(doc[115])
+    # content_replacer(pdf, index) текст всех span заменяется на TEXT. Удобно тестировать CMAP-индексацию для поиска и копирования!
+    fix_cmap(index)
 
-doc.save("search_modified_by_VectorASD.pdf")
+    doc.save("search_modified_by_VectorASD.pdf")
 
-input("Press enter to exit...")
+    input("Press enter to exit...")
