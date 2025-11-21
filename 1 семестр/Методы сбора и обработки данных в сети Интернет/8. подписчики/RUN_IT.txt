@@ -1,0 +1,13 @@
+pip install Scrapy (установит сам в HOME нужную штуку)
+
+Проверка наличия паука под именем "instagram":
+	scrapy list
+
+Запуск всего этого добра:
+	scrapy crawl instagram -a usernames="tshn.d,0_asko_0,pivkolina"
+
+# Заменить scrapy.log на scrapy.7z (LZMA2 (9 - Ультра)) для сжатия ;'-}
+#	(Это не имеет смысла в режиме логирования INFO, вместо DEBUG)
+
+Заменить директорию avatars на avatars.7z (LZMA2 (9 - Ультра))
+	для уменьшения нагрузки на GitHub index… и немного сжатия ;'-}
