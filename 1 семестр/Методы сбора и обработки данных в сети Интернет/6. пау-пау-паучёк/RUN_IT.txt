@@ -1,0 +1,9 @@
+pip install Scrapy (установит сам в HOME нужную штуку)
+
+Проверка наличия паука под именем "labirint":
+	scrapy list
+
+Запуск всего этого добра:
+	scrapy crawl labirint
+
+Заменить scrapy.log на scrapy.7z (LZMA2 (9 - Ультра)) для сжатия ;'-}

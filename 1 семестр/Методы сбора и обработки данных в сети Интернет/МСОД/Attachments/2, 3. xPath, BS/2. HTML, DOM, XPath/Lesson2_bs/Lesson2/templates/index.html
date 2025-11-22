@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Поиск узлов по дереву документа</title>
+    <style>
+      html{background:#f93;cursor:default;}
+      html, input, button{font:16px calibri, sans-serif;}
+      div{margin:0 0 20px;padding: 20px;border:5px solid #fcc;}
+      p{margin: 10px 0;background:#fff;padding:10px;}
+
+      .red{color: red}
+      .left{margin-left: 100px}
+    </style>
+    <script type="text/javascript">
+        function f(){
+            alert('Привет!')
+        }
+    </script>
+</head>
+<body>
+    <div id="d">
+        <p class="red paragraph">Первый параграф</p>
+        <p id="clickable" class="paragraph">
+            <a href = 'http://www.mail.ru'>Второй <b>кликабельный</b> параграф</a>
+        </p>
+        <p class="red paragraph left">Третий параграф</p>
+    </div>
+    <div id="d2">
+        <p><a href = '#'>Четвертый параграф</a></p>
+        <p>Пятый параграф</p>
+    </div>
+    <p>Шестой параграф</p>
+    <p>Седьмой и последний параграф</p>
+</body>
+</html>
