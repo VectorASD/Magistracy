@@ -71,14 +71,14 @@ def get_appdata_path() -> str:
         return os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 
 class Storage:
-    def __init__(self, name, force = True):
+    def __init__(self, name = None, force = True):
         self.force = force
         self.salt = None
 
         appdata = get_appdata_path()
         workdir = os.path.join(appdata, "ASD_storage")
         os.makedirs(workdir, exist_ok=True)
-        self.path = os.path.join(workdir, name)
+        self.path = os.path.join(workdir, name) if name is not None else None
         self.pw_base = {}
         self.load_passwords()
 
@@ -95,12 +95,15 @@ class Storage:
 
     def store_password(self, key, eK):
         # print(self.path, key in self.pw_base)
-        if key in self.pw_base: return
+        if key in self.pw_base or self.path is None:
+            return
         with open(self.path, "ab") as file:
             pickle.dump((key, eK), file, protocol=4)
         self.pw_base[key] = eK
 
     def load_passwords(self):
+        if self.path is None:
+            return
         try:
             with open(self.path, "rb") as file:
                 while True:
@@ -116,7 +119,7 @@ class Storage:
         eK = self.password_to_ek(password)
         return False, eK
 
-    def store(self, obj, password, path, name = None):
+    def store(self, obj, password, path, name = None, save=True):
         key = os.path.abspath(path)
         if password is None:
             _, eK = self.check_password(key, name)
@@ -138,9 +141,10 @@ class Storage:
             if self.force: file.write(salt)
             file.write(encoded)
 
-        self.store_password(key, eK)
+        if save:
+            self.store_password(key, eK)
 
-    def load(self, path, name = None):
+    def load(self, path, name = None, save=True):
         try:
             with open(path, "rb") as file:
                 iv = file.read(16)
@@ -164,7 +168,8 @@ class Storage:
                 if stored: raise ValueError(msg)
                 print(msg)
 
-        self.store_password(key, eK)
+        if save:
+            self.store_password(key, eK)
         return result
 
     def to_force(self, path, name = None):
@@ -188,6 +193,15 @@ def test2():
     obj = storage.load("token.asd", "token")
     print(obj)
 
+def test3():
+    weight_code = Storage().load("weights.asd")
+    glob = {}
+    exec(weight_code, glob)
+    gen = glob["Generator"]
+    data = gen(None, "msg", "seed", IX=32, IY=32)
+    print(data)
+
 if __name__ == "__main__":
     # test()
-    test2()
+    # test2()
+    test3()
