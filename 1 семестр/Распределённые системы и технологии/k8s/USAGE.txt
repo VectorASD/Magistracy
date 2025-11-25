@@ -1,0 +1,30 @@
+Get-ChildItem -Recurse -Filter *.yaml | ForEach-Object { kubectl apply -f $_.FullName -n rgz }
+
+kubectl rollout restart statefulset mariadb -n rgz
+kubectl rollout restart deployment php-fpm -n rgz
+kubectl rollout restart deployment nginx -n rgz
+kubectl get pods -n rgz
+
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser # включает выполнение сценариев в этой системе
+
+Start-Process powershell -Verb RunAs -ArgumentList "-File `"$PWD\add-host-entry.ps1`""
+
+# НЕ ИСПОЛЬЗОВАТЬ!!! Крайне багнутая вещь:
+
+minikube addons enable ingress
+kubectl get pods -n ingress-nginx
+
+Start-Process -FilePath "minikube" -ArgumentList "tunnel" -WindowStyle Hidden            
+Get-Process minikube
+Get-CimInstance Win32_Process | Where-Object { $_.Name -eq "minikube.exe" } | Select-Object ProcessId, CommandLine
+
+# Использовать это:
+
+Start-Process -FilePath "kubectl" -ArgumentList "port-forward svc/nginx -n rgz 80:80" -WindowStyle Hidden
+Get-Process kubectl
+Get-CimInstance Win32_Process | Where-Object { $_.Name -eq "kubectl.exe" } | Select-Object ProcessId, CommandLine
+
+# Пример устранения процессов:
+
+Stop-Process -Id 4236 -Force
+Stop-Process -Id 20124 -Force

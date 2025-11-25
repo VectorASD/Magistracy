@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-fpm
+  namespace: rgz
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: php-fpm
+  template:
+    metadata:
+      labels:
+        app: php-fpm
+    spec:
+      containers:
+        - name: php-fpm
+          image: vectorasd/my-php-fpm:latest
+          ports:
+            - containerPort: 9000
+          env:
+            - name: DB_HOST
+              value: mariadb.rgz.svc.cluster.local
+            - name: DB_USER
+              value: appuser
+            - name: DB_PASS
+              value: "1"
+            - name: DB_NAME
+              value: library
+          volumeMounts:
+            - name: php-fpm-conf
+              mountPath: /etc/php82/php-fpm.d
+            #- name: books-code
+            #  mountPath: /var/www/library/books.php
+            #  subPath: books.php
+      volumes:
+        - name: php-fpm-conf
+          configMap:
+            name: php-fpm-config
+        #- name: books-code
+        #  configMap:
+        #    name: php-fpm-config
