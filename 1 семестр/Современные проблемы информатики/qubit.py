@@ -16,14 +16,15 @@ class Qubit:
     def vector(self):
         return self.a0, self.a1
 
-    def __repr__(self):
+    def __repr(self, div_mode):
         a0, a1 = self.a0, self.a1
 
-        signer = lambda n: "" if float_eq(abs(n), 1) else "-" if float_eq(abs(n), -1) else decorate_num(n, self.rounding) + ' '
+        signer = lambda n: "" if float_eq(n, 1) else "-" if float_eq(n, -1) else decorate_num(n, self.rounding) + ' '
 
         if float_eq(abs(a1), 0): return f"|φ> {signer(a0)}|0>"
         if float_eq(abs(a0), 0): return f"|φ> {signer(a1)}|1>"
 
+        """
         if a0 and a1:
             # div = 1 / s2
             # new = a0 / div, a1 / div
@@ -32,6 +33,11 @@ class Qubit:
             if div_mode: a0, a1 = new
         else: div_mode = False
         # print("***", div_mode, a0, a1, abs(a1), decorate_num(a1))
+        """
+        if div_mode: a0, a1 = a0 * s2, a1 * s2
+
+        a0_comb = not (float_eq(abs(a0.real), 0) or float_eq(abs(a0.imag), 0))
+        a1_comb = not (float_eq(abs(a1.real), 0) or float_eq(abs(a1.imag), 0))
 
         a0 = signer(a0)
 
@@ -42,10 +48,19 @@ class Qubit:
         if   a1.startswith('-'): sign = ''
         elif a1.startswith('i'): sign = '+'
         else:
-            sign = '-' if a1_real < 0 else '+'
-            a1 = ' ' + a1 if a1 else a1
-    
-        return f"|φ> {'1/√2 (' if div_mode else ''}{a0}|0> {sign}{a1}|1>{')' if div_mode else ''}"
+            sign = '-' if a1_real < 0 else '' if a1_comb else '+'
+            a1 = ' ' + a1 if a1 and not a1_comb else a1
+
+        if a0_comb: a0 = f"({a0.strip()}) "
+        a1 = f"{sign}{a1}"
+        if a1_comb: a1 = f"({a1.strip()}) "
+
+        return f"|φ> {'1/√2 (' if div_mode else ''}{a0}|0> {a1}|1>{')' if div_mode else ''}"
+
+    def __repr__(self):
+        v0 = self.__repr(False)
+        v1 = self.__repr(True)
+        return v0 if len(v0) <= len(v1) else v1
 
     def vec_repr(self):
         a0, a1 = self.a0, self.a1
@@ -116,16 +131,16 @@ class Qubit:
     @staticmethod
     def test():
         print("\n~~~ test Qubit ~~~\n")
-        print("  0°:", Q_0)   # |φ> |0> + 0 |1>
+        print("  0°:", Q_0)   # |φ> |0>
         print(" 30°:", Q_30)  # |φ> √3/2 |0> + 1/2 |1>
-        print(" 45°:", Q_45)  # |φ> 1/√2 (|0> + |1>)
+        print(" 45°:", Q_45)  # |φ> 1/√2 (|0> +|1>)
         print(" 60°:", Q_60)  # |φ> 1/2 |0> + √3/2 |1>
-        print(" 90°:", Q_90)  # |φ> 0 |0> + |1>
-        print("180°:", Q_180) # |φ> -|0> + 0 |1>
-        print("210°:", Q_210) # |φ> -√3/2 |0> - 1/2 |1>
+        print(" 90°:", Q_90)  # |φ> |1>
+        print("180°:", Q_180) # |φ> -|0>
+        print("210°:", Q_210) # |φ> -√3/2 |0> -1/2 |1>
         print("225°:", Q_225) # |φ> 1/√2 (-|0> -|1>)
         print("240°:", Q_240) # |φ> -1/2 |0> -√3/2 |1>
-        print("270°:", Q_270) # |φ> 0 |0> -|1>
+        print("270°:", Q_270) # |φ> -|1>
         print()
 
         print(Q_45.vec_repr())
@@ -158,6 +173,13 @@ class Qubit:
         print("Q_225:", Q_225.to_Bloch()) # = Q_45.to_Bloch()
         print("Q_60: ",  Q_60.to_Bloch()) # (0, -0.4999999999999999, 0.8660254037844386)
         print("Q_240:", Q_240.to_Bloch()) # = Q_60.to_Bloch()
+
+        print()
+        print(Qubit(complex( .5,  .5), complex( .5,  .5))) # |φ> (1/2 +i 1/2) |0> (1/2 +i 1/2) |1>
+        print(Qubit(complex(-.5,  .5), complex( .5,  .5))) # |φ> (-1/2 +i 1/2) |0> (1/2 +i 1/2) |1>
+        print(Qubit(complex( .5, -.5), complex( .5,  .5))) # |φ> (1/2 -i 1/2) |0> (1/2 +i 1/2) |1>
+        print(Qubit(complex( .5,  .5), complex(-.5,  .5))) # |φ> (1/2 +i 1/2) |0> (-1/2 +i 1/2) |1>
+        print(Qubit(complex( .5,  .5), complex( .5, -.5))) # |φ> (1/2 +i 1/2) |0> (1/2 -i 1/2) |1>
 
 
 
