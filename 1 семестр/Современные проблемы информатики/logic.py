@@ -1,5 +1,6 @@
 import inspect
 from io import StringIO
+from math import log2, ceil
 
 from utils import print_table
 from matrix import Matrix
@@ -157,9 +158,13 @@ class BooleanFunction:
         return BooleanFunction(n, rows, self.inputs-count, outputs, is_rows=True)
 
     @staticmethod
-    def synthesize(n, bits, func):
-        rows = tuple(int_to_bits(func(i), bits)
-                     for i in range(2 ** n))
+    def synthesize(n, func):
+        sig = inspect.signature(func)
+        if len(sig.parameters) != 1:
+            raise ValueError(f"Функция должна принимать 1 аргумент (иметь вид lambda x: ...)")
+        items = tuple(func(i) for i in range(2 ** n))
+        bits = ceil(log2(max(items) + 1))
+        rows = tuple(int_to_bits(i, bits) for i in items)
 
         outputs = tuple(f"f{i}" for i in range(bits, 0, -1))
         return BooleanFunction(n, rows, None, outputs, is_rows=True)
@@ -282,32 +287,68 @@ class CompactMatrix:
 
 
 
-def check_quantum_transform(L, R):
+def check_quantum_transform(L, R, file):
     ft = L.quantum_transform(R)
-    print("ft:", ft, sep="\n")
+    print("ft:", ft, sep="\n", file=file)
 
-    print()
+    print(file=file)
 
     C_mat = ft.to_C()
-    print("C_mat:", C_mat, sep="\n")
+    print("C_mat:", C_mat, sep="\n", file=file)
+    print("А как это выглядит в памяти:", C_mat.C, file=file)
     mat = C_mat.to_matrix()
-    # print(mat)
-    print("Унитарная?", "❌✅"[mat.is_unitary()])
+    # print(mat, file=file)
+    print("Унитарная?", "❌✅"[mat.is_unitary()], file=file)
+
+
+
+def universal_synthesizer(n, func, file):
+    synth = BooleanFunction.synthesize(n, func)
+    print("synth:", synth, sep="\n", file=file)
+
+    bits = len(synth.outputs)
+    f = BooleanFunction(n + bits).shift(bits)
+    print("f:", f, sep="\n", file=file)
+
+    check_quantum_transform(f, synth, file)
+
+
 
 if __name__ == "__main__":
+    from sys import stdout
+    from time import time
+
     f1 = BooleanFunction(3).shift(1) # раньше shift не было... BooleanFunction(3, (0, 1) * 4, 2)
     print("f1:", f1, sep="\n")
     f2 = BooleanFunction(2, lambda a, b: a <= b, outputs=" f")
     print("f2:", f2, sep="\n")
-    check_quantum_transform(f1, f2)
+    check_quantum_transform(f1, f2, stdout)
 
+    print()
+    print("~" * 77)
     print()
 
     f = BooleanFunction(4).shift(2)
     print("f:", f, sep="\n")
-    synth = BooleanFunction.synthesize(2, 2, lambda x: 3 * x % 4)
+    synth = BooleanFunction.synthesize(2, lambda x: 3 * x % 4)
     print("synth:", synth, sep="\n")
-    check_quantum_transform(f, synth)
+    check_quantum_transform(f, synth, stdout)
+
+    print()
+    print("~" * 77)
+    print()
+
+    a = 3
+    mod = 15
+    n = ceil(log2(mod))
+
+    with open("solve3.txt", "w", encoding="utf-8") as file:
+        T1 = time()
+        print(f"Функция: {a} ^ x mod {mod}", file=file)
+        universal_synthesizer(n, lambda x: pow(a, x, mod), file)
+        T2 = time()
+        print("Время расчётов и записи в этот файл:", T2 - T1, "с.", file=file)
+    print("Время расчётов и записи в файл 'solve3.txt':", T2 - T1, "с.")
 
 
 
@@ -363,7 +404,10 @@ C_mat:
 | 0 0 0 0 0 0 0 1 |
 | 0 0 0 0 0 0 1 0 |
 +-----------------+
+А как это выглядит в памяти: (1, 0, 3, 2, 4, 5, 7, 6)
 Унитарная? ✅
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 f:
 +-------------+
@@ -436,5 +480,10 @@ C_mat:
 | 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 |
 | 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 |
 +---------------------------------+
+А как это выглядит в памяти: (0, 1, 2, 3, 7, 6, 5, 4, 10, 11, 8, 9, 13, 12, 15, 14)
 Унитарная? ✅
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Время расчётов и записи в файл 'solve3.txt': 0.0252535343170166 с.
 """

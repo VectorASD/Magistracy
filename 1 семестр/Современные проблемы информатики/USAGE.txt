@@ -1,5 +1,7 @@
-Репозиторий со всем программным кодом:
+	Репозиторий со всем программным кодом:
 https://github.com/VectorASD/Magistracy/tree/modern-problems-of-informatics/1%20семестр/Современные%20проблемы%20информатики
+	Данный файл соответствует:
+https://github.com/VectorASD/Magistracy/blob/modern-problems-of-informatics/1%20семестр/Современные%20проблемы%20информатики/USAGE.txt
 
 Желательно указывать ветку Вашей дисциплины (modern-problems-of-informatics), чтобы всегда видеть самую актуальную информацию по ней.
 Все указанные здесь пути относительно директории "/1 семестр/Современные проблемы информатики"
@@ -17,4 +19,4 @@ https://github.com/VectorASD/Magistracy/tree/modern-problems-of-informatics/1%20
 	Задание 3
 
 Запуск:    python logic.py
-Результат: в конце файла logic.py
+Результат: в конце файла logic.py и в solve3.txt
