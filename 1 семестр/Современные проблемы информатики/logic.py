@@ -25,16 +25,14 @@ def bits_to_int(bits):
 class BooleanFunction:
     """Булева функция от n переменных, заданная таблицей истинности или лямбда-выражением."""
 
-    def __init__(self, n, source=None, inputs=None, outputs=(" y",), is_rows=False):
-        self.n = n
-        self.inputs  = n if inputs is None else inputs
-        self.outputs = outputs
+    def __init__(self, n, source=None, inputs=None, outputs=" y", is_rows=False):
+        outputs = (outputs,) if type(outputs) is str else outputs
         if is_rows:
             self.truth_rows = source
         else:
             if source is None:
                 self.truth_rows = ((),) * (2 ** n)
-                self.outputs = ()
+                outputs = ()
             elif len(outputs) == 1:
                 truth_table = (self.read_truth_table(n, source),)
                 self.truth_rows = tuple(zip(*truth_table))
@@ -43,6 +41,10 @@ class BooleanFunction:
                     raise ValueError("Неверное количество столбиков истинности")
                 truth_table = tuple(self.read_truth_table(n, column) for column in source)
                 self.truth_rows = tuple(zip(*truth_table))
+
+        self.n = n
+        self.inputs  = n if inputs is None else inputs
+        self.outputs = outputs
 
     @staticmethod
     def read_truth_table(n, source):
@@ -84,12 +86,12 @@ class BooleanFunction:
         n     = self.n
         skip  = n - self.inputs
         truth = self.truth_rows
-        one  = len(self.outputs) == 1
+        # one  = len(self.outputs) == 1
         dict = {}
 
         for i in range(2 ** n):
             I = int_to_bits(i, n, skip)
-            O = truth[i][0] if one else truth[i]
+            O = truth[i] # truth[i][0] if one else truth[i]
             try:             dict[I].add(O)
             except KeyError: dict[I] = {O}
 
@@ -102,21 +104,21 @@ class BooleanFunction:
         n     = self.n
         skip  = n - self.inputs
         truth = self.truth_rows
-        f = f.get_f()
+        func = f.get_f()
 
         new_rows = []
         append   = new_rows.append
 
         for i in range(2 ** n):
             I   = int_to_bits(i, n, skip)
-            inv = f(*I)
-            if type(inv) is not int:
+            inv = func(*I)
+            if type(inv) is set:
                 raise ValueError(f"Неопределённое состояние при {I}: {inv}")
             row = truth[i]
-            if inv: row = tuple(i^1 for i in row)
+            row = tuple(a^b for a, b in zip(row, inv))
             append(row)
 
-        outputs = tuple(name + "^f" for name in self.outputs)
+        outputs = tuple(name.strip() + "^" + name2.strip() for name, name2 in zip(self.outputs, f.outputs))
         return BooleanFunction(n, new_rows, self.inputs, outputs, is_rows=True)
 
     def to_rows(self):
@@ -280,21 +282,32 @@ class CompactMatrix:
 
 
 
-f1 = BooleanFunction(2, lambda a, b: a <= b)
-print("f1:", f1, sep="\n")
-f2 = BooleanFunction(3).shift(1) # раньше shift не было... BooleanFunction(3, (0, 1) * 4, 2)
-print("f2:", f2, sep="\n")
-ft = f2.quantum_transform(f1)
-print("ft:", f2, sep="\n")
+def check_quantum_transform(L, R):
+    ft = L.quantum_transform(R)
+    print("ft:", ft, sep="\n")
 
-C_mat = ft.to_C()
-print("C_mat:", C_mat, sep="\n")
-mat = C_mat.to_matrix()
-print(mat)
-print("Унитарная?", "❌✅"[mat.is_unitary()])
+    print()
 
-synth = BooleanFunction.synthesize(2, 2, lambda x: 3 * x % 4)
-print("synth:", synth, sep="\n")
+    C_mat = ft.to_C()
+    print("C_mat:", C_mat, sep="\n")
+    mat = C_mat.to_matrix()
+    # print(mat)
+    print("Унитарная?", "❌✅"[mat.is_unitary()])
+
+if __name__ == "__main__":
+    f1 = BooleanFunction(3).shift(1) # раньше shift не было... BooleanFunction(3, (0, 1) * 4, 2)
+    print("f1:", f1, sep="\n")
+    f2 = BooleanFunction(2, lambda a, b: a <= b, outputs=" f")
+    print("f2:", f2, sep="\n")
+    check_quantum_transform(f1, f2)
+
+    print()
+
+    f = BooleanFunction(4).shift(2)
+    print("f:", f, sep="\n")
+    synth = BooleanFunction.synthesize(2, 2, lambda x: 3 * x % 4)
+    print("synth:", synth, sep="\n")
+    check_quantum_transform(f, synth)
 
 
 
@@ -307,37 +320,38 @@ f1:
 +----------+
 | x₂ x₁  y |
 +----------+
+|  0  0  0 |
 |  0  0  1 |
+|  0  1  0 |
 |  0  1  1 |
 |  1  0  0 |
+|  1  0  1 |
+|  1  1  0 |
 |  1  1  1 |
 +----------+
 f2:
 +----------+
-| x₂ x₁  y |
+| x₂ x₁  f |
 +----------+
-|  0  0  0 |
 |  0  0  1 |
-|  0  1  0 |
 |  0  1  1 |
 |  1  0  0 |
-|  1  0  1 |
-|  1  1  0 |
 |  1  1  1 |
 +----------+
 ft:
-+----------+
-| x₂ x₁  y |
-+----------+
-|  0  0  0 |
-|  0  0  1 |
-|  0  1  0 |
-|  0  1  1 |
-|  1  0  0 |
-|  1  0  1 |
-|  1  1  0 |
-|  1  1  1 |
-+----------+
++-----------+
+| x₂ x₁ y^f |
++-----------+
+|  0  0   1 |
+|  0  0   0 |
+|  0  1   1 |
+|  0  1   0 |
+|  1  0   0 |
+|  1  0   1 |
+|  1  1   1 |
+|  1  1   0 |
++-----------+
+
 C_mat:
 +-----------------+
 | 0 1 0 0 0 0 0 0 |
@@ -349,15 +363,29 @@ C_mat:
 | 0 0 0 0 0 0 0 1 |
 | 0 0 0 0 0 0 1 0 |
 +-----------------+
-M = ⎧0, 1, 0, 0, 0, 0, 0, 0⎫
-    ⎪1, 0, 0, 0, 0, 0, 0, 0⎪
-    ⎪0, 0, 0, 1, 0, 0, 0, 0⎪
-    ⎪0, 0, 1, 0, 0, 0, 0, 0⎪
-    ⎪0, 0, 0, 0, 1, 0, 0, 0⎪
-    ⎪0, 0, 0, 0, 0, 1, 0, 0⎪
-    ⎪0, 0, 0, 0, 0, 0, 0, 1⎪
-    ⎩0, 0, 0, 0, 0, 0, 1, 0⎭
 Унитарная? ✅
+
+f:
++-------------+
+| x₂ x₁ y₂ y₁ |
++-------------+
+|  0  0  0  0 |
+|  0  0  0  1 |
+|  0  0  1  0 |
+|  0  0  1  1 |
+|  0  1  0  0 |
+|  0  1  0  1 |
+|  0  1  1  0 |
+|  0  1  1  1 |
+|  1  0  0  0 |
+|  1  0  0  1 |
+|  1  0  1  0 |
+|  1  0  1  1 |
+|  1  1  0  0 |
+|  1  1  0  1 |
+|  1  1  1  0 |
+|  1  1  1  1 |
++-------------+
 synth:
 +-------------+
 | x₂ x₁ f₂ f₁ |
@@ -367,4 +395,46 @@ synth:
 |  1  0  1  0 |
 |  1  1  0  1 |
 +-------------+
+ft:
++-------------------+
+| x₂ x₁ y₂^f₂ y₁^f₁ |
++-------------------+
+|  0  0     0     0 |
+|  0  0     0     1 |
+|  0  0     1     0 |
+|  0  0     1     1 |
+|  0  1     1     1 |
+|  0  1     1     0 |
+|  0  1     0     1 |
+|  0  1     0     0 |
+|  1  0     1     0 |
+|  1  0     1     1 |
+|  1  0     0     0 |
+|  1  0     0     1 |
+|  1  1     0     1 |
+|  1  1     0     0 |
+|  1  1     1     1 |
+|  1  1     1     0 |
++-------------------+
+
+C_mat:
++---------------------------------+
+| 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 |
+| 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 |
+| 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 |
+| 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 |
+| 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 |
+| 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 |
+| 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 |
+| 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 |
+| 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 |
+| 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 |
+| 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 |
+| 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 |
+| 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 |
+| 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 |
+| 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 |
+| 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 |
++---------------------------------+
+Унитарная? ✅
 """
