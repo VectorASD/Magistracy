@@ -25,20 +25,24 @@ def bits_to_int(bits):
 class BooleanFunction:
     """Булева функция от n переменных, заданная таблицей истинности или лямбда-выражением."""
 
-    def __init__(self, n, source, inputs=None, outputs=("y",), is_rows=False):
+    def __init__(self, n, source=None, inputs=None, outputs=(" y",), is_rows=False):
         self.n = n
-        self.inputs  = inputs or n
+        self.inputs  = n if inputs is None else inputs
         self.outputs = outputs
         if is_rows:
             self.truth_rows = source
         else:
-            if len(outputs) == 1:
+            if source is None:
+                self.truth_rows = ((),) * (2 ** n)
+                self.outputs = ()
+            elif len(outputs) == 1:
                 truth_table = (self.read_truth_table(n, source),)
+                self.truth_rows = tuple(zip(*truth_table))
             else:
                 if len(source) != len(outputs):
                     raise ValueError("Неверное количество столбиков истинности")
-                truth_table = tuple(self.read_truth_table(n, column) for column in source)  
-            self.truth_rows = tuple(zip(*truth_table))
+                truth_table = tuple(self.read_truth_table(n, column) for column in source)
+                self.truth_rows = tuple(zip(*truth_table))
 
     @staticmethod
     def read_truth_table(n, source):
@@ -73,7 +77,7 @@ class BooleanFunction:
         )
 
         io = StringIO()
-        print_table(table, io, middle_sep = False)
+        print_table(table, io, middle_sep = False, column_sep = False)
         return io.getvalue()
 
     def get_f(self):
@@ -99,7 +103,9 @@ class BooleanFunction:
         skip  = n - self.inputs
         truth = self.truth_rows
         f = f.get_f()
+
         new_rows = []
+        append   = new_rows.append
 
         for i in range(2 ** n):
             I   = int_to_bits(i, n, skip)
@@ -108,7 +114,7 @@ class BooleanFunction:
                 raise ValueError(f"Неопределённое состояние при {I}: {inv}")
             row = truth[i]
             if inv: row = tuple(i^1 for i in row)
-            new_rows.append(row)
+            append(row)
 
         outputs = tuple(name + "^f" for name in self.outputs)
         return BooleanFunction(n, new_rows, self.inputs, outputs, is_rows=True)
@@ -130,63 +136,116 @@ class BooleanFunction:
     # УПС! Старое правило мешает: матрицы всегда квадратные ;'-}
     # Класс НЕ рассчитан на прямоугольные матрицы, увы
 
+    def shift(self, count):
+        n     = self.n
+        skip  = n - self.inputs
+        truth = self.truth_rows
+        rows = tuple(int_to_bits(i, skip+count, skip) + truth[i]
+                     for i in range(2 ** n))
+
+        outputs = self.outputs
+        if outputs and outputs[-1] == " y": # восстанавливаем 'y₁' из 'y'
+            outputs = (*outputs[:-1], "y1")
+
+        if skip == 0 and count == 1:
+            outputs = (" y",) # 'y' вместо 'y₁'
+        else:
+            outputs = (*(f"y{i}" for i in range(skip+count, skip, -1)), *outputs)
+
+        return BooleanFunction(n, rows, self.inputs-count, outputs, is_rows=True)
+
+    @staticmethod
+    def synthesize(n, bits, func):
+        rows = tuple(int_to_bits(func(i), bits)
+                     for i in range(2 ** n))
+
+        outputs = tuple(f"f{i}" for i in range(bits, 0, -1))
+        return BooleanFunction(n, rows, None, outputs, is_rows=True)
+        
 
 
-# f = BooleanFunction(2, (1, 1, 0, 1)); print(f)
-"""
-+----+----+---+
-| x₂ | x₁ | y |
-+----+----+---+
-|  0 |  0 | 1 |
-|  0 |  1 | 1 |
-|  1 |  0 | 0 |
-|  1 |  1 | 1 |
-+----+----+---+
-"""
 
-# f = BooleanFunction(2, lambda a, b: a <= b); print(f)
-"""
-+----+----+---+
-| x₂ | x₁ | y |
-+----+----+---+
-|  0 |  0 | 1 |
-|  0 |  1 | 1 |
-|  1 |  0 | 0 |
-|  1 |  1 | 1 |
-+----+----+---+
-"""
+assert repr(BooleanFunction(2, (1, 1, 0, 1))) == """
++----------+
+| x₂ x₁  y |
++----------+
+|  0  0  1 |
+|  0  1  1 |
+|  1  0  0 |
+|  1  1  1 |
++----------+
+""".strip()
 
-# f = BooleanFunction(3, lambda a, b, c: a == b, None, ("name",)); print(f)
-"""
-+----+----+----+------+
-| x₃ | x₂ | x₁ | name |
-+----+----+----+------+
-|  0 |  0 |  0 |    1 |
-|  0 |  0 |  1 |    1 |
-|  0 |  1 |  0 |    0 |
-|  0 |  1 |  1 |    0 |
-|  1 |  0 |  0 |    0 |
-|  1 |  0 |  1 |    0 |
-|  1 |  1 |  0 |    1 |
-|  1 |  1 |  1 |    1 |
-+----+----+----+------+
-"""
+assert repr(BooleanFunction(2, lambda a, b: a <= b)) == """
++----------+
+| x₂ x₁  y |
++----------+
+|  0  0  1 |
+|  0  1  1 |
+|  1  0  0 |
+|  1  1  1 |
++----------+
+""".strip()
 
-# f = BooleanFunction(3, (lambda a, b, c: a == b, lambda a, b, c: a != b), 2, ("y1", "y2")); print(f)
-"""
-+----+----+----+----+
-| x₂ | x₁ | y₁ | y₂ |
-+----+----+----+----+
-|  0 |  0 |  1 |  0 |
-|  0 |  0 |  1 |  0 |
-|  0 |  1 |  0 |  1 |
-|  0 |  1 |  0 |  1 |
-|  1 |  0 |  0 |  1 |
-|  1 |  0 |  0 |  1 |
-|  1 |  1 |  1 |  0 |
-|  1 |  1 |  1 |  0 |
-+----+----+----+----+
-"""
+assert repr(BooleanFunction(3, lambda a, b, c: a == b, None, ("name",))) == """
++---------------+
+| x₃ x₂ x₁ name |
++---------------+
+|  0  0  0    1 |
+|  0  0  1    1 |
+|  0  1  0    0 |
+|  0  1  1    0 |
+|  1  0  0    0 |
+|  1  0  1    0 |
+|  1  1  0    1 |
+|  1  1  1    1 |
++---------------+
+""".strip()
+
+assert repr(BooleanFunction(3, (lambda a, b, c: a == b, lambda a, b, c: a != b), 2, ("y1", "y2"))) == """
++-------------+
+| x₂ x₁ y₁ y₂ |
++-------------+
+|  0  0  1  0 |
+|  0  0  1  0 |
+|  0  1  0  1 |
+|  0  1  0  1 |
+|  1  0  0  1 |
+|  1  0  0  1 |
+|  1  1  1  0 |
+|  1  1  1  0 |
++-------------+
+""".strip()
+
+assert repr(BooleanFunction(3).shift(1)) == """
++----------+
+| x₂ x₁  y |
++----------+
+|  0  0  0 |
+|  0  0  1 |
+|  0  1  0 |
+|  0  1  1 |
+|  1  0  0 |
+|  1  0  1 |
+|  1  1  0 |
+|  1  1  1 |
++----------+
+""".strip()
+
+assert repr(BooleanFunction(3).shift(2)) == """
++----------+
+| x₁ y₂ y₁ |
++----------+
+|  0  0  0 |
+|  0  0  1 |
+|  0  1  0 |
+|  0  1  1 |
+|  1  0  0 |
+|  1  0  1 |
+|  1  1  0 |
+|  1  1  1 |
++----------+
+""".strip() == repr(BooleanFunction(3).shift(1).shift(1))
 
 
 
@@ -213,6 +272,7 @@ class CompactMatrix:
             write(f"| {row} |\n")
         write(sep)
 
+        io.truncate(io.tell() - 1)
         return io.getvalue()
 
     def to_matrix(self):
@@ -221,24 +281,64 @@ class CompactMatrix:
 
 
 f1 = BooleanFunction(2, lambda a, b: a <= b)
-f2 = BooleanFunction(3, (0, 1) * 4, 2)
+print("f1:", f1, sep="\n")
+f2 = BooleanFunction(3).shift(1) # раньше shift не было... BooleanFunction(3, (0, 1) * 4, 2)
+print("f2:", f2, sep="\n")
 ft = f2.quantum_transform(f1)
-""" print(ft)
-+----+----+-----+
-| x₂ | x₁ | y^f |
-+----+----+-----+
-|  0 |  0 |   1 |
-|  0 |  0 |   0 |
-|  0 |  1 |   1 |
-|  0 |  1 |   0 |
-|  1 |  0 |   0 |
-|  1 |  0 |   1 |
-|  1 |  1 |   1 |
-|  1 |  1 |   0 |
-+----+----+-----+
-"""
+print("ft:", f2, sep="\n")
+
 C_mat = ft.to_C()
-""" print(C_mat)
+print("C_mat:", C_mat, sep="\n")
+mat = C_mat.to_matrix()
+print(mat)
+print("Унитарная?", "❌✅"[mat.is_unitary()])
+
+synth = BooleanFunction.synthesize(2, 2, lambda x: 3 * x % 4)
+print("synth:", synth, sep="\n")
+
+
+
+r"""
+Python 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)] on win32
+Enter "help" below or click "Help" above for more information.
+
+================================= RESTART: C:\Users\VectorASD\Desktop\Учёба\1 семестр\Современные проблемы информатики\logic.py ================================
+f1:
++----------+
+| x₂ x₁  y |
++----------+
+|  0  0  1 |
+|  0  1  1 |
+|  1  0  0 |
+|  1  1  1 |
++----------+
+f2:
++----------+
+| x₂ x₁  y |
++----------+
+|  0  0  0 |
+|  0  0  1 |
+|  0  1  0 |
+|  0  1  1 |
+|  1  0  0 |
+|  1  0  1 |
+|  1  1  0 |
+|  1  1  1 |
++----------+
+ft:
++----------+
+| x₂ x₁  y |
++----------+
+|  0  0  0 |
+|  0  0  1 |
+|  0  1  0 |
+|  0  1  1 |
+|  1  0  0 |
+|  1  0  1 |
+|  1  1  0 |
+|  1  1  1 |
++----------+
+C_mat:
 +-----------------+
 | 0 1 0 0 0 0 0 0 |
 | 1 0 0 0 0 0 0 0 |
@@ -249,11 +349,6 @@ C_mat = ft.to_C()
 | 0 0 0 0 0 0 0 1 |
 | 0 0 0 0 0 0 1 0 |
 +-----------------+
-"""
-mat = C_mat.to_matrix()
-print(mat)
-print("Унитарная?", "❌✅"[mat.is_unitary()])
-"""
 M = ⎧0, 1, 0, 0, 0, 0, 0, 0⎫
     ⎪1, 0, 0, 0, 0, 0, 0, 0⎪
     ⎪0, 0, 0, 1, 0, 0, 0, 0⎪
@@ -263,8 +358,13 @@ M = ⎧0, 1, 0, 0, 0, 0, 0, 0⎫
     ⎪0, 0, 0, 0, 0, 0, 0, 1⎪
     ⎩0, 0, 0, 0, 0, 0, 1, 0⎭
 Унитарная? ✅
+synth:
++-------------+
+| x₂ x₁ f₂ f₁ |
++-------------+
+|  0  0  0  0 |
+|  0  1  1  1 |
+|  1  0  1  0 |
+|  1  1  0  1 |
++-------------+
 """
-
-
-
-
