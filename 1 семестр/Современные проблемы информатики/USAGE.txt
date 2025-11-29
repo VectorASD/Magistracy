@@ -20,3 +20,7 @@ https://github.com/VectorASD/Magistracy/blob/modern-problems-of-informatics/1%20
 
 Запуск:    python logic.py
 Результат: в конце файла logic.py и в solve3.txt
+
+	Задание 4 (РГЗ)
+Запуск:    python task4.py
+Результат: в отчёте ;'-}

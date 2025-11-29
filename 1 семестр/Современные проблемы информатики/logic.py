@@ -119,7 +119,7 @@ class BooleanFunction:
             row = tuple(a^b for a, b in zip(row, inv))
             append(row)
 
-        outputs = tuple(name.strip() + "^" + name2.strip() for name, name2 in zip(self.outputs, f.outputs))
+        outputs = tuple(name.strip() + "⊕" + name2.strip() for name, name2 in zip(self.outputs, f.outputs))
         return BooleanFunction(n, new_rows, self.inputs, outputs, is_rows=True)
 
     def to_rows(self):
@@ -381,7 +381,7 @@ f2:
 +----------+
 ft:
 +-----------+
-| x₂ x₁ y^f |
+| x₂ x₁ y⊕f |
 +-----------+
 |  0  0   1 |
 |  0  0   0 |
@@ -441,7 +441,7 @@ synth:
 +-------------+
 ft:
 +-------------------+
-| x₂ x₁ y₂^f₂ y₁^f₁ |
+| x₂ x₁ y₂⊕f₂ y₁⊕f₁ |
 +-------------------+
 |  0  0     0     0 |
 |  0  0     0     1 |
@@ -485,5 +485,5 @@ C_mat:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Время расчётов и записи в файл 'solve3.txt': 0.0252535343170166 с.
+Время расчётов и записи в файл 'solve3.txt': 0.02521204948425293 с.
 """
