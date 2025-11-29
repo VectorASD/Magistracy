@@ -1,8 +1,10 @@
+from __future__ import annotations
+
+from types import GeneratorType
+from math import pi, tan, sin, cos, hypot
+
 from misc import float_eq, edge_enumerate
 from number_decorator import decorate_num, exists_decor
-from math import pi, tan, sin, cos, hypot
-from types import GeneratorType
-
 from qubit import Qubit, Q_0, s2
 
 from sortedcontainers import SortedList # pip install sortedcontainers
@@ -226,6 +228,22 @@ class Matrix:
             (0,       0,        1/m2fn, FN_2fn),
         )
 
+    def kron(A: Matrix, B: Matrix) -> Matrix: # A = self
+        """Кронекерово произведение матриц A ⊗ B"""
+        Am, Bm = A.mat, B.mat
+        a_r, a_c = len(Am), len(Am[0])
+        b_r, b_c = len(Bm), len(Bm[0])
+
+        rows = []
+        for i in range(a_r):
+            for k in range(b_r):
+                row = []
+                for j in range(a_c):
+                    for l in range(b_c):
+                        row.append(Am[i][j] * Bm[k][l])
+                rows.append(tuple(row))
+        return Matrix(*rows)
+
     @staticmethod
     def test():
         print("\n~~~ test Matrix ~~~\n")
@@ -266,12 +284,52 @@ class Matrix:
         #              ⎪0, 0, -1, 0⎪ Вот такой вот поворот!!! Z инвертирована... но это нормально...
         #              ⎩0, 0, 0 , 1⎭
 
+        print(Matrix((1, 2), (3, 4)).kron(I)("kron-test"))
+        # kron-test = ⎧1, 0, 2, 0⎫
+        #             ⎪0, 1, 0, 2⎪
+        #             ⎪3, 0, 4, 0⎪
+        #             ⎩0, 3, 0, 4⎭
+        print(I.kron(Matrix((1, 2), (3, 4)))("kron-test"))
+        # kron-test = ⎧1, 2, 0, 0⎫
+        #             ⎪3, 4, 0, 0⎪
+        #             ⎪0, 0, 1, 2⎪
+        #             ⎩0, 0, 3, 4⎭
+
 
 
 I   = Matrix((1, 0), (0, 1))
 NOT = Matrix((0, 1), (1, 0))
 H   = Matrix((1, 1), (1, -1)) * (1/s2) # Hadamard
 C   = Matrix((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, 1), (0, 0, 1, 0))
+
+def kron_n(mats: tuple[Matrix, ...]) -> Matrix:
+    """
+    Строит тензорное (Кронекерово) произведение списка матриц.
+    Если каждая матрица имеет размер 2×2 и список длиной n,
+    результат будет матрицей размера 2^n × 2^n.
+    """
+    it = iter(mats)
+    op = next(it)
+    for g in it:
+        op = op.kron(g)
+    # print(*mats, sep="\n")
+    # print(op)
+    return op
+
+def gate_on_qubit(n_qubits: int, gate: Matrix, target: int, LSB: bool = True) -> Matrix:
+    """Полный оператор 2^n×2^n: gate на target, I на остальных"""
+    path = (range(n_qubits -1, -1, -1)   # (x1, x2, ..., y), LSB справа
+            if LSB else range(n_qubits)) # (y, ..., x2, x1), MSB справа
+    return kron_n(gate if k == target else I
+                  for k in path)
+
+def apply_H_gate(psi: tuple[complex, ...], n_qubits: int, LSB: bool = True) -> tuple[complex, ...]:
+    """Применяет Hadamard-преобразование для квантового кубита, расписанного по состояниям!"""
+    # на позиции target=0 анцилла
+    for target in range(1, n_qubits):
+        U = gate_on_qubit(n_qubits, H, target, LSB)
+        psi = U * psi
+    return psi
 
 
 

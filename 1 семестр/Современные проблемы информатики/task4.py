@@ -6,7 +6,7 @@ from qubit import Qubit, Q_0, Q_45, Q_135
 from logic import BooleanFunction
 from number_decorator import decorate_num
 from misc import float_eq, float_neq, to_subscript
-from matrix import Matrix, H, I
+from matrix import apply_H_gate
 
 
 
@@ -135,44 +135,6 @@ def simulate_parallelism(func, Q_arr: Tuple[Qubit, ...]) -> Tuple[complex, ...]:
 
 
 
-def kron_matrix(A: Matrix, B: Matrix) -> Matrix:
-    """Кронекерово произведение матриц A ⊗ B (использует численные данные A.mat, B.mat)."""
-    Am, Bm = A.mat, B.mat
-    a_r, a_c = len(Am), len(Am[0])
-    b_r, b_c = len(Bm), len(Bm[0])
-
-    rows = []
-    for i in range(a_r):
-        for k in range(b_r):
-            row = []
-            for j in range(a_c):
-                for l in range(b_c):
-                    row.append(Am[i][j] * Bm[k][l])
-            rows.append(tuple(row))
-    return Matrix(*rows)
-
-def kron_n(mats):
-    it = iter(mats)
-    op = next(it)
-    # print(*mats, sep="\n")
-    for g in it:
-        op = kron_matrix(op, g)
-    # print(op)
-    return op
-
-def gate_on_qubit(n_qubits: int, gate: Matrix, target: int) -> Matrix:
-    """Полный оператор 2^n×2^n: gate на target, I на остальных"""
-    mats = tuple(gate if k == target else I
-                 for k in range(n_qubits - 1, -1, -1)) # (x1, x2, ..., y), LSB справа
-    return kron_n(mats)
-
-def apply_H_gate(psi: Tuple[complex, ...], n_qubits: int):
-    """Применяет Hadamard-преобразование для квантового кубита, расписанного по состояниям!"""
-    for target in range(1, n_qubits):
-        U = gate_on_qubit(n_qubits, H, target)
-        psi = U * psi
-    return psi
-
 def psi_eq(L_psi, R_psi):
     """Сравнивает два квантовых регистра, учитывая EPS-погрешность"""
     return all(float_eq(L, R) for L, R in zip(L_psi, R_psi))
@@ -202,8 +164,10 @@ def deutsch_jozsa(func, Q_arr: Tuple[Qubit, ...]):
     # Вероятности по x-регистру (суммируем по анцилле)
     probs = [0.0] * (2 ** n_inputs)
     for i, amp in enumerate(H_psi):
-        x_bits = i >> 1 # склеиваем попарно квадраты модулей состояний
+        x_bits = i >> 1 # отбрасываем анциллу при LSB
         probs[x_bits] += abs(amp) ** 2
+    # LSB: анцилла справа, склеиваются индексы 0<->1, 2<->3, 4<->5, 6<->7
+    # MSB: анцилла слева,  склеиваются индексы 0<->4, 1<->5, 2<->6, 3<->7
 
     # Вердикт
     if float_eq(probs[0], 1):
