@@ -3,6 +3,9 @@ EPS = 0.0001
 def float_eq(a, b):
     return abs(a - b) < EPS
 
+def float_neq(a, b):
+    return abs(a - b) > EPS
+
 def edge_enumerate(it):
     it = iter(it)
     try: a = next(it)
