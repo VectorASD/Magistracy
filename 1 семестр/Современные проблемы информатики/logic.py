@@ -285,6 +285,20 @@ class CompactMatrix:
     def to_matrix(self):
         return Matrix(*self.to_rows())
 
+    def __matmul__(self, vec: tuple[complex, ...]) -> tuple[complex, ...]:
+        """
+        Умножение компактной матрицы на вектор.
+        vec — кортеж комплексных амплитуд длиной len(C).
+        Возвращает новый вектор.
+        """
+        C = self.C
+        n = len(C)
+        if len(vec) != n:
+            raise ValueError("Размер вектора не совпадает с размером матрицы")
+        # Каждая строка i копирует значение из vec[C[i]]. O(n) вместо привычного O(nnn)
+        return tuple(vec[idx] for idx in C)
+
+
 
 
 def check_quantum_transform(L, R, file):
