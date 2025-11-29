@@ -5,7 +5,8 @@ import inspect
 from qubit import Qubit, Q_0, Q_45, Q_135
 from logic import BooleanFunction
 from number_decorator import decorate_num
-from misc import float_eq, float_neq
+from misc import float_eq, float_neq, to_subscript
+from matrix import Matrix, H, I
 
 
 
@@ -25,7 +26,7 @@ def tensor_qubits_LSB(*qubits: Qubit) -> Tuple[complex, ...]:
         vec = tuple(x for v in vec for x in (v * a0, v * a1))
     return vec
 
-def reg2str(vec: Tuple[complex, ...]) -> None:
+def reg2str(vec: Tuple[complex, ...], misc="") -> None:
     """Печатает все базисные состояния вектора состояния"""
     n_qubits = round(log2(len(vec)))
     if 2 ** n_qubits != len(vec):
@@ -39,7 +40,7 @@ def reg2str(vec: Tuple[complex, ...]) -> None:
         if div: v = f"{div} ({v})"
         vs.append(v.replace("+ -", "-").replace("+ |", "+|"))
     # for i in vs: print(len(i), i)
-    return "ψ> = " + min(vs, key=len)
+    return f"ψ{to_subscript(misc)}> = " + min(vs, key=len)
 
 def check_registers():
     #   Q_0 = |φ> |0>
@@ -81,12 +82,14 @@ def simulate_parallelism(func, Q_arr: Tuple[Qubit, ...]) -> Tuple[complex, ...]:
     print(C_mat)
 
     psi_in = tensor_qubits_LSB(*Q_arr) # |+> |+> |0>
-    print(reg2str(psi_in))  # ψ> = ½ (|000⟩ + |010⟩ + |100⟩ + |110⟩)
+    print(reg2str(psi_in, "in"))  # ψ> = ½ (|000⟩ + |010⟩ + |100⟩ + |110⟩)
     psi_out = C_mat @ psi_in
-    print(reg2str(psi_out)) # ψ> = ½ (|000⟩ + |010⟩ + |100⟩ + |111⟩)
+    print(reg2str(psi_out, "out")) # ψ> = ½ (|000⟩ + |010⟩ + |100⟩ + |111⟩)
     return psi_out
 
-simulate_parallelism(lambda x, y: x & y, (Q_45, Q_45, Q_0)) # |+> |+> |0>
+
+
+# simulate_parallelism(lambda x, y: x & y, (Q_45, Q_45, Q_0)) # |+> |+> |0>
 """
 === Квантовый параллелизм ===
 
@@ -120,12 +123,158 @@ simulate_parallelism(lambda x, y: x & y, (Q_45, Q_45, Q_0)) # |+> |+> |0>
 | 0 0 0 0 0 0 0 1 |
 | 0 0 0 0 0 0 1 0 |
 +-----------------+
-ψ> = ½ (|000⟩ +|010⟩ +|100⟩ +|110⟩)
-ψ> = ½ (|000⟩ +|010⟩ +|100⟩ +|111⟩)
+ψᵢₙ> = ½ (|000⟩ +|010⟩ +|100⟩ +|110⟩)
+ψₒᵤₜ> = ½ (|000⟩ +|010⟩ +|100⟩ +|111⟩)
 """
 
-simulate_parallelism(lambda x, y, z: x ^ ~y ^ z, (Q_45, Q_45, Q_45, Q_135)) # |+> |+> |+> |->
+# simulate_parallelism(lambda x, y, z: x ^ ~y ^ z, (Q_45, Q_45, Q_45, Q_135)) # |+> |+> |+> |->
 """
-ψ> = ¼ (|0000⟩ -|0001⟩ +|0010⟩ -|0011⟩ +|0100⟩ -|0101⟩ +|0110⟩ -|0111⟩ +|1000⟩ -|1001⟩ +|1010⟩ -|1011⟩ +|1100⟩ -|1101⟩ +|1110⟩ -|1111⟩)
-ψ> = ¼ (-|0000⟩ +|0001⟩ -|0010⟩ +|0011⟩ -|0100⟩ +|0101⟩ -|0110⟩ +|0111⟩ -|1000⟩ +|1001⟩ -|1010⟩ +|1011⟩ -|1100⟩ +|1101⟩ -|1110⟩ +|1111⟩)
+ψᵢₙ> = ¼ (|0000⟩ -|0001⟩ +|0010⟩ -|0011⟩ +|0100⟩ -|0101⟩ +|0110⟩ -|0111⟩ +|1000⟩ -|1001⟩ +|1010⟩ -|1011⟩ +|1100⟩ -|1101⟩ +|1110⟩ -|1111⟩)
+ψₒᵤₜ> = ¼ (-|0000⟩ +|0001⟩ -|0010⟩ +|0011⟩ -|0100⟩ +|0101⟩ -|0110⟩ +|0111⟩ -|1000⟩ +|1001⟩ -|1010⟩ +|1011⟩ -|1100⟩ +|1101⟩ -|1110⟩ +|1111⟩)
+"""
+
+
+
+def kron_matrix(A: Matrix, B: Matrix) -> Matrix:
+    """Кронекерово произведение матриц A ⊗ B (использует численные данные A.mat, B.mat)."""
+    Am, Bm = A.mat, B.mat
+    a_r, a_c = len(Am), len(Am[0])
+    b_r, b_c = len(Bm), len(Bm[0])
+
+    rows = []
+    for i in range(a_r):
+        for k in range(b_r):
+            row = []
+            for j in range(a_c):
+                for l in range(b_c):
+                    row.append(Am[i][j] * Bm[k][l])
+            rows.append(tuple(row))
+    return Matrix(*rows)
+
+def kron_n(mats):
+    it = iter(mats)
+    op = next(it)
+    # print(*mats, sep="\n")
+    for g in it:
+        op = kron_matrix(op, g)
+    # print(op)
+    return op
+
+def gate_on_qubit(n_qubits: int, gate: Matrix, target: int) -> Matrix:
+    """Полный оператор 2^n×2^n: gate на target, I на остальных"""
+    mats = tuple(gate if k == target else I
+                 for k in range(n_qubits - 1, -1, -1)) # (x1, x2, ..., y), LSB справа
+    return kron_n(mats)
+
+def apply_H_gate(psi: Tuple[complex, ...], n_qubits: int):
+    """Применяет Hadamard-преобразование для квантового кубита, расписанного по состояниям!"""
+    for target in range(1, n_qubits):
+        U = gate_on_qubit(n_qubits, H, target)
+        psi = U * psi
+    return psi
+
+def psi_eq(L_psi, R_psi):
+    """Сравнивает два квантовых регистра, учитывая EPS-погрешность"""
+    return all(float_eq(L, R) for L, R in zip(L_psi, R_psi))
+
+def deutsch_jozsa(func, Q_arr: Tuple[Qubit, ...]):
+    """
+    Алгоритм Дойча–Ёжи для произвольной булевой функции.
+    Использует simulate_parallelism для симуляции оракула.
+    Возвращает (psi, probs, verdict).
+    """
+    psi = simulate_parallelism(func, Q_arr)
+
+    print("~~~ Алгоритм Дойча–Ёжи ~~~")
+
+    # Количество кубитов в регистре
+    n_qubits = round(log2(len(psi)))
+    if 2 ** n_qubits != len(psi):
+        raise ValueError(f"Длина вектора ψₒᵤₜ ({len(psi)}) не равна 2^n для целого числа кубитов")
+    n_inputs = len(Q_arr) - 1 # последний кубит — анцилла
+
+    # Применяем H перед распознавателем
+    H_psi = apply_H_gate(psi, n_qubits) # Hadamard_psi
+    R_psi = apply_H_gate(H_psi, n_qubits) # reverse_psi
+    print(reg2str(H_psi, "kron"), f"(eigenstates (Hᵢₙ=Hₒᵤₜ)? {'❌✅'[psi_eq(psi, H_psi)]})")
+    print(reg2str(R_psi, "kron2"), f"(инволюция (self-inverse)? {'❌✅'[psi_eq(psi, R_psi)]})")
+
+    # Вероятности по x-регистру (суммируем по анцилле)
+    probs = [0.0] * (2 ** n_inputs)
+    for i, amp in enumerate(H_psi):
+        x_bits = i >> 1 # склеиваем попарно квадраты модулей состояний
+        probs[x_bits] += abs(amp) ** 2
+
+    # Вердикт
+    if float_eq(probs[0], 1):
+        verdict = "константная"
+    elif all(float_eq(p, 1/(2**n_inputs)) for p in probs):
+        verdict = "сбалансированная"
+    else:
+        verdict = "ни константная, ни сбалансированная"
+
+    print("Вероятности:", ", ".join(map(decorate_num, probs)))
+    print("Вердикт:", verdict)
+
+    return H_psi, probs, verdict
+
+
+
+deutsch_jozsa(lambda x, y: x & y, (Q_45, Q_45, Q_0)) # |+> |+> |0>
+"""
+ψᵢₙ> = ½ (|000⟩ +|010⟩ +|100⟩ +|110⟩)
+ψₒᵤₜ> = ½ (|000⟩ +|010⟩ +|100⟩ +|111⟩)
+~~~ Алгоритм Дойча–Ёжи ~~~
+ψₖᵣₒₙ> = ¼ (3 |000⟩ +|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ -|110⟩ +|111⟩) (eigenstates (Hᵢₙ=Hₒᵤₜ)? ❌)
+ψₖᵣₒₙ₂> = ½ (|000⟩ +|010⟩ +|100⟩ +|111⟩) (инволюция (self-inverse)? ✅)
+Вероятности: 5/8, 1/8, 1/8, 1/8
+Вердикт: ни константная, ни сбалансированная
+    НЕТ ФАЗОВОГО КИКА, ОШИБКА ВЕРДИКТА! Это желозеботонное доказательство,
+    что анцилла должна быть ВСЕГДА в фазе |-> (туда пихать |0> нельзя!)
+    Тем ни менее ψₖᵣₒₙ₂> сошёлся с ψₒᵤₜ>, т.е. H-gate сам по себе обратимый
+"""
+
+deutsch_jozsa(lambda x, y: x & y, (Q_45, Q_45, Q_135)) # |+> |+> |->
+"""
+ψᵢₙ> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ +|110⟩ -|111⟩)
+ψₒᵤₜ> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ -|110⟩ +|111⟩)
+~~~ Алгоритм Дойча–Ёжи ~~~
+ψₖᵣₒₙ> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ -|110⟩ +|111⟩) (eigenstates (Hᵢₙ=Hₒᵤₜ)? ✅)
+ψₖᵣₒₙ₂> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ -|110⟩ +|111⟩) (инволюция (self-inverse)? ✅)
+Вероятности: 1/4, 1/4, 1/4, 1/4
+Вердикт: сбалансированная
+    ВЕРНЫЙ ВЕРДИКТ! Ещё и на eigenstates попали (на выходе H-gate тоже самое, что и на входе)
+"""
+
+deutsch_jozsa(lambda x, y: 0, (Q_45, Q_45, Q_135)) # |+> |+> |0>
+"""
+ψᵢₙ> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ +|110⟩ -|111⟩)
+ψₒᵤₜ> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ +|110⟩ -|111⟩)
+~~~ Алгоритм Дойча–Ёжи ~~~
+ψₖᵣₒₙ> = 1/√2 (|000⟩ -|001⟩) (eigenstates (Hᵢₙ=Hₒᵤₜ)? ❌)
+ψₖᵣₒₙ₂> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ +|110⟩ -|111⟩) (инволюция (self-inverse)? ✅)
+Вероятности: 1, 0, 0, 0
+Вердикт: константная
+"""
+
+deutsch_jozsa(lambda x, y: 1, (Q_45, Q_45, Q_135)) # |+> |+> |0>
+"""
+ψᵢₙ> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ +|110⟩ -|111⟩)
+ψₒᵤₜ> = 1/(2√2) (-|000⟩ +|001⟩ -|010⟩ +|011⟩ -|100⟩ +|101⟩ -|110⟩ +|111⟩)
+~~~ Алгоритм Дойча–Ёжи ~~~
+ψₖᵣₒₙ> = 1/√2 (-|000⟩ +|001⟩) (eigenstates (Hᵢₙ=Hₒᵤₜ)? ❌)
+ψₖᵣₒₙ₂> = 1/(2√2) (-|000⟩ +|001⟩ -|010⟩ +|011⟩ -|100⟩ +|101⟩ -|110⟩ +|111⟩) (инволюция (self-inverse)? ✅)
+Вероятности: 1, 0, 0, 0
+Вердикт: константная
+"""
+
+deutsch_jozsa(lambda x, y: x ^ y, (Q_45, Q_45, Q_135)) # |+> |+> |0>
+"""
+ψᵢₙ> = 1/(2√2) (|000⟩ -|001⟩ +|010⟩ -|011⟩ +|100⟩ -|101⟩ +|110⟩ -|111⟩)
+ψₒᵤₜ> = 1/(2√2) (|000⟩ -|001⟩ -|010⟩ +|011⟩ -|100⟩ +|101⟩ +|110⟩ -|111⟩)
+~~~ Алгоритм Дойча–Ёжи ~~~
+ψₖᵣₒₙ> = 1/√2 (|110⟩ -|111⟩) (eigenstates (Hᵢₙ=Hₒᵤₜ)? ❌)
+ψₖᵣₒₙ₂> = 1/(2√2) (|000⟩ -|001⟩ -|010⟩ +|011⟩ -|100⟩ +|101⟩ +|110⟩ -|111⟩) (инволюция (self-inverse)? ✅)
+Вероятности: 0, 0, 0, 1
+Вердикт: ни константная, ни сбалансированная
 """
