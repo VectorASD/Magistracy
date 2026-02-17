@@ -1,0 +1,26 @@
+	Репозиторий со всем программным кодом:
+https://github.com/VectorASD/Magistracy/tree/modern-problems-of-informatics/1%20семестр/Современные%20проблемы%20информатики
+	Данный файл соответствует:
+https://github.com/VectorASD/Magistracy/blob/modern-problems-of-informatics/1%20семестр/Современные%20проблемы%20информатики/USAGE.txt
+
+Желательно указывать ветку Вашей дисциплины (modern-problems-of-informatics), чтобы всегда видеть самую актуальную информацию по ней.
+Все указанные здесь пути относительно директории "/1 семестр/Современные проблемы информатики"
+
+	Задание 1
+
+Запуск:    python main.py
+Результат: solve1.png
+
+	Задание 2
+
+Запуск:    python task2.py
+Результат: solve2.txt
+
+	Задание 3
+
+Запуск:    python logic.py
+Результат: в конце файла logic.py и в solve3.txt
+
+	Задание 4 (РГЗ)
+Запуск:    python task4.py
+Результат: в отчёте ;'-}
