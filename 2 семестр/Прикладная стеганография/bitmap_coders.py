@@ -97,8 +97,9 @@ def decode_rle4(data, width, height):
                     b = data[i + k//2]
                     out[y, x] = (b >> 4) if (k % 2 == 0) else (b & 0xF)
                     x += 1
-                i += (n+1) // 2
-                if n & 1: # padding
+                data_bytes = (n+1) // 2
+                i += data_bytes
+                if data_bytes & 1: # padding
                     i += 1
     return out
 
@@ -348,7 +349,7 @@ def encode_rle4(idxmap):
                         a = row[start + i] & 0xF
                         b = row[start + i + 1] & 0xF if i + 1 < n else 0
                         out.append(a << 4 | b)
-                    if n & 1:
+                    if (n + 1) // 2 & 1:
                         out.append(0) # padding
                 continue
 
@@ -454,6 +455,31 @@ def decode_rgb(raw, width, height, bpp, top_down):
 def encode_rgb(arr, bpp):
     h, w = arr.shape[:2]
     buf = bytearray()
+
+    if arr.ndim == 2 and bpp == 1:
+        # 1‑битная упаковка: 8 пикселей → 1 байт
+        row_bits = (w + 7) // 8             # байт на строку до выравнивания
+        row_size = (row_bits + 3) // 4 * 4  # выравнивание до 4 байт
+        pad = row_size - row_bits
+
+        for y in range(h):
+            row = arr[y]
+            byte = 0
+            bitpos = 7
+
+            for x in range(w):
+                if row[x]:
+                    byte |= (1 << bitpos)
+                bitpos -= 1
+                if bitpos < 0:
+                    buf.append(byte)
+                    byte = 0
+                    bitpos = 7
+            if bitpos != 7: # если остались недозаполненные биты
+                buf.append(byte)
+            buf.extend(b"\x00" * pad)
+
+        return buf
 
     if arr.ndim == 2 and bpp == 8:
         row_size = ((bpp * w + 31) // 32) * 4
@@ -776,7 +802,13 @@ def encode_bmp_pixels(arr, comp, *, bpp=None, palette=None, masks=None):
                     bpp = 32
                 else:
                     raise ValueError("Cannot infer bpp for BI_RGB")
-            return encode_rgb(arr, bpp)
+            if bpp in (1, 8, 24, 32):
+                return encode_rgb(arr, bpp)
+            if bpp == 4:
+                raise ValueError("BI_RGB does not support 4 bpp. Use BI_RLE4 instead.")
+            if bpp == 2:
+                raise ValueError("2 bpp BMP does not exist in the BMP specification.")
+            raise ValueError(f"unknown bpp: {bpp}")
 
         case 1: # BI_RLE8
             if arr.ndim != 2 or arr.dtype != np.uint8:
