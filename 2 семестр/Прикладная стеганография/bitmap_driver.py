@@ -17,7 +17,7 @@ def write_i32(f, v): f.write(struct.pack("<i", v))
 
 # --- pixel core ---
 
-from bitmap_coders import decode_bmp_pixels, encode_bmp_pixels
+from bitmap_coders import decode_bmp_pixels, encode_bmp_pixels, BMP_COMPRESSION_to_str
 
 
 
@@ -168,7 +168,8 @@ def read_bmp(f, debug=False):
         colors_used = read_u32(dib) # 32-36
         important   = read_u32(dib) # 36-40
 
-        print("size:", width, height, "  DPI:", xppm, yppm)
+        if debug:
+            print("size:", width, height, "  DPI:", xppm, yppm)
         assert width >= 0,  "большинство bmp-read'еров не понимают переворот по оси ширины"
         assert planes == 1, f"неподдерживаемое число планов: {planes}"
 
@@ -182,6 +183,10 @@ def read_bmp(f, debug=False):
                 amask = read_u32(dib) # 52-56
             print("masks:", hex(rmask), hex(gmask), hex(bmask), "x" if amask is None else hex(amask))
 
+    if debug:
+        comp_name = BMP_COMPRESSION_to_str.get(comp, f"unknown ({comp})")
+        print(f"compression: {comp_name}")
+
     if dib_size >= 108: # V4
         color_space = read_u32(dib) # 56–60
         ciexyz_r = read_s32(dib), read_s32(dib), read_s32(dib) # 60-72
@@ -192,9 +197,10 @@ def read_bmp(f, debug=False):
         gamma_g = read_u32(dib) # 100–104
         gamma_b = read_u32(dib) # 104–108
         gamma   = gamma_r, gamma_g, gamma_b
-        print("color space:",  color_space)
-        print("CIEXYZTRIPLE:", ciexyz)
-        print("GAMMA:", gamma)
+        if debug:
+            print("color space:",  color_space)
+            print("CIEXYZTRIPLE:", ciexyz)
+            print("GAMMA:", gamma)
 
     if dib_size == 124: # V5
         intent       = read_u32(dib) # 108–112 (bV5Intent)
@@ -251,7 +257,7 @@ def read_bmp(f, debug=False):
         masks=(rmask, gmask, bmask, amask),
         top_down=top_down,
     )
-    return pix
+    return pix, palette
 
 
 
@@ -272,7 +278,7 @@ def write_bmp(f, pix, *,
     masks = (None, None, None, None)
     colors_used = 0
 
-    if mode or palette or palette_size:
+    if mode or palette is not None or palette_size:
         pal, idx = _build_palette_and_indices(arr, palette, palette_size, mode)
         colors_used = pal.shape[0]
         if colors_used <= 2:
@@ -385,7 +391,7 @@ def save_bmp(path, pix, **kw):
 
 
 if __name__ == "__main__":
-    pix = load_bmp("origin.bmp", debug=False)
+    pix, palette = load_bmp("origin.bmp", debug=False)
     print(pix)
     save_bmp("saved_rgb.bmp", pix)
 

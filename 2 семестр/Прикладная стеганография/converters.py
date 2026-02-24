@@ -1,11 +1,12 @@
 import zipfile
 import os
+from random import sample
 
 import numpy as np    # pip install numpy
 import pydicom        # pip install pydicom
 from PIL import Image # pip install pillow
 
-from bitmap_driver import write_bmp
+from bitmap_driver import read_bmp, write_bmp
 
 
 
@@ -114,7 +115,34 @@ def convert_dicom_zip_to_bmp_zip(in_zip, out_zip, debug=False):
 
 
 
+def bossbase_repacker(in_zip, out_zip):
+    with zipfile.ZipFile(in_zip, 'r') as zin, \
+         zipfile.ZipFile(out_zip, 'w', compression=zipfile.ZIP_BZIP2) as zout:
+
+        names = zin.namelist()
+        assert len(names) == 1000
+
+        names = sample(names, 100)
+        for name in names:
+            assert name.endswith(".bmp")
+            print(name)
+
+            with zin.open(name, "r") as file:
+                pix, palette = read_bmp(file, debug=False)
+            assert palette is not None # bpp <= 8
+
+            with zout.open(name, "w") as file:
+                # palette из read_bmp можно пропустить, т.к. мой режим 'gray' генерирует тоже самое
+                # use_rle (мой rle8) + BZIP2 компрессия хуже, чем сразу BZIP2 на индексной карте...
+                write_bmp(file, pix, mode="gray", use_rle=False)
+
+
+
 if __name__ == "__main__":
+    #    источник BOSSbase-сцен:
+    # https://drive.google.com/drive/folders/1LcvhZe-lhYFMVLq9hexo8HJJa3Y-uUMM
+    bossbase_repacker("pictures.zip", "bossbase_containers.zip")
+
     #    источник dicom'ок:
     # https://www.kaggle.com/datasets/kmader/siim-medical-images
-    convert_dicom_zip_to_bmp_zip("archive.zip", "medical_containers.zip", debug=False)
+    # convert_dicom_zip_to_bmp_zip("archive.zip", "medical_containers.zip", debug=False)
