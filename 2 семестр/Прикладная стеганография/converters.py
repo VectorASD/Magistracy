@@ -138,11 +138,41 @@ def bossbase_repacker(in_zip, out_zip):
 
 
 
+def convert_jpeg_zip_to_bmp_zip(in_zip, out_zip):
+    with zipfile.ZipFile(in_zip, 'r') as zin, \
+         zipfile.ZipFile(out_zip, 'w', compression=zipfile.ZIP_BZIP2) as zout:
+
+        names = zin.namelist()
+        assert len(names) == 5734
+
+        names = sample(names, 100)
+        for name in names:
+            assert name.startswith("Images/") and name.endswith(".jpg")
+            out_name = name[len("Images/"):]
+            print(out_name)
+
+            with zin.open(name, "r") as file:
+                img = Image.open(file)
+                img = img.convert("L") # grayscale
+                pix = np.array(img, dtype=np.uint8)
+                assert pix.shape == (512, 512) # автор датасета уже сделал это...
+
+            with zout.open(out_name, "w") as file:
+                # palette из read_bmp можно пропустить, т.к. мой режим 'gray' генерирует тоже самое
+                # use_rle (мой rle8) + BZIP2 компрессия хуже, чем сразу BZIP2 на индексной карте...
+                write_bmp(file, pix, mode="gray", use_rle=False)
+
+
+
 if __name__ == "__main__":
     #    источник BOSSbase-сцен:
     # https://drive.google.com/drive/folders/1LcvhZe-lhYFMVLq9hexo8HJJa3Y-uUMM
-    bossbase_repacker("pictures.zip", "bossbase_containers.zip")
+    # bossbase_repacker("pictures.zip", "bossbase_containers.zip")
 
     #    источник dicom'ок:
     # https://www.kaggle.com/datasets/kmader/siim-medical-images
     # convert_dicom_zip_to_bmp_zip("archive.zip", "medical_containers.zip", debug=False)
+
+    #    источник рисованных портретов:
+    # https://www.kaggle.com/datasets/deewakarchakraborty/portrait-paintings
+    convert_jpeg_zip_to_bmp_zip("portraits.zip", "portrait_containers.zip")
