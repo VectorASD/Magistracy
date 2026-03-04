@@ -36,6 +36,13 @@ def _make_cga16_palette(): # как в паскальном терминале :
 
 CGA16 = _make_cga16_palette()
 
+def _to_gray(arr):
+    # gray = (0.299*arr[...,0] + 0.587*arr[...,1] + 0.114*arr[...,2]).astype(np.uint8)
+    # (4, 4, 4) -> 0.299*4 + 0.587*4 + 0.114*4 = 3.9999999999999996 -> 3
+    arr = arr.astype(np.uint32)
+    gray = ((299*arr[...,0] + 587*arr[...,1] + 114*arr[...,2]) // 1000).astype(np.uint8)
+    return gray
+
 def _build_palette_and_indices(arr, palette=None, palette_size=None, mode=None):
     def quantization(flat, palette):
         # advanced indexing (None и ':' в индексах) - создаёт лишь виртуальные ndarray, как если бы это был memref.subview в MLIR
@@ -54,7 +61,7 @@ def _build_palette_and_indices(arr, palette=None, palette_size=None, mode=None):
 
     if mode == "mono":
         pal  = np.array(((0, 0, 0), (255, 255, 255)), dtype=np.uint8)
-        gray = (0.299*arr[...,0] + 0.587*arr[...,1] + 0.114*arr[...,2]).astype(np.uint8)
+        gray = _to_gray(arr)
         idx  = (gray > 127).astype(np.uint8)
         return pal, idx
 
@@ -73,7 +80,7 @@ def _build_palette_and_indices(arr, palette=None, palette_size=None, mode=None):
 
     if mode == "gray":
         pal  = np.arange(256, dtype=np.uint8)[:, None].repeat(3, axis=1)
-        gray = (0.299*arr[...,0] + 0.587*arr[...,1] + 0.114*arr[...,2]).astype(np.uint8)
+        gray = _to_gray(arr)
         return pal, gray
 
     if mode == "random":
@@ -130,7 +137,7 @@ def _build_palette_and_indices(arr, palette=None, palette_size=None, mode=None):
 
 # --- headers-handler ---
 
-def read_bmp(f, debug=False):
+def read_bmp(f, debug=False, return_palette=False, to_gray=False):
     # FILE HEADER (14 bytes)
     magic = f.read(2)
     if magic != b"BM":
@@ -257,7 +264,15 @@ def read_bmp(f, debug=False):
         masks=(rmask, gmask, bmask, amask),
         top_down=top_down,
     )
-    return pix, palette
+
+    if return_palette:
+        return pix, palette
+
+    if palette is not None:
+        pix = palette[pix] # fancy indexing
+    if to_gray:
+        pix = _to_gray(pix)
+    return pix
 
 
 
@@ -378,10 +393,11 @@ def write_bmp(f, pix, *,
 
 # --- main ---
 
-def load_bmp(path, debug=False):
+def load_bmp(path, debug=False, return_palette=False, to_gray=False):
     print(f"Reading {path}...")
     with open(path, "rb") as file:
-        return read_bmp(file, debug)
+        return read_bmp(file, debug, return_palette, to_gray)
+    
 
 def save_bmp(path, pix, **kw):
     print(f"Saving {path}...")
@@ -391,7 +407,7 @@ def save_bmp(path, pix, **kw):
 
 
 if __name__ == "__main__":
-    pix, palette = load_bmp("origin.bmp", debug=False)
+    pix = load_bmp("origin.bmp", debug=False, to_gray=True)
     print(pix)
     save_bmp("saved_rgb.bmp", pix)
 

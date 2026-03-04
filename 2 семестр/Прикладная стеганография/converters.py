@@ -128,8 +128,7 @@ def bossbase_repacker(in_zip, out_zip):
             print(name)
 
             with zin.open(name, "r") as file:
-                pix, palette = read_bmp(file, debug=False)
-            assert palette is not None # bpp <= 8
+                pix = read_bmp(file, debug=False, to_gray=True)
 
             with zout.open(name, "w") as file:
                 # palette из read_bmp можно пропустить, т.к. мой режим 'gray' генерирует тоже самое
