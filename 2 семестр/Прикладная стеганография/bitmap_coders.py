@@ -430,25 +430,25 @@ def encode_rle4(idxmap):
 # RGB DECODER / ENCODER (vectorized)
 # ------------------------------------------------------------
 
-def decode_rgb(raw, width, height, bpp, top_down):
+def decode_rgb(raw, width, height, bpp):
     row_size = ((bpp * width + 31) // 32) * 4
 
     if bpp == 24:
         arr = np.frombuffer(raw, dtype=np.uint8)
         arr = arr.reshape((height, row_size))[:, :width*3]
         arr = arr.reshape((height, width, 3))
-        return arr if not top_down else arr[::-1]
+        return arr
 
     if bpp == 32:
         arr = np.frombuffer(raw, dtype=np.uint8)
         arr = arr.reshape((height, row_size))[:, :width*4]
         arr = arr.reshape((height, width, 4))
-        return arr if not top_down else arr[::-1]
+        return arr
 
     if bpp == 8:
         arr = np.frombuffer(raw, dtype=np.uint8)
         arr = arr.reshape((height, row_size))[:, :width]
-        return arr if not top_down else arr[::-1]
+        return arr
 
     raise ValueError(f"Unsupported bpp for BI_RGB: {bpp}")
 
@@ -520,7 +520,7 @@ def _mask_max(mask):
     shift = (mask & -mask).bit_length() - 1
     return mask >> shift
 
-def decode_bitfields(raw, width, height, bpp, rmask, gmask, bmask, top_down):
+def decode_bitfields(raw, width, height, bpp, rmask, gmask, bmask):
     row_size = ((bpp * width + 31) // 32) * 4
     px = np.frombuffer(raw, dtype=np.uint8)
     px = px.reshape((height, row_size))[:, :width*(bpp//8)]
@@ -540,9 +540,9 @@ def decode_bitfields(raw, width, height, bpp, rmask, gmask, bmask, top_down):
     B = B * 255 // _mask_max(bmask)
 
     arr = np.stack([R, G, B], axis=-1).astype(np.uint8)
-    return arr if not top_down else arr[::-1]
+    return arr
 
-def decode_bitfields_alpha(raw, width, height, bpp, rmask, gmask, bmask, amask, top_down):
+def decode_bitfields_alpha(raw, width, height, bpp, rmask, gmask, bmask, amask):
     row_size = ((bpp * width + 31) // 32) * 4
     px = np.frombuffer(raw, dtype=np.uint8)
     px = px.reshape((height, row_size))[:, :width*(bpp//8)]
@@ -564,7 +564,7 @@ def decode_bitfields_alpha(raw, width, height, bpp, rmask, gmask, bmask, amask, 
     A = A * 255 // _mask_max(amask)
 
     arr = np.stack([R, G, B, A], axis=-1).astype(np.uint8)
-    return arr if not top_down else arr[::-1]
+    return arr
 
 # ------------------------------------------------------------
 # CMYK DECODER (vectorized)
@@ -578,7 +578,7 @@ def cmyk_row_size(width):
     # For any bpp, alignment is up to 4 bytes
     return row_size
 
-def decode_cmyk(raw, width, height, top_down):
+def decode_cmyk(raw, width, height):
     row_size = cmyk_row_size(width) # BMP row alignment
     px = np.frombuffer(raw, dtype=np.uint8)
     px = px.reshape((height, row_size))[:, :width*4]
@@ -589,9 +589,9 @@ def decode_cmyk(raw, width, height, top_down):
     G = 255 - np.minimum(255, M + K)
     B = 255 - np.minimum(255, Y + K)
     rgb = np.stack([R,G,B], axis=-1).astype(np.uint8)
-    return rgb if not top_down else rgb[::-1]
+    return rgb
 
-def decode_cmyk_rle8(raw, colors_used, width, height, top_down):
+def decode_cmyk_rle8(raw, colors_used, width, height):
     # raw = palette(4*N bytes) + rle_stream
     palette_size = colors_used * 4
     palette = np.frombuffer(raw[:palette_size], dtype=np.uint8).reshape((colors_used, 4))
@@ -606,9 +606,9 @@ def decode_cmyk_rle8(raw, colors_used, width, height, top_down):
     B = 255 - np.minimum(255, Y + K)
 
     rgb = np.stack([R,G,B], axis=-1).astype(np.uint8)
-    return rgb if not top_down else rgb[::-1]
+    return rgb
 
-def decode_cmyk_rle4(raw, colors_used, width, height, top_down):
+def decode_cmyk_rle4(raw, colors_used, width, height):
     palette_size = colors_used * 4
     palette = np.frombuffer(raw[:palette_size], dtype=np.uint8).reshape((colors_used, 4))
     rle_stream = raw[palette_size:]
@@ -622,7 +622,7 @@ def decode_cmyk_rle4(raw, colors_used, width, height, top_down):
     B = 255 - np.minimum(255, Y + K)
 
     rgb = np.stack([R,G,B], axis=-1).astype(np.uint8)
-    return rgb if not top_down else rgb[::-1]
+    return rgb
 
 # ------------------------------------------------------------
 # CMYK ENCODER (vectorized)
@@ -734,36 +734,38 @@ BMP_COMPRESSION_to_str = {
     13: "BI_CMYKRLE4",
 }
 
-def decode_bmp_pixels(raw, width, height, bpp, comp, palette, colors_used, masks, top_down):
+def decode_bmp_pixels(raw, width, height, bpp, comp, colors_used, masks):
     rmask, gmask, bmask, amask = masks
 
     match comp:
         case 0: # BI_RGB
-            return decode_rgb(raw, width, height, bpp, top_down)
+            return decode_rgb(raw, width, height, bpp)
 
         case 1: # BI_RLE8
             idx = decode_rle8(raw, width, height)
-            if palette is None:
-                raise ValueError("RLE8 requires palette for decoding to RGB")
-            rgb = palette[idx]
-            return rgb if not top_down else rgb[::-1]
+            # if palette is None:
+            #     raise ValueError("RLE8 requires palette for decoding to RGB")
+            # rgb = palette[idx]
+            # return rgb if not top_down else rgb[::-1]
+            return idx
 
         case 2: # BI_RLE4
             idx = decode_rle4(raw, width, height)
-            if palette is None:
-                raise ValueError("RLE4 requires palette for decoding to RGB")
-            rgb = palette[idx]
-            return rgb if not top_down else rgb[::-1]
+            # if palette is None:
+            #     raise ValueError("RLE4 requires palette for decoding to RGB")
+            # rgb = palette[idx]
+            # return rgb if not top_down else rgb[::-1]
+            return idx
 
         case 3: # BI_BITFIELDS
             if rmask is None or gmask is None or bmask is None:
                 raise ValueError("BITFIELDS requires RGB masks")
-            return decode_bitfields(raw, width, height, bpp, rmask, gmask, bmask, top_down)
+            return decode_bitfields(raw, width, height, bpp, rmask, gmask, bmask)
 
         case 6: # BI_ALPHABITFIELDS
             if rmask is None or gmask is None or bmask is None or amask is None:
                 raise ValueError("ALPHABITFIELDS requires RGBA masks")
-            return decode_bitfields_alpha(raw, width, height, bpp, rmask, gmask, bmask, amask, top_down)
+            return decode_bitfields_alpha(raw, width, height, bpp, rmask, gmask, bmask, amask)
 
         case 4: # BI_JPEG
             Image = get_pillow_Image()
@@ -776,19 +778,19 @@ def decode_bmp_pixels(raw, width, height, bpp, comp, palette, colors_used, masks
             return np.array(img)
 
         case 11: # BI_CMYK
-            return decode_cmyk(raw, width, height, top_down)
+            return decode_cmyk(raw, width, height)
 
         case 12: # BI_CMYKRLE8
-            return decode_cmyk_rle8(raw, colors_used, width, height, top_down)
+            return decode_cmyk_rle8(raw, colors_used, width, height)
 
         case 13: # BI_CMYKRLE4
-            return decode_cmyk_rle4(raw, colors_used, width, height, top_down)
+            return decode_cmyk_rle4(raw, colors_used, width, height)
 
         case _:
             comp_name = BMP_COMPRESSION_to_str.get(comp, f"unknown ({comp})")
             raise ValueError(f"Unknown BMP compression: {comp_name}")
 
-def encode_bmp_pixels(arr, comp, *, bpp=None, palette=None, masks=None):
+def encode_bmp_pixels(arr, comp, *, bpp=None, masks=None):
     rmask, gmask, bmask, amask = masks if masks else (None, None, None, None)
 
     match comp:

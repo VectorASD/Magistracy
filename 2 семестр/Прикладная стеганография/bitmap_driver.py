@@ -216,7 +216,7 @@ def read_bmp(f, debug=False, return_palette=False, to_gray=False):
         reserved     = read_u32(dib) # 120–124 (bV5Reserved)
         # всё это метаданные, на пиксели не влияет
 
-    top_down = height >= 0
+    top_down = height < 0
     height   = abs(height)
 
     # PALETTE
@@ -259,11 +259,10 @@ def read_bmp(f, debug=False, return_palette=False, to_gray=False):
         height=height,
         bpp=bpp,
         comp=comp,
-        palette=palette,
         colors_used=colors_used,
         masks=(rmask, gmask, bmask, amask),
-        top_down=top_down,
     )
+    pix = pix if top_down else pix[::-1]
 
     if return_palette:
         return pix, palette
@@ -283,8 +282,10 @@ def write_bmp(f, pix, *,
               mode         =None,
               gray         =False,
               bitfields_565=False,
-              top_down     =False):
+              top_down     =True):
     arr = np.asarray(pix)
+    if not top_down:
+        arr = arr[::-1]
     if arr.ndim == 2:
         arr = np.stack((arr, arr, arr), axis=-1)
     h, w, c = arr.shape
@@ -336,7 +337,7 @@ def write_bmp(f, pix, *,
     hdr = BytesIO()
     write_u32(hdr, dib_size)
     write_i32(hdr, w)
-    write_i32(hdr, h if top_down else -h)
+    write_i32(hdr, -h if top_down else h)
     write_u16(hdr, 1)    # planes
     write_u16(hdr, bpp)
     write_u32(hdr, comp)
