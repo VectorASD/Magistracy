@@ -108,11 +108,13 @@ def main(path, msg_path):
 
 
 
-def bmp_sampler_from_zip(path, count):
+def bmp_sampler_from_zip(path, count, filter=True):
     pixs = []
     with zipfile.ZipFile(path, "r") as zip:
         file_list = zip.namelist()
         assert len(file_list) >= count
+        if filter:
+            file_list = tuple(name for name in file_list if not name.startswith("ernst-ludwig-kirchner"))
         sample = random.sample(file_list, count)
 
         for name in sample:

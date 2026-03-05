@@ -5,6 +5,21 @@ from solve_1 import get_k_layer
 
 import tkinter as tk
 from tkinter import ttk
+import platform
+
+"""
+tk  — это классические виджеты Tk, созданные ещё в 90‑х.
+ttk — это “themed Tk”, современная библиотека поверх Tk, добавляющая темы и стили.
+
+tk‑виджеты выглядят одинаково на всех ОС (серые, квадратные).
+ttk‑виджеты используют нативные темы ОС (Windows, macOS, Linux).
+
+Пример:
+tk.Button  выглядит как старый серый прямоугольник.
+ttk.Button выглядит как нормальная кнопка Windows/macOS.
+"""
+
+win = platform.system() == "Windows"
 
 
 
@@ -37,7 +52,7 @@ def dump_tree(app):
 
 
 class ScrollableFrame(ttk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, ctrl_cb):
         super().__init__(parent)
 
         # Критично: дать фрейму реальный минимальный размер
@@ -74,6 +89,8 @@ class ScrollableFrame(ttk.Frame):
         self.canvas.bind("<Configure>", self._on_canvas_configure)
 
         # Мыщ
+        self.ctrl_cb  = ctrl_cb
+        self.is_combo = False
         self._bind_mousewheel()
 
     def _on_frame_configure(self, event):
@@ -98,9 +115,29 @@ class ScrollableFrame(ttk.Frame):
         self.canvas.bind_all("<Button-5>", self._on_mousewheel)
 
     def _on_mousewheel(self, event):
-        is_shift  = (event.state & 0x0001) != 0  # Shift mask
+        # события колеса мыши перехватываются Combobox
+        # и дублируются в вертикальный scrollbar :/
+        if self.is_combo:
+            return
+
+        # print(hex(event.state))
+        is_shift = bool(event.state & 0x00001) # Shift mask
+        is_ctrl  = bool(event.state & 0x00004) # Ctrl  mask
+        alt_mask = 0x20000 if win else 0x00008 # Alt   mask
+        is_alt   = bool(event.state & alt_mask)
+        # 00002 - shift  lock (средняя лампочка клавиатуры)
+        # 00008 - num    lock (нижняя  лампочка клавиатуры)
+        # 00020 - scroll lock (верхняя лампочка клавиатуры)
+        # 00100 - ЛКМ зажата
+        # 00200 - СКМ зажата
+        # 00400 - ПКМ зажата
+
         can       = self.canvas
-        scroll_fn = can.xview_scroll if is_shift else can.yview_scroll
+        scroll_fn = (
+                 self.ctrl_cb     if is_ctrl
+            else can.xview_scroll if is_shift
+            else can.yview_scroll
+        )
 
         if event.num == 4:   # Linux scroll up
             scroll_fn(-1, "units")
@@ -136,8 +173,9 @@ class BitPlaneGUI(tk.Tk):
         self.pixs = None
         self.pix  = None
         self.images = []
+        self.zoom = 1.
 
-        root = ScrollableFrame(self)
+        root = ScrollableFrame(self, self.ctrl_cb)
         root.pack(side="top", fill="both", expand=True)
 
         self.top_labels = self._grid(root.inner)
@@ -150,6 +188,9 @@ class BitPlaneGUI(tk.Tk):
         )
         combo.pack(pady=0)
         combo.bind("<<ComboboxSelected>>", self.on_select_base)
+        def is_combo(value): root.is_combo = value
+        combo.bind("<Enter>", lambda e: is_combo(True))
+        combo.bind("<Leave>", lambda e: is_combo(False))
         combo.current(0)
 
         self.bottom_labels = self._grid(root.inner)
@@ -160,18 +201,18 @@ class BitPlaneGUI(tk.Tk):
         base = self.combo.get()
 
         self.pixs = self.cb(base)
-        self.pix = self.pixs[0]
 
         self.show_original_previews()
-        self.show_bit_planes()
+        self.on_click_original(0)
 
     def show_original_previews(self):
         self.images.clear()
-
         assert len(self.pixs) == 8
+
+        size = int(256 * self.zoom)
         for idx, pix in enumerate(self.pixs):
             img = Image.fromarray(pix.astype(np.uint8))
-            img = img.resize((256, 256), Image.NEAREST)
+            img = img.resize((size, size), Image.NEAREST)
             tk_img = ImageTk.PhotoImage(img)
 
             r, c = divmod(idx, 4)
@@ -186,17 +227,19 @@ class BitPlaneGUI(tk.Tk):
             # если не сохранить PhotoImage, мусоросборщик её съест...
             self.images.append(tk_img)
 
-    def on_click_original(self, event=None):
+    def on_click_original(self, idx):
+        self.pix = self.pixs[idx]
         self.show_bit_planes()
 
     def show_bit_planes(self): # остальные 8 картинок
         if self.pix is None:
             return
 
+        size = int(256 * self.zoom)
         for k in range(1, 9):
             plane = get_k_layer(self.pix, k) * 255
             img = Image.fromarray(plane.astype(np.uint8))
-            img = img.resize((256, 256), Image.NEAREST)
+            img = img.resize((size, size), Image.NEAREST)
             tk_img = ImageTk.PhotoImage(img)
 
             r, c = divmod(k - 1, 4)
@@ -207,13 +250,17 @@ class BitPlaneGUI(tk.Tk):
 
             self.images.append(tk_img)
 
+    def ctrl_cb(self, direction, units):
+        self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
+        self.show_original_previews()
+        self.show_bit_planes()
+
 
 
 if __name__ == "__main__":
     from solve_1 import bmp_sampler_from_zip
     container_names = ("BOSSbase", "medical", "portrait")
     def cb(name):
-        print("NAME:", name)
         match name:
             case "BOSSbase": path = "bossbase_containers.zip"
             case "medical":  path = "medical_containers.zip"
