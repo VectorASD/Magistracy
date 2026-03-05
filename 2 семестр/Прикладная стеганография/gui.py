@@ -127,6 +127,9 @@ class ScrollableFrame(ttk.Frame):
         # 00200 - СКМ зажата
         # 00400 - ПКМ зажата
 
+        # mods = ('Shift', 'Lock', 'Control', 'Mod1', 'Mod2', 'Mod3', 'Mod4', 'Mod5', 'Button1', 'Button2', 'Button3', 'Button4', 'Button5')
+        # прямо из: %LocalAppData%\Programs\Python\Python314\Lib\tkinter\__init__.py:272
+
         can       = self.canvas
         scroll_fn = (
                  self.ctrl_cb     if is_ctrl
@@ -227,7 +230,7 @@ class BitPlaneGUI(tk.Tk):
         self.plane_cb = plane_cb # (pix, k) -> (plane, k_label) 
         self.pixs     = None
         self.pix      = None
-        self.images   = []
+        self.prev_idx = None
         self.zoom     = 1.
 
         root = ScrollableFrame(self, self.ctrl_cb)
@@ -246,27 +249,17 @@ class BitPlaneGUI(tk.Tk):
         def on_gui_ready():
             panel.postinit()
         self.after_idle(on_gui_ready)
-        """
-        # Выпадающий список выбора набора
-        self.combo = combo = ttk.Combobox(
-            root.inner,
-            values=container_names,
-            state="readonly"
-        )
-        combo.pack(pady=0)
-        """
 
     def show_original_previews(self, pixs=None):
         if pixs is not None:
             self.pixs = pixs
+            self.prev_idx = None
         if self.pixs is None:
             return
 
-        self.images.clear()
         assert len(self.pixs) == 8
 
         size = int(256 * self.zoom)
-        print("pixs:", self.pixs) # кортеж из восьми: array(..., shape=(512, 512), dtype=uint8)
         for idx, pix in enumerate(self.pixs):
             img = Image.fromarray(pix.astype(np.uint8))
             img = img.resize((size, size), Image.NEAREST)
@@ -277,16 +270,29 @@ class BitPlaneGUI(tk.Tk):
             lbl = self.top.labels[r][c]
             lbl.configure(image=tk_img)
             lbl.image = tk_img
+            lbl._idx = idx
 
-            # важно: сохранить индекс, чтобы знать, по какой картинке кликнули
-            lbl.bind("<Button-1>", lambda e, i=idx: self.on_click_original(i))
+            def on_motion(event):
+                Button1 = event.state & 0x00100 # ЛКМ
+                if Button1:
+                    x = event.x_root
+                    y = event.y_root
+                    w = event.widget.winfo_containing(x, y)
+                    if hasattr(w, "_idx"):
+                        self.on_click_original(w._idx)
+            lbl.bind("<Motion>", on_motion)
 
             # если не сохранить PhotoImage, мусоросборщик её съест...
-            self.images.append(tk_img)
+            #     lbl.configure(image=tk_img) не создаёт ссылку в Python
+            #     lbl.image = tk_img          создаёт ссылку
+            #     self.images.append(tk_img)  тоже создаёт ссылку
+            # по этому self.images НЕ нужен
 
     def on_click_original(self, idx):
-        self.pix = self.pixs[idx]
-        self.show_bit_planes()
+        if self.prev_idx != idx:
+            self.prev_idx = idx
+            self.pix = self.pixs[idx]
+            self.show_bit_planes()
 
     def show_bit_planes(self): # остальные 8 картинок
         if self.pix is None:
@@ -304,8 +310,6 @@ class BitPlaneGUI(tk.Tk):
             lbl = self.bottom.labels[r][c]
             lbl.configure(image=tk_img, text=k_label, compound="top")
             lbl.image = tk_img
-
-            self.images.append(tk_img)
 
     def ctrl_cb(self, direction, units):
         self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
