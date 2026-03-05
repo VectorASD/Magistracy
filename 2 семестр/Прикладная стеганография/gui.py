@@ -88,16 +88,13 @@ class ScrollableFrame(ttk.Frame):
 
         # Мыщ
         self.ctrl_cb  = ctrl_cb
-        self.is_combo = False
+        self.is_combo = None
         self._bind_mousewheel()
 
     def _on_frame_configure(self, event):
         # Получаем реальный размер внутреннего фрейма
         w = self.inner.winfo_reqwidth()
         h = self.inner.winfo_reqheight()
-
-        # Обновляем размер окна внутри Canvas
-        #self.canvas.itemconfig(self.inner_id, width=w)
 
         # Обновляем scrollregion
         self.canvas.configure(scrollregion=(0, 0, w, h))
@@ -115,7 +112,7 @@ class ScrollableFrame(ttk.Frame):
     def _on_mousewheel(self, event):
         # события колеса мыши перехватываются Combobox
         # и дублируются в вертикальный scrollbar :/
-        if self.is_combo:
+        if self.is_combo.get():
             return
 
         # print(hex(event.state))
@@ -144,29 +141,89 @@ class ScrollableFrame(ttk.Frame):
         else:                # Windows / macOS
             scroll_fn(-1 * (event.delta // 120), "units")
 
+class ControlPanel(ttk.Frame):
+    def __init__(self, master, opts):
+        super().__init__(master)
+        self.combos = []
+        self.is_combo = tk.BooleanVar()
+
+        for entry in opts:
+            names     = tuple(item for item in entry if isinstance(item, (str, bool, int, float, complex)))
+            callbacks = tuple(item for item in entry if callable(item))
+
+            assert names, "Нужны имена"
+            assert len(callbacks) == 1, "Должен быть ровно один callback"
+
+            callback = callbacks[0]
+
+            # Кнопка
+            if len(names) == 1:
+                name = names[0]
+                def on_press(cb=callback):
+                    cb()
+                btn = ttk.Button(self, text=name, command=on_press)
+                btn.pack(side="left", padx=4)
+
+            # Чекбокс
+            elif len(names) == 2 and names[0] == names[1]:
+                name = names[0]
+                def on_toggle(event, cb=callback):
+                    cb(event.widget._var.get())
+                var = tk.BooleanVar()
+                chk = ttk.Checkbutton(self, text=name, variable=var)
+                chk.bind("<ButtonRelease-1>", on_toggle)
+                chk.pack(side="left", padx=4)
+                chk._var = var
+
+            # Выпадающий список
+            else:
+                combo = ttk.Combobox(self, values=names, state="readonly")
+                def on_select(event=None, cb=callback, combo=combo):
+                    cb(combo.get())
+                def is_combo(event):
+                    # print(event.type) # 7 и 8
+                    # >>> tk.EventType.Enter -> <EventType.Enter: '7'>
+                    # >>> tk.EventType.Leave -> <EventType.Leave: '8'>
+                    event.widget._entered = event.type == tk.EventType.Enter
+                    is_combo = any(combo._entered for combo in self.combos)
+                    self.is_combo.set(is_combo)
+                combo.bind("<<ComboboxSelected>>", on_select)
+                combo.bind("<Enter>", is_combo)
+                combo.bind("<Leave>", is_combo)
+                combo.pack(side="left", padx=4)
+                combo._entered = False
+                self.combos.append(combo)
+
+    def postinit(self):
+        for combo in self.combos:
+            combo.current(0)
+            combo.event_generate("<<ComboboxSelected>>")
 
 
-def _grid(root):
-    frame = ttk.Frame(root)
-    frame.pack(pady=10)
 
-    labels = []
-    for r in range(2):
-        row = []
-        for c in range(4):
-            label = ttk.Label(frame)
-            label.grid(row=r, column=c, padx=0, pady=0)
-            row.append(label)
-        labels.append(row)
-    return labels
+class ImageGrid(ttk.Frame):
+    def __init__(self, master, rows=2, cols=4, padx=0, pady=0):
+        super().__init__(master)
+
+        self.labels = []
+
+        for r in range(rows):
+            row = []
+            for c in range(cols):
+                lbl = ttk.Label(self)
+                lbl.grid(row=r, column=c, padx=padx, pady=pady)
+                row.append(lbl)
+            self.labels.append(row)
+
+
 
 class BitPlaneGUI(tk.Tk):
-    def __init__(self, container_names, pixs_cb, plane_cb):
+    def __init__(self, plane_cb, opts):
         super().__init__()
         self.title("Bit-plane Viewer")
         self.geometry("1400x1000")
+        self.bind("d", lambda e: dump_tree(self))
 
-        self.pixs_cb  = pixs_cb  # base     -> pixs
         self.plane_cb = plane_cb # (pix, k) -> (plane, k_label) 
         self.pixs     = None
         self.pix      = None
@@ -176,8 +233,20 @@ class BitPlaneGUI(tk.Tk):
         root = ScrollableFrame(self, self.ctrl_cb)
         root.pack(side="top", fill="both", expand=True)
 
-        self.top_labels = _grid(root.inner)
+        self.top = ImageGrid(root.inner, rows=2, cols=4)
+        self.top.pack(side="top", pady=0)
 
+        panel = ControlPanel(root.inner, opts)
+        panel.pack(side="top", fill="x", pady=5)
+        root.is_combo = panel.is_combo
+
+        self.bottom = ImageGrid(root.inner, rows=2, cols=4)
+        self.bottom.pack(side="top", pady=0)
+
+        def on_gui_ready():
+            panel.postinit()
+        self.after_idle(on_gui_ready)
+        """
         # Выпадающий список выбора набора
         self.combo = combo = ttk.Combobox(
             root.inner,
@@ -185,29 +254,19 @@ class BitPlaneGUI(tk.Tk):
             state="readonly"
         )
         combo.pack(pady=0)
-        combo.bind("<<ComboboxSelected>>", self.on_select_base)
-        def is_combo(value): root.is_combo = value
-        combo.bind("<Enter>", lambda e: is_combo(True))
-        combo.bind("<Leave>", lambda e: is_combo(False))
-        combo.current(0)
+        """
 
-        self.bottom_labels = _grid(root.inner)
+    def show_original_previews(self, pixs=None):
+        if pixs is not None:
+            self.pixs = pixs
+        if self.pixs is None:
+            return
 
-        self.on_select_base()
-
-    def on_select_base(self, event=None):
-        base = self.combo.get()
-
-        self.pixs = self.pixs_cb(base)
-
-        self.show_original_previews()
-        self.on_click_original(0)
-
-    def show_original_previews(self):
         self.images.clear()
         assert len(self.pixs) == 8
 
         size = int(256 * self.zoom)
+        print("pixs:", self.pixs) # кортеж из восьми: array(..., shape=(512, 512), dtype=uint8)
         for idx, pix in enumerate(self.pixs):
             img = Image.fromarray(pix.astype(np.uint8))
             img = img.resize((size, size), Image.NEAREST)
@@ -215,7 +274,7 @@ class BitPlaneGUI(tk.Tk):
 
             r, c = divmod(idx, 4)
 
-            lbl = self.top_labels[r][c]
+            lbl = self.top.labels[r][c]
             lbl.configure(image=tk_img)
             lbl.image = tk_img
 
@@ -242,7 +301,7 @@ class BitPlaneGUI(tk.Tk):
 
             r, c = divmod(k - 1, 4)
 
-            lbl = self.bottom_labels[r][c]
+            lbl = self.bottom.labels[r][c]
             lbl.configure(image=tk_img, text=k_label, compound="top")
             lbl.image = tk_img
 

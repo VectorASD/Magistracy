@@ -125,22 +125,31 @@ def bmp_sampler_from_zip(path, count, filter=True):
     return pixs
 
 def gui_main():
-    # уже намечается гибкая декларативная система конфигурации источников данных
-    container_names = ("BOSSbase", "medical", "portrait")
-    def pixs_cb(name):
-        match name:
-            case "BOSSbase": path = "assets/bossbase_containers.zip"
-            case "medical":  path = "assets/medical_containers.zip"
-            case "portrait": path = "assets/portrait_containers.zip"
-        return bmp_sampler_from_zip(path, 8)
-
     def plane_cb(pix, k):
         pix   = get_k_layer(pix, k) * 255
         label = f"k={k}"
         return pix, label
 
-    app = BitPlaneGUI(container_names, pixs_cb, plane_cb)
-    app.bind("d", lambda e: dump_tree(app))
+    # Гибкая декларативная система конфигурации источников данных :)
+
+    def pixs_cb(name):
+        match name:
+            case "BOSSbase": path = "assets/bossbase_containers.zip"
+            case "medical":  path = "assets/medical_containers.zip"
+            case "portrait": path = "assets/portrait_containers.zip"
+        pixs = bmp_sampler_from_zip(path, 8)
+        app.show_original_previews(pixs)
+        app.on_click_original(0)
+
+    opts = (
+        ("BOSSbase", "medical", "portrait", pixs_cb),
+        ("is_checkbox", "is_checkbox",      lambda checked: print("checked:", checked)),
+        ("is_button",                       lambda: print("punched!")),
+    )
+
+    # Графическая петля
+
+    app = BitPlaneGUI(plane_cb, opts)
     app.mainloop()
 
 
