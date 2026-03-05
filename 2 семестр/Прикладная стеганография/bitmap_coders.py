@@ -51,7 +51,7 @@ def decode_rle8(data, width, height, debug=False):
                 n = val
                 end = min(x+n, width)
                 if debug: print(f"+ 00 {n:02x} {data[i:i+(end-x)].hex()} (container)")
-                out[y, x:end] = data[i:i+(end-x)]
+                out[y, x:end] = tuple(data[i:i+(end-x)])
                 i += n
                 if n & 1: # padding
                     i += 1

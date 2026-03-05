@@ -4,6 +4,7 @@ from bitmap_driver import read_bmp, load_bmp, save_bmp
 
 import zipfile
 import os
+import random
 
 
 
@@ -43,7 +44,9 @@ def read_k_layer(pix, k):
     need = 0
     for i in range(32):
         need |= int(bits[-1-i]) << i
-    # print(len(bits), need) # 262144 262112
+    # print(need, len(bits)) # 262112 262144
+    if need > len(bits) - 32:
+        raise ValueError("Corrupted container: message length is invalid")
     message = np.packbits(bits[:need]).tobytes()
     return message
 
@@ -81,7 +84,9 @@ def read_bmp_from_zip(path):
             pix = read_bmp(file, debug=False, to_gray=True)
     return pix
 
-def main(pix, msg_path):
+def main(path, msg_path):
+    pix = read_bmp_from_zip(path)
+
     for k in range(1, 9):
         save_layer(f"result/layer_k{k}.bmp", pix, k)
 
@@ -103,10 +108,29 @@ def main(pix, msg_path):
 
 
 
+def bmp_sampler_from_zip(path, count):
+    pixs = []
+    with zipfile.ZipFile(path, "r") as zip:
+        file_list = zip.namelist()
+        assert len(file_list) >= count
+        sample = random.sample(file_list, count)
+
+        for name in sample:
+            with zip.open(name, "r") as file:
+                pix = read_bmp(file, debug=False, to_gray=True)
+            pixs.append(pix)
+    return pixs
+
+def main2(path, count):
+    pixs = bmp_sampler_from_zip(path, count)
+    print(pixs)
+
+
+
 if __name__ == "__main__":
     path     = "bossbase_containers.zip"
     msg_path = "Harry Potter and the Philosopher's Stone.txt"
+    count    = 8
 
-    pix = read_bmp_from_zip(path)
-    main(pix, msg_path)
-
+    # main(path, msg_path)
+    main2(path, count)
