@@ -14,12 +14,16 @@ def get_k_layer(pix, k):
     if k != 8: shifted &= 1
     return shifted
 
-def insert_k_layer(pix, k, message):
+def insert_k_layer(pix, k, message, *, slice=False):
     W, H = pix.shape
     capacity = W * H - 32
     need = len(message) * 8
     if capacity < need:
-        raise ValueError(f"Capacity is {capacity}, but required is {need}") 
+        if slice:
+            message = message[:capacity // 8]
+            need = len(message) * 8
+        else:
+            raise ValueError(f"Capacity is {capacity}, but required is {need}") 
 
     bits = np.unpackbits(np.frombuffer(message, dtype=np.uint8))
     assert bits.shape == (need,)
@@ -109,6 +113,67 @@ def main(path, msg_path):
 
 
 
+"""
+Что именно измеряют MSE, PSNR и SSIM?
+
+Эти три метрики появились в задачах:
+    сжатия изображений (JPEG, JPEG2000),
+    восстановления после шума,
+    суперразрешения,
+    денойзинга,
+    реконструкции после передачи по каналу.
+
+Их смысл:
+    MSE — насколько сильно отличаются два изображения по пикселям.
+    PSNR — насколько «громкий» сигнал по сравнению с ошибкой.
+    SSIM — насколько похожи структуры, контраст и яркость.
+
+То есть они отвечают на вопрос:
+    «Насколько хорошо 𝐼^ (искажённое изображение) похоже на оригинал 𝐼?»
+"""
+
+# lambda mean(x): x.astype(np.float32).sum() / x.size                     AVG
+# lambda var(x): ((mean(x) - x.astype(np.float32)) ** 2).sum() / x.size   дисперсия
+
+def mean_squared_error(orig: np.ndarray, stego: np.ndarray) -> float: # MSE
+    """MSE — Mean Squared Error"""
+    diff = orig.astype(np.float32) - stego.astype(np.float32)
+    return float((diff * diff).mean())
+
+def peak_signal_to_noise_ratio(orig: np.ndarray, stego: np.ndarray) -> float:
+    """PSNR — Peak Signal-to-Noise Ratio"""
+    mse = mean_squared_error(orig, stego)
+    if mse == 0:
+        return float("inf")
+    MAX_I = 255
+    return float(10 * np.log10((MAX_I * MAX_I) / mse))
+
+def structural_similarity_index(orig: np.ndarray, stego: np.ndarray) -> float:
+    """SSIM — Structural Similarity Index""" # на деле SIM - это первые 3 буквы Similarity :)
+    orig = orig.astype(np.float32)
+    stego = stego.astype(np.float32)
+
+    mu_x  = orig.mean()
+    mu_y  = stego.mean()
+
+    sigma_x2 = orig.var()
+    sigma_y2 = stego.var()
+    sigma_xy = ((orig - mu_x) * (stego - mu_y)).mean() # ковариация
+    # Дисперсия измеряет, насколько значения одной величины отклоняются от своего среднего.
+    # Ковариация измеряет, насколько две величины отклоняются от своих средних одновременно.
+    # Дисперсия — это частный случай ковариации, когда сравнивают величину саму с собой.
+
+    MAX_I = 255
+    C1 = (0.01 * MAX_I) ** 2 #  6.5025
+    C2 = (0.03 * MAX_I) ** 2 # 58.5225
+
+    num = (2 * mu_x * mu_y + C1) * (2 * sigma_xy + C2)
+    den = (mu_x**2 + mu_y**2 + C1) * (sigma_x2 + sigma_y2 + C2)
+
+    return float(num / den)
+
+
+
 def bmp_sampler_from_zip(path, count, filter=True):
     pixs = []
     with zipfile.ZipFile(path, "r") as zip:
@@ -124,33 +189,81 @@ def bmp_sampler_from_zip(path, count, filter=True):
             pixs.append(pix)
     return pixs
 
-def gui_main():
-    def plane_cb(pix, k):
-        pix   = get_k_layer(pix, k) * 255
-        label = f"k={k}"
-        return pix, label
+class MainGUI:
+    def plane_cb(self, orig, k):
+        pix = orig
+        if self.plane:
+            pix = get_k_layer(pix, k) * 255
+        if self.stego:
+            # ValueError: Capacity is 262112, but required is 3628328
+            pix = insert_k_layer(pix, k, self.message, slice=True)
 
-    # Гибкая декларативная система конфигурации источников данных :)
+        label = [f"k={k}"]
+        if self.mse:
+            mse = mean_squared_error(orig, pix)
+            label.append(f"mse={mse:.4f}")
+        if self.psnr:
+            psnr = peak_signal_to_noise_ratio(orig, pix)
+            label.append(f"psnr={psnr:.4f}")
+        if self.ssim:
+            ssim = structural_similarity_index(orig, pix)
+            label.append(f"ssim={ssim:.4f}")
 
-    def pixs_cb(name):
+        return pix, ", ".join(label)
+
+    def recalc(self):
+        self.app.show_bit_planes()
+
+    def pixs_cb(self, name):
         match name:
             case "BOSSbase": path = "assets/bossbase_containers.zip"
             case "medical":  path = "assets/medical_containers.zip"
             case "portrait": path = "assets/portrait_containers.zip"
         pixs = bmp_sampler_from_zip(path, 8)
-        app.show_original_previews(pixs)
-        app.on_click_original(0)
 
-    opts = (
-        ("BOSSbase", "medical", "portrait", pixs_cb),
-        ("is_checkbox", "is_checkbox",      lambda checked: print("checked:", checked)),
-        ("is_button",                       lambda: print("punched!")),
-    )
+        self.app.show_original_previews(pixs)
+        self.app.on_click_original(0)
 
-    # Графическая петля
+    def on_plane(self, on): self.plane = on; self.recalc()
+    def on_stego(self, on): self.stego = on; self.recalc()
+    def on_mse  (self, on): self.mse   = on; self.recalc()
+    def on_psnr (self, on): self.psnr  = on; self.recalc()
+    def on_ssim (self, on): self.ssim  = on; self.recalc()
 
-    app = BitPlaneGUI(plane_cb, opts)
-    app.mainloop()
+    def FDDSCS(self):
+        # Гибкая декларативная система конфигурации источников данных :)
+        # Flexible declarative data source configuration system (FDDSCS)
+
+        self.opts = (
+            ("BOSSbase", "medical", "portrait", self.pixs_cb),
+            # ("is_checkbox", "is_checkbox",      lambda checked: print("checked:", checked)),
+            # ("is_button",                       lambda: print("punched!")),
+            ("plane", "plane", self.on_plane, {"default": True}),
+            ("stego", "stego", self.on_stego),
+            ("mse",   "mse",   self.on_mse),
+            ("psnr",  "psnr",  self.on_psnr),
+            ("ssim",  "ssim",  self.on_ssim),
+        )
+
+    def read_message(self):
+        with open(self.msg_path, "rb") as file:
+            self.message = file.read()
+
+    def __init__(self):
+        self.plane = True
+        self.stego = False
+        self.mse   = False
+        self.psnr  = False
+        self.ssim  = False
+        self.FDDSCS()
+
+        self.msg_path = "assets/Harry Potter and the Philosopher's Stone.txt"
+        self.read_message()
+
+        self.app = BitPlaneGUI(self.plane_cb, self.opts)
+
+    def mainloop(self):
+        self.app.mainloop()
 
 
 
@@ -160,4 +273,4 @@ if __name__ == "__main__":
     count    = 8
 
   # main(path, msg_path)
-    gui_main()
+    MainGUI().mainloop()

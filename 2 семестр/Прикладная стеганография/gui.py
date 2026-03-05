@@ -50,7 +50,7 @@ def dump_tree(app):
 
 
 class ScrollableFrame(ttk.Frame):
-    def __init__(self, parent, ctrl_cb):
+    def __init__(self, parent, ctrl_cb, *, to_bottom=False):
         super().__init__(parent)
 
         # Критично: дать фрейму реальный минимальный размер
@@ -85,6 +85,7 @@ class ScrollableFrame(ttk.Frame):
         # Обновление scrollregion при изменении размера
         self.inner.bind("<Configure>",  self._on_frame_configure)
         self.canvas.bind("<Configure>", self._on_canvas_configure)
+        self.to_bottom = to_bottom
 
         # Мыщ
         self.ctrl_cb  = ctrl_cb
@@ -98,6 +99,9 @@ class ScrollableFrame(ttk.Frame):
 
         # Обновляем scrollregion
         self.canvas.configure(scrollregion=(0, 0, w, h))
+        if self.to_bottom:
+            self.to_bottom = False
+            self.after(0, lambda: self.canvas.yview_moveto(1.0))
 
     def _on_canvas_configure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -153,15 +157,19 @@ class ControlPanel(ttk.Frame):
         for entry in opts:
             names     = tuple(item for item in entry if isinstance(item, (str, bool, int, float, complex)))
             callbacks = tuple(item for item in entry if callable(item))
+            metas     = tuple(item for item in entry if isinstance(item, dict))
 
             assert names, "Нужны имена"
             assert len(callbacks) == 1, "Должен быть ровно один callback"
 
             callback = callbacks[0]
+            meta = {k: v for meta in metas for k, v in meta.items()}
+            default = meta.get("default", None)
 
             # Кнопка
             if len(names) == 1:
                 name = names[0]
+                assert default is None
                 def on_press(cb=callback):
                     cb()
                 btn = ttk.Button(self, text=name, command=on_press)
@@ -170,13 +178,13 @@ class ControlPanel(ttk.Frame):
             # Чекбокс
             elif len(names) == 2 and names[0] == names[1]:
                 name = names[0]
-                def on_toggle(event, cb=callback):
-                    cb(event.widget._var.get())
                 var = tk.BooleanVar()
-                chk = ttk.Checkbutton(self, text=name, variable=var)
-                chk.bind("<ButtonRelease-1>", on_toggle)
+                if default is not None:
+                    var.set(default)
+                def on_toggle(var=var, cb=callback):
+                    cb(var.get())
+                chk = ttk.Checkbutton(self, text=name, variable=var, command=on_toggle)
                 chk.pack(side="left", padx=4)
-                chk._var = var
 
             # Выпадающий список
             else:
@@ -195,11 +203,12 @@ class ControlPanel(ttk.Frame):
                 combo.bind("<Leave>", is_combo)
                 combo.pack(side="left", padx=4)
                 combo._entered = False
+                combo._default = default
                 self.combos.append(combo)
 
     def postinit(self):
         for combo in self.combos:
-            combo.current(0)
+            combo.current(combo._default or 0)
             combo.event_generate("<<ComboboxSelected>>")
 
 
@@ -224,7 +233,8 @@ class BitPlaneGUI(tk.Tk):
     def __init__(self, plane_cb, opts):
         super().__init__()
         self.title("Bit-plane Viewer")
-        self.geometry("1400x1000")
+        x = (1920 - 1400) // 2
+        self.geometry(f"1400x1000+{x}+0")
         self.bind("d", lambda e: dump_tree(self))
 
         self.plane_cb = plane_cb # (pix, k) -> (plane, k_label) 
@@ -233,7 +243,7 @@ class BitPlaneGUI(tk.Tk):
         self.prev_idx = None
         self.zoom     = 1.
 
-        root = ScrollableFrame(self, self.ctrl_cb)
+        root = ScrollableFrame(self, self.ctrl_cb, to_bottom=True)
         root.pack(side="top", fill="both", expand=True)
 
         self.top = ImageGrid(root.inner, rows=2, cols=4)
@@ -274,13 +284,14 @@ class BitPlaneGUI(tk.Tk):
 
             def on_motion(event):
                 Button1 = event.state & 0x00100 # ЛКМ
-                if Button1:
+                if Button1 or event.type == tk.EventType.ButtonPress:
                     x = event.x_root
                     y = event.y_root
                     w = event.widget.winfo_containing(x, y)
                     if hasattr(w, "_idx"):
                         self.on_click_original(w._idx)
-            lbl.bind("<Motion>", on_motion)
+            lbl.bind("<ButtonPress-1>", on_motion)
+            lbl.bind("<Motion>",        on_motion) # случайно переизобрёл <B1-Motion> ...
 
             # если не сохранить PhotoImage, мусоросборщик её съест...
             #     lbl.configure(image=tk_img) не создаёт ссылку в Python
@@ -319,5 +330,5 @@ class BitPlaneGUI(tk.Tk):
 
 
 if __name__ == "__main__":
-    from solve_1 import gui_main
-    gui_main()
+    from solve_1 import MainGUI
+    MainGUI().mainloop()
