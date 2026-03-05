@@ -209,7 +209,12 @@ class MainGUI:
             ssim = structural_similarity_index(orig, pix)
             label.append(f"ssim={ssim:.4f}")
 
-        return pix, ", ".join(label)
+        label = ", ".join(label)
+        if k == 1:
+            self.labels.clear()
+        self.labels.append(label)
+
+        return pix, label
 
     def recalc(self):
         self.app.show_bit_planes()
@@ -219,6 +224,7 @@ class MainGUI:
             case "BOSSbase": path = "assets/bossbase_containers.zip"
             case "medical":  path = "assets/medical_containers.zip"
             case "portrait": path = "assets/portrait_containers.zip"
+        self.base = name
         pixs = bmp_sampler_from_zip(path, 8)
 
         self.app.show_original_previews(pixs)
@@ -229,6 +235,20 @@ class MainGUI:
     def on_mse  (self, on): self.mse   = on; self.recalc()
     def on_psnr (self, on): self.psnr  = on; self.recalc()
     def on_ssim (self, on): self.ssim  = on; self.recalc()
+
+    def copy_to_clipboard(self):
+        base = f"base: {self.base}"
+        branch = "I^ = I"
+        if self.plane: branch += " + to_plane(k)"
+        if self.stego: branch += " + to_stego(k)"
+
+        lines = "\n".join((base, branch, *self.labels))
+        print(lines)
+
+        app = self.app
+        app.clipboard_clear()
+        app.clipboard_append(lines)
+        app.update()
 
     def FDDSCS(self):
         # Гибкая декларативная система конфигурации источников данных :)
@@ -243,6 +263,7 @@ class MainGUI:
             ("mse",   "mse",   self.on_mse),
             ("psnr",  "psnr",  self.on_psnr),
             ("ssim",  "ssim",  self.on_ssim),
+            ("copy", self.copy_to_clipboard),
         )
 
     def read_message(self):
@@ -255,6 +276,8 @@ class MainGUI:
         self.mse   = False
         self.psnr  = False
         self.ssim  = False
+        self.base  = "???"
+        self.labels = []
         self.FDDSCS()
 
         self.msg_path = "assets/Harry Potter and the Philosopher's Stone.txt"
