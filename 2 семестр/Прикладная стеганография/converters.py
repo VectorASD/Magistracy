@@ -166,12 +166,12 @@ def convert_jpeg_zip_to_bmp_zip(in_zip, out_zip):
 if __name__ == "__main__":
     #    источник BOSSbase-сцен:
     # https://drive.google.com/drive/folders/1LcvhZe-lhYFMVLq9hexo8HJJa3Y-uUMM
-    # bossbase_repacker("pictures.zip", "bossbase_containers.zip")
+    # bossbase_repacker("pictures.zip", "assets/bossbase_containers.zip")
 
     #    источник dicom'ок:
     # https://www.kaggle.com/datasets/kmader/siim-medical-images
-    # convert_dicom_zip_to_bmp_zip("archive.zip", "medical_containers.zip", debug=False)
+    # convert_dicom_zip_to_bmp_zip("archive.zip", "assets/medical_containers.zip", debug=False)
 
     #    источник рисованных портретов:
     # https://www.kaggle.com/datasets/deewakarchakraborty/portrait-paintings
-    convert_jpeg_zip_to_bmp_zip("portraits.zip", "portrait_containers.zip")
+    convert_jpeg_zip_to_bmp_zip("portraits.zip", "assets/portrait_containers.zip")

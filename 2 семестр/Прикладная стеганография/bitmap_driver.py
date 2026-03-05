@@ -407,7 +407,7 @@ def save_bmp(path, pix, **kw):
 
 
 if __name__ == "__main__":
-    pix = load_bmp("origin.bmp", debug=False, to_gray=True)
+    pix = load_bmp("assets/origin.bmp", debug=False, to_gray=True)
     print(pix)
     save_bmp("saved_rgb.bmp", pix)
 

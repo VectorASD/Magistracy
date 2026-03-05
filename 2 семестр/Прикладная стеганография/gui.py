@@ -1,8 +1,6 @@
 from PIL import Image, ImageTk # pip install pillow
 import numpy as np             # pip install numpy
 
-from solve_1 import get_k_layer
-
 import tkinter as tk
 from tkinter import ttk
 import platform
@@ -148,37 +146,37 @@ class ScrollableFrame(ttk.Frame):
 
 
 
+def _grid(root):
+    frame = ttk.Frame(root)
+    frame.pack(pady=10)
+
+    labels = []
+    for r in range(2):
+        row = []
+        for c in range(4):
+            label = ttk.Label(frame)
+            label.grid(row=r, column=c, padx=0, pady=0)
+            row.append(label)
+        labels.append(row)
+    return labels
+
 class BitPlaneGUI(tk.Tk):
-    @staticmethod
-    def _grid(root):
-        frame = ttk.Frame(root)
-        frame.pack(pady=10)
-
-        labels = []
-        for r in range(2):
-            row = []
-            for c in range(4):
-                label = ttk.Label(frame)
-                label.grid(row=r, column=c, padx=0, pady=0)
-                row.append(label)
-            labels.append(row)
-        return labels
-
-    def __init__(self, container_names, cb):
+    def __init__(self, container_names, pixs_cb, plane_cb):
         super().__init__()
         self.title("Bit-plane Viewer")
         self.geometry("1400x1000")
 
-        self.cb   = cb
-        self.pixs = None
-        self.pix  = None
-        self.images = []
-        self.zoom = 1.
+        self.pixs_cb  = pixs_cb  # base     -> pixs
+        self.plane_cb = plane_cb # (pix, k) -> (plane, k_label) 
+        self.pixs     = None
+        self.pix      = None
+        self.images   = []
+        self.zoom     = 1.
 
         root = ScrollableFrame(self, self.ctrl_cb)
         root.pack(side="top", fill="both", expand=True)
 
-        self.top_labels = self._grid(root.inner)
+        self.top_labels = _grid(root.inner)
 
         # Выпадающий список выбора набора
         self.combo = combo = ttk.Combobox(
@@ -193,14 +191,14 @@ class BitPlaneGUI(tk.Tk):
         combo.bind("<Leave>", lambda e: is_combo(False))
         combo.current(0)
 
-        self.bottom_labels = self._grid(root.inner)
+        self.bottom_labels = _grid(root.inner)
 
         self.on_select_base()
 
     def on_select_base(self, event=None):
         base = self.combo.get()
 
-        self.pixs = self.cb(base)
+        self.pixs = self.pixs_cb(base)
 
         self.show_original_previews()
         self.on_click_original(0)
@@ -237,7 +235,7 @@ class BitPlaneGUI(tk.Tk):
 
         size = int(256 * self.zoom)
         for k in range(1, 9):
-            plane = get_k_layer(self.pix, k) * 255
+            plane, k_label = self.plane_cb(self.pix, k)
             img = Image.fromarray(plane.astype(np.uint8))
             img = img.resize((size, size), Image.NEAREST)
             tk_img = ImageTk.PhotoImage(img)
@@ -245,7 +243,7 @@ class BitPlaneGUI(tk.Tk):
             r, c = divmod(k - 1, 4)
 
             lbl = self.bottom_labels[r][c]
-            lbl.configure(image=tk_img, text=f"k={k}", compound="top")
+            lbl.configure(image=tk_img, text=k_label, compound="top")
             lbl.image = tk_img
 
             self.images.append(tk_img)
@@ -258,15 +256,5 @@ class BitPlaneGUI(tk.Tk):
 
 
 if __name__ == "__main__":
-    from solve_1 import bmp_sampler_from_zip
-    container_names = ("BOSSbase", "medical", "portrait")
-    def cb(name):
-        match name:
-            case "BOSSbase": path = "bossbase_containers.zip"
-            case "medical":  path = "medical_containers.zip"
-            case "portrait": path = "portrait_containers.zip"
-        return bmp_sampler_from_zip(path, 8)
-
-    app = BitPlaneGUI(container_names, cb)
-    app.bind("d", lambda e: dump_tree(app))
-    app.mainloop()
+    from solve_1 import gui_main
+    gui_main()

@@ -1,6 +1,7 @@
 import numpy as np
 
 from bitmap_driver import read_bmp, load_bmp, save_bmp
+from gui import BitPlaneGUI
 
 import zipfile
 import os
@@ -123,16 +124,31 @@ def bmp_sampler_from_zip(path, count, filter=True):
             pixs.append(pix)
     return pixs
 
-def main2(path, count):
-    pixs = bmp_sampler_from_zip(path, count)
-    print(pixs)
+def gui_main():
+    # уже намечается гибкая декларативная система конфигурации источников данных
+    container_names = ("BOSSbase", "medical", "portrait")
+    def pixs_cb(name):
+        match name:
+            case "BOSSbase": path = "assets/bossbase_containers.zip"
+            case "medical":  path = "assets/medical_containers.zip"
+            case "portrait": path = "assets/portrait_containers.zip"
+        return bmp_sampler_from_zip(path, 8)
+
+    def plane_cb(pix, k):
+        pix   = get_k_layer(pix, k) * 255
+        label = f"k={k}"
+        return pix, label
+
+    app = BitPlaneGUI(container_names, pixs_cb, plane_cb)
+    app.bind("d", lambda e: dump_tree(app))
+    app.mainloop()
 
 
 
 if __name__ == "__main__":
-    path     = "bossbase_containers.zip"
-    msg_path = "Harry Potter and the Philosopher's Stone.txt"
+    path     = "assets/bossbase_containers.zip"
+    msg_path = "assets/Harry Potter and the Philosopher's Stone.txt"
     count    = 8
 
-    # main(path, msg_path)
-    main2(path, count)
+  # main(path, msg_path)
+    gui_main()
