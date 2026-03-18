@@ -196,9 +196,9 @@ def read_bmp(f, debug=False, return_palette=False, to_gray=False):
 
     if dib_size >= 108: # V4
         color_space = read_u32(dib) # 56–60
-        ciexyz_r = read_s32(dib), read_s32(dib), read_s32(dib) # 60-72
-        ciexyz_g = read_s32(dib), read_s32(dib), read_s32(dib) # 72-84
-        ciexyz_b = read_s32(dib), read_s32(dib), read_s32(dib) # 84-96
+        ciexyz_r = read_i32(dib), read_i32(dib), read_i32(dib) # 60-72
+        ciexyz_g = read_i32(dib), read_i32(dib), read_i32(dib) # 72-84
+        ciexyz_b = read_i32(dib), read_i32(dib), read_i32(dib) # 84-96
         ciexyz   = ciexyz_r, ciexyz_g, ciexyz_b
         gamma_r = read_u32(dib) #  96–100
         gamma_g = read_u32(dib) # 100–104
