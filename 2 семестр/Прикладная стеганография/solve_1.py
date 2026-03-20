@@ -125,15 +125,15 @@ def main(path, msg_path):
 
 Их смысл:
     MSE — насколько сильно отличаются два изображения по пикселям.
-    PSNR — насколько «громкий» сигнал по сравнению с ошибкой.
+    PSNR — насколько «громкий» сигнал по сравнению с ошибкой, меряется в децибелах.
     SSIM — насколько похожи структуры, контраст и яркость.
 
 То есть они отвечают на вопрос:
     «Насколько хорошо 𝐼^ (искажённое изображение) похоже на оригинал 𝐼?»
 """
 
-# lambda mean(x): x.astype(np.float32).sum() / x.size                     AVG
-# lambda var(x): ((mean(x) - x.astype(np.float32)) ** 2).sum() / x.size   дисперсия
+# np.mean = lambda x: x.astype(np.float32).sum() / x.size                      AVG
+# np.var  = lambda x: ((mean(x) - x.astype(np.float32)) ** 2).sum() / x.size   дисперсия
 
 def mean_squared_error(orig: np.ndarray, stego: np.ndarray) -> float: # MSE
     """MSE — Mean Squared Error"""
@@ -190,6 +190,50 @@ def bmp_sampler_from_zip(path, count, filter=True):
     return pixs
 
 class MainGUI:
+    def analyze_sample(self):
+        stats = {k: {"mse": [], "ssim": []} for k in range(1, 9)}
+
+        for orig in self.pixs:
+            for k in range(1, 9):
+                pix = orig
+                if self.plane:
+                    pix = get_k_layer(pix, k) * 255
+                if self.stego:
+                    pix = insert_k_layer(pix, k, self.message, slice=True)
+
+                if self.mse:
+                    stats[k]["mse"].append(mean_squared_error(orig, pix))
+                if self.ssim:
+                    stats[k]["ssim"].append(structural_similarity_index(orig, pix))
+
+        base = f"base: {self.base}"
+        branch = "I^ = I"
+        if self.plane: branch += " + to_plane(k)"
+        if self.stego: branch += " + to_stego(k)"
+
+        lines = [base, branch]
+
+        # алгоритмы усреднения
+        for k in range(1, 9):
+            parts = [f"k={k}"]
+            if self.mse:
+                mse_avg = np.mean(stats[k]["mse"])
+                parts.append(f"mse={mse_avg:.4f}")
+                MAX_I = 255
+                psnr_avg = float(10 * np.log10((MAX_I * MAX_I) / mse_avg) if mse_avg else "inf")
+                parts.append(f"psnr={psnr_avg:.4f}")
+            if self.ssim:
+                ssim_avg = np.mean(stats[k]["ssim"])
+                parts.append(f"ssim={ssim_avg:.4f}")
+            lines.append(", ".join(parts))
+
+        text = "\n".join(lines)
+        print(text)
+
+        self.app.clipboard_clear()
+        self.app.clipboard_append(text)
+        self.app.update()
+
     def plane_cb(self, orig, k):
         pix = orig
         if self.plane:
@@ -225,7 +269,7 @@ class MainGUI:
             case "medical":  path = "assets/medical_containers.zip"
             case "portrait": path = "assets/portrait_containers.zip"
         self.base = name
-        pixs = bmp_sampler_from_zip(path, 8)
+        self.pixs = pixs = bmp_sampler_from_zip(path, 8)
 
         self.app.show_original_previews(pixs)
         self.app.on_click_original(0)
@@ -242,13 +286,12 @@ class MainGUI:
         if self.plane: branch += " + to_plane(k)"
         if self.stego: branch += " + to_stego(k)"
 
-        lines = "\n".join((base, branch, *self.labels))
-        print(lines)
+        text = "\n".join((base, branch, *self.labels))
+        print(text)
 
-        app = self.app
-        app.clipboard_clear()
-        app.clipboard_append(lines)
-        app.update()
+        self.app.clipboard_clear()
+        self.app.clipboard_append(text)
+        self.app.update()
 
     def FDDSCS(self):
         # Гибкая декларативная система конфигурации источников данных :)
@@ -264,6 +307,7 @@ class MainGUI:
             ("psnr",  "psnr",  self.on_psnr),
             ("ssim",  "ssim",  self.on_ssim),
             ("copy", self.copy_to_clipboard),
+            ("analyze", self.analyze_sample),
         )
 
     def read_message(self):
