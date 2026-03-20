@@ -1,9 +1,10 @@
-from PIL import Image, ImageTk # pip install pillow
-import numpy as np             # pip install numpy
+from PIL import Image, ImageTk, ImageDraw # pip install pillow
+import numpy as np                        # pip install numpy
+
+
 
 import tkinter as tk
 from tkinter import ttk
-import platform
 
 """
 tk  — это классические виджеты Tk, созданные ещё в 90‑х.
@@ -16,6 +17,10 @@ ttk‑виджеты используют нативные темы ОС (Window
 tk.Button  выглядит как старый серый прямоугольник.
 ttk.Button выглядит как нормальная кнопка Windows/macOS.
 """
+
+import platform
+from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor
 
 win = platform.system() == "Windows"
 
@@ -50,7 +55,7 @@ def dump_tree(app):
 
 
 class ScrollableFrame(ttk.Frame):
-    def __init__(self, parent, ctrl_cb, *, to_bottom=False):
+    def __init__(self, parent, ctrl_cb=None, *, to_bottom=False):
         super().__init__(parent)
 
         # Критично: дать фрейму реальный минимальный размер
@@ -116,7 +121,7 @@ class ScrollableFrame(ttk.Frame):
     def _on_mousewheel(self, event):
         # события колеса мыши перехватываются Combobox
         # и дублируются в вертикальный scrollbar :/
-        if self.is_combo.get():
+        if self.is_combo is not None and self.is_combo.get():
             return
 
         # print(hex(event.state))
@@ -140,6 +145,8 @@ class ScrollableFrame(ttk.Frame):
             else can.xview_scroll if is_shift
             else can.yview_scroll
         )
+        if scroll_fn is None:
+            return
 
         if event.num == 4:   # Linux scroll up
             scroll_fn(-1, "units")
@@ -309,6 +316,7 @@ class BitPlaneGUI(tk.Tk):
         if self.pix is None:
             return
 
+        self.planes = planes = []
         size = int(256 * self.zoom)
         for k in range(1, 9):
             plane, k_label = self.plane_cb(self.pix, k)
@@ -322,10 +330,117 @@ class BitPlaneGUI(tk.Tk):
             lbl.configure(image=tk_img, text=k_label, compound="top")
             lbl.image = tk_img
 
+            planes.append(plane)
+
     def ctrl_cb(self, direction, units):
         self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
         self.show_original_previews()
         self.show_bit_planes()
+
+
+
+class HistogramGUI(tk.Toplevel):
+    def __init__(self, master, pixs, current, rows=4, cols=4):
+        super().__init__(master)
+        self.title("Histograms (Original vs Stego)")
+        self.geometry("1200x900")
+
+        plt = None
+        try: import matplotlib.pyplot as plt
+        except ImportError: pass
+        self.plt = plt            
+
+        assert len(pixs) == rows * cols
+        self.pixs = pixs
+        self.zoom = 1
+        self.prev_zoom = None
+        self.images    = [None] * (rows * cols)
+        self.current   = current
+
+        root = ScrollableFrame(self, self.ctrl_cb)
+        root.pack(fill="both", expand=True)
+
+        self.grid = ImageGrid(root.inner, rows=rows, cols=cols)
+        self.grid.pack()
+
+        self.calculate_async()
+
+    def calculate_async(self):
+        # показываем заглушки
+        self.show()
+
+        if self.plt:
+            # запускаем асинхронную генерацию
+            executor = ThreadPoolExecutor(max_workers=8)
+            for idx, pix in enumerate(self.pixs):
+                executor.submit(self.calculate_one, idx, pix)
+
+    def calculate_one(self, idx, pix):
+        # np_hist, bins = np.histogram(pix, bins=256, range=(0, 255))
+        # аналогично:
+        flat = pix.reshape(-1)
+        hist = np.bincount(flat, minlength=256)
+
+        # Рисуем matplotlib-график
+        fig, ax = self.plt.subplots(figsize=(3, 2), dpi=512)
+        ax.plot(hist, color="blue", linewidth=1.5)
+        ax.tick_params(axis='x', colors='green')
+        ax.tick_params(axis='y', colors='green')
+        text = f"img#{idx+1}" if idx < 8 else f"k={idx-7}"
+        if idx == self.current: text += " (CURRENT)"
+        ax.set_title(text, color="black")
+        ax.set_xlim(0, 255)
+
+        # Закидываем в png
+        buf = BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight")
+        self.plt.close(fig)
+
+        # Конвертируем в tkinter-картинку
+        buf.seek(0)
+        img = Image.open(buf)
+        self.images.append(img)
+
+        # обновляем GUI
+        self.images[idx] = img
+        self.after(0, lambda: self.show_one(idx))
+
+    def get_placeholder(self):
+        if self.prev_zoom == self.zoom:
+            return self.placeholder
+
+        size = int(256 * self.zoom)
+        placeholder = Image.new("RGB", (size, size), "white")
+        draw = ImageDraw.Draw(placeholder)
+        draw.rectangle((5, 5, size-5, size-5), outline="black", width=5)
+
+        self.prev_zoom = self.zoom
+        self.placeholder = placeholder
+        return placeholder
+
+    def show_one(self, idx):
+        size = int(256 * self.zoom)
+        image = self.images[idx]
+        image = self.get_placeholder() if image is None else image.resize((size, size), Image.LANCZOS if self.zoom < 1.0 else Image.NEAREST)
+        tk_img = ImageTk.PhotoImage(image)
+
+        r, c = divmod(idx, 4)
+        lbl = self.grid.labels[r][c]
+        try:
+            if self.plt is None:
+                lbl.configure(image=tk_img, text="pip install matplotlib", compound="top")
+            else:
+                lbl.configure(image=tk_img)
+        except: pass
+        lbl.image = tk_img
+
+    def show(self):
+        for idx in range(len(self.images)):
+            self.show_one(idx)
+
+    def ctrl_cb(self, direction, units):
+        self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
+        self.show()
 
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 
 from bitmap_driver import read_bmp, load_bmp, save_bmp
-from gui import BitPlaneGUI
+from gui import BitPlaneGUI, HistogramGUI
 
 import zipfile
 import os
@@ -234,6 +234,15 @@ class MainGUI:
         self.app.clipboard_append(text)
         self.app.update()
 
+    def show_histograms(self):
+        pixs    = self.app.pixs
+        planes  = self.app.planes
+        current = self.app.prev_idx
+
+        HistogramGUI(self.app, pixs + planes, current)
+
+
+
     def plane_cb(self, orig, k):
         pix = orig
         if self.plane:
@@ -308,6 +317,7 @@ class MainGUI:
             ("ssim",  "ssim",  self.on_ssim),
             ("copy", self.copy_to_clipboard),
             ("analyze", self.analyze_sample),
+            ("hist", self.show_histograms),
         )
 
     def read_message(self):
