@@ -21,6 +21,7 @@ ttk.Button выглядит как нормальная кнопка Windows/mac
 import platform
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
 
 win = platform.system() == "Windows"
 
@@ -441,6 +442,50 @@ class HistogramGUI(tk.Toplevel):
     def ctrl_cb(self, direction, units):
         self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
         self.show()
+
+
+
+def plot_ci(rows):
+    import matplotlib.pyplot as plt # pip install matplotlib
+
+    # Группируем данные по базе
+    bases = defaultdict(list)
+    for base, k, std, low, avg, high in rows:
+        bases[base].append((k, avg, low, high))
+
+    plt.figure(figsize=(10, 6), dpi=640)
+
+    for base, data in bases.items():
+        ks, avgs, lows, highs = zip(*data)
+        avgs  = np.array(avgs)
+        lows  = np.array(lows)
+        highs = np.array(highs)
+
+        plt.errorbar(
+            ks,
+            avgs,
+            yerr=(avgs - lows, highs - avgs), # восстанавливаем назад margin, но как Y в графиках
+            capsize=5,
+            label=base
+        )
+
+    plt.xlabel("k (битовая плоскость)")
+    plt.ylabel("PSNR (дБ)")
+    plt.title("Доверительные интервалы PSNR для разных контейнеров")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("psnr_ci_graph.png", dpi=200)
+    plt.close()
+    print("График сохранён: psnr_ci_graph.png")
+"""
+Почему «свечи» (plt.errorbar) похожи на свечи на криптобирже?
+Потому что визуально:
+    есть центральное значение (у нас — среднее PSNR, на бирже — цена открытия/закрытия)
+    есть верхняя граница (у нас — верхний доверительный интервал, на бирже — максимум цены)
+    есть нижняя граница (у нас — нижний доверительный интервал, на бирже — минимум цены)
+То есть форма похожа, но смысл разный.
+"""
 
 
 

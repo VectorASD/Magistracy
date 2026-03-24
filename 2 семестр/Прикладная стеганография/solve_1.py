@@ -1,7 +1,8 @@
-import numpy as np
+import numpy as np # pip install numpy
 
 from bitmap_driver import read_bmp, load_bmp, save_bmp
-from gui import BitPlaneGUI, HistogramGUI
+from gui import BitPlaneGUI, HistogramGUI, plot_ci
+from utils import confidence_interval
 
 import zipfile
 import os
@@ -174,14 +175,16 @@ def structural_similarity_index(orig: np.ndarray, stego: np.ndarray) -> float:
 
 
 
-def bmp_sampler_from_zip(path, count, filter=True):
+def bmp_sampler_from_zip(path, count=None, filter=True):
     pixs = []
     with zipfile.ZipFile(path, "r") as zip:
         file_list = zip.namelist()
-        assert len(file_list) >= count
+        if count:
+            assert len(file_list) >= count
         if filter:
             file_list = tuple(name for name in file_list if not name.startswith("ernst-ludwig-kirchner"))
-        sample = random.sample(file_list, count)
+
+        sample = random.sample(file_list, count) if count else file_list
 
         for name in sample:
             with zip.open(name, "r") as file:
@@ -240,6 +243,54 @@ class MainGUI:
         current = self.app.prev_idx
 
         HistogramGUI(self.app, pixs + planes, current)
+
+    @staticmethod
+    def confidence_interval_async():
+        from multiprocessing import Process
+        ci_process = Process(target=MainGUI.confidence_interval)
+        ci_process.start()
+
+    @staticmethod
+    def confidence_interval():
+        rows = []
+
+        for base in ("BOSSbase", "medical", "portrait"):
+            match base:
+                case "BOSSbase": path = "assets/bossbase_containers.zip"
+                case "medical":  path = "assets/medical_containers.zip"
+                case "portrait": path = "assets/portrait_containers.zip"
+
+            print(f"Анализирую {base}...")
+            pixs = bmp_sampler_from_zip(path, filter=False)
+            assert len(pixs) == 100
+
+            for k in range(1, 9):
+                psnrs = []
+                for orig in pixs:
+                    pix = get_k_layer(orig, k) * 255
+                    mse = mean_squared_error(orig, pix)
+                    psnr = 10 * np.log10((255 * 255) / mse) if mse else float("inf")
+                    psnrs.append(psnr)
+                arr = np.array(psnrs)
+
+                avg = arr.mean()
+                std = arr.std(ddof=1) # по умолчанию, ddof=0
+                # std² = (1/n - ddof) * Σ (x_i − x̄)²
+                # ddof=0 → смещённая дисперсия:   σ² = (1/n)     * Σ (x_i − x̄)²
+                # ddof=1 → несмещённая дисперсия: s² = (1/(n−1)) * Σ (x_i − x̄)²
+                n = len(arr)
+                low, high = confidence_interval(avg, std, n, alpha=0.05)
+
+                rows.append((base, k, std, low, avg, high))
+
+        import csv
+        with open("psnr_ci_table.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["base", "k", "std", "low", "avg", "high"])
+            writer.writerows(rows)
+        print("CSV сохранён: psnr_ci_table.csv")
+
+        plot_ci(rows)
 
 
 
@@ -308,16 +359,17 @@ class MainGUI:
 
         self.opts = (
             ("BOSSbase", "medical", "portrait", self.pixs_cb),
-            # ("is_checkbox", "is_checkbox",      lambda checked: print("checked:", checked)),
-            # ("is_button",                       lambda: print("punched!")),
+          # ("is_checkbox", "is_checkbox",      lambda checked: print("checked:", checked)),
+          # ("is_button",                       lambda: print("punched!")),
             ("plane", "plane", self.on_plane, {"default": True}),
             ("stego", "stego", self.on_stego),
             ("mse",   "mse",   self.on_mse),
             ("psnr",  "psnr",  self.on_psnr),
             ("ssim",  "ssim",  self.on_ssim),
-            ("copy", self.copy_to_clipboard),
+            ("copy",    self.copy_to_clipboard),
             ("analyze", self.analyze_sample),
-            ("hist", self.show_histograms),
+            ("hist",    self.show_histograms),
+            ("ci_graph", MainGUI.confidence_interval_async),
         )
 
     def read_message(self):
