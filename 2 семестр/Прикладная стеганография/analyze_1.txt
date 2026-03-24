@@ -1,0 +1,101 @@
+base: любая
+I^ = I
+k=1, mse=0.0000, psnr=inf, ssim=1.0000
+k=2, mse=0.0000, psnr=inf, ssim=1.0000
+k=3, mse=0.0000, psnr=inf, ssim=1.0000
+k=4, mse=0.0000, psnr=inf, ssim=1.0000
+k=5, mse=0.0000, psnr=inf, ssim=1.0000
+k=6, mse=0.0000, psnr=inf, ssim=1.0000
+k=7, mse=0.0000, psnr=inf, ssim=1.0000
+k=8, mse=0.0000, psnr=inf, ssim=1.0000
+
+base: BOSSbase
+I^ = I + to_plane(k)
+k=1, mse=24411.7085, psnr=4.2548, ssim=-0.0197
+k=2, mse=23080.3293, psnr=4.4984, ssim=0.0057
+k=3, mse=21526.1021, psnr=4.8011, ssim=0.0439
+k=4, mse=20739.8987, psnr=4.9627, ssim=0.0662
+k=5, mse=20919.2836, psnr=4.9253, ssim=0.0675
+k=6, mse=18465.5914, psnr=5.4672, ssim=0.1027
+k=7, mse=10811.3867, psnr=7.7920, ssim=0.3289
+k=8, mse=4308.0040, psnr=11.7880, ssim=0.5705
+base: medical
+I^ = I + to_plane(k)
+k=1, mse=25584.4800, psnr=4.0510, ssim=0.0129
+k=2, mse=22067.4753, psnr=4.6933, ssim=0.0531
+k=3, mse=17271.5781, psnr=5.7575, ssim=0.1519
+k=4, mse=15686.0542, psnr=6.1757, ssim=0.1821
+k=5, mse=11023.7546, psnr=7.7075, ssim=0.2905
+k=6, mse=8987.3376, psnr=8.5945, ssim=0.3455
+k=7, mse=9208.6570, psnr=8.4888, ssim=0.3542
+k=8, mse=4503.5805, psnr=11.5952, ssim=0.3266
+base: portrait
+I^ = I + to_plane(k)
+k=1, mse=21208.3293, psnr=4.8657, ssim=0.0008
+k=2, mse=21835.7878, psnr=4.7391, ssim=-0.0062
+k=3, mse=22176.8074, psnr=4.6718, ssim=-0.0198
+k=4, mse=21236.7778, psnr=4.8599, ssim=0.0002
+k=5, mse=19991.2753, psnr=5.1224, ssim=0.0337
+k=6, mse=18708.3372, psnr=5.4105, ssim=0.0853
+k=7, mse=15003.7024, psnr=6.3688, ssim=0.2091
+k=8, mse=5812.6135, psnr=10.4871, ssim=0.4425
+base: BOSSbase
+I^ = I + to_stego(k)
+k=1, mse=0.4970, psnr=51.1672, ssim=0.9999
+k=2, mse=1.9897, psnr=45.1429, ssim=0.9996
+k=3, mse=7.9603, psnr=39.1215, ssim=0.9983
+k=4, mse=31.7297, psnr=33.1161, ssim=0.9934
+k=5, mse=127.1888, psnr=27.0863, ssim=0.9740
+k=6, mse=508.8198, psnr=21.0652, ssim=0.9047
+k=7, mse=2047.0586, psnr=15.0195, ssim=0.6696
+k=8, mse=8582.2109, psnr=8.7948, ssim=0.1637
+base: medical
+I^ = I + to_stego(k)
+k=1, mse=0.4999, psnr=51.1423, ssim=0.9999
+k=2, mse=2.0111, psnr=45.0965, ssim=0.9996
+k=3, mse=8.1226, psnr=39.0338, ssim=0.9984
+k=4, mse=32.6238, psnr=32.9955, ssim=0.9937
+k=5, mse=132.0400, psnr=26.9237, ssim=0.9745
+k=6, mse=525.2720, psnr=20.9270, ssim=0.8958
+k=7, mse=2104.1328, psnr=14.9001, ssim=0.6081
+k=8, mse=8721.1484, psnr=8.7251, ssim=0.2778
+base: portrait
+I^ = I + to_stego(k)
+k=1, mse=0.4999, psnr=51.1418, ssim=0.9999
+k=2, mse=1.9967, psnr=45.1278, ssim=0.9994
+k=3, mse=7.9758, psnr=39.1130, ssim=0.9977
+k=4, mse=31.8365, psnr=33.1016, ssim=0.9908
+k=5, mse=127.9867, psnr=27.0592, ssim=0.9648
+k=6, mse=513.0322, psnr=21.0294, ssim=0.8749
+k=7, mse=2076.4629, psnr=14.9576, ssim=0.6392
+k=8, mse=8250.8906, psnr=8.9658, ssim=0.0563
+base: BOSSbase
+I^ = I + to_plane(k) + to_stego(k)
+k=1, mse=23367.5554, psnr=4.4447, ssim=0.0036
+k=2, mse=23344.3308, psnr=4.4490, ssim=-0.0022
+k=3, mse=22973.8306, psnr=4.5185, ssim=-0.0044
+k=4, mse=22570.9099, psnr=4.5953, ssim=0.0172
+k=5, mse=18674.5278, psnr=5.4183, ssim=0.0637
+k=6, mse=13877.7920, psnr=6.7076, ssim=0.1273
+k=7, mse=7664.4788, psnr=9.2860, ssim=0.2025
+k=8, mse=5842.7355, psnr=10.4646, ssim=0.3644
+base: medical
+I^ = I + to_plane(k) + to_stego(k)
+k=1, mse=24054.9999, psnr=4.3188, ssim=0.0684
+k=2, mse=19189.7007, psnr=5.3001, ssim=0.1037
+k=3, mse=14839.7102, psnr=6.4165, ssim=0.2185
+k=4, mse=13026.9316, psnr=6.9824, ssim=0.2384
+k=5, mse=11095.4159, psnr=7.6794, ssim=0.2794
+k=6, mse=8074.0046, psnr=9.0599, ssim=0.4580
+k=7, mse=8797.6876, psnr=8.6871, ssim=0.3014
+k=8, mse=6904.9968, psnr=9.7392, ssim=0.3070
+base: portrait
+I^ = I + to_plane(k) + to_stego(k)
+k=1, mse=21468.0667, psnr=4.8129, ssim=0.0054
+k=2, mse=22513.4187, psnr=4.6064, ssim=-0.0107
+k=3, mse=22415.5483, psnr=4.6253, ssim=-0.0153
+k=4, mse=21679.8835, psnr=4.7702, ssim=-0.0213
+k=5, mse=18002.3945, psnr=5.5775, ssim=0.0339
+k=6, mse=16196.5536, psnr=6.0366, ssim=0.0945
+k=7, mse=9483.2796, psnr=8.3612, ssim=0.2530
+k=8, mse=5396.9304, psnr=10.8093, ssim=0.3184
