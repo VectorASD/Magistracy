@@ -445,7 +445,7 @@ class HistogramGUI(tk.Toplevel):
 
 
 
-def plot_ci(rows):
+def plot_ci(rows, title, filename):
     import matplotlib.pyplot as plt # pip install matplotlib
 
     # Группируем данные по базе
@@ -471,11 +471,11 @@ def plot_ci(rows):
 
     plt.xlabel("k (битовая плоскость)")
     plt.ylabel("PSNR (дБ)")
-    plt.title("Доверительные интервалы PSNR для разных контейнеров")
+    plt.title(title)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig("psnr_ci_graph.png", dpi=200)
+    plt.savefig(filename, dpi=200)
     plt.close()
     print("График сохранён: psnr_ci_graph.png")
 """

@@ -252,7 +252,8 @@ class MainGUI:
 
     @staticmethod
     def confidence_interval():
-        rows = []
+        psnr_rows = []
+        var_rows = []
 
         for base in ("BOSSbase", "medical", "portrait"):
             match base:
@@ -275,22 +276,54 @@ class MainGUI:
 
                 avg = arr.mean()
                 std = arr.std(ddof=1) # по умолчанию, ddof=0
-                # std² = (1/n - ddof) * Σ (x_i − x̄)²
+                # std² = (1/(n-ddof)) * Σ (x_i − x̄)²
                 # ddof=0 → смещённая дисперсия:   σ² = (1/n)     * Σ (x_i − x̄)²
                 # ddof=1 → несмещённая дисперсия: s² = (1/(n−1)) * Σ (x_i − x̄)²
                 n = len(arr)
                 low, high = confidence_interval(avg, std, n, alpha=0.05)
 
-                rows.append((base, k, std, low, avg, high))
+                psnr_rows.append((base, k, std, low, avg, high))
+
+                variances = []
+                for orig in pixs:
+                    layer = get_k_layer(orig, k) # без * 255 это просто 0 и 1
+                    var = layer.var(ddof=1) # по умолчанию, ddof=0
+                    # var = дисперсия выборки: тоже самое, что std, только возвращаем напрямую σ²,s², вместо σ,s
+                    variances.append(var)
+
+                arr = np.array(variances)
+                avg = arr.mean()
+                std = arr.std(ddof=1)
+              # n = len(arr)
+                low, high = confidence_interval(avg, std, n, alpha=0.05)
+
+                var_rows.append((base, k, std, low, avg, high))
 
         import csv
         with open("psnr_ci_table.csv", "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(["base", "k", "std", "low", "avg", "high"])
-            writer.writerows(rows)
+            writer.writerow(("base", "k", "std", "low", "avg", "high"))
+            writer.writerows(psnr_rows)
         print("CSV сохранён: psnr_ci_table.csv")
 
-        plot_ci(rows)
+        with open("variance_ci_table.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(("base", "k", "std", "low", "avg", "high"))
+            writer.writerows(var_rows)
+        print("CSV сохранён: variance_ci_table.csv")
+
+        plot_ci(psnr_rows, title="Доверительные интервалы PSNR для разных контейнеров",                         filename="psnr_ci_graph.png")
+        plot_ci(var_rows,  title="Доверительные интервалы дисперсии битовых плоскостей для разных контейнеров", filename="variance_ci_graph.png")
+    """
+    Для бинарных данных дисперсия имеет простую формулу:
+        var=𝑝(1-𝑝)
+        где 𝑝 - доля единиц.
+    Это максимум:
+        0.25 при 𝑝=0.5
+    То есть:
+        дисперсия битовой плоскости не может быть больше 0.25
+        а чаще всего она намного меньше, потому что распределение 0 и 1 неравномерное
+    """
 
 
 
