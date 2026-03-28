@@ -1,10 +1,12 @@
 import numpy as np # pip install numpy
 from PIL import Image # pip install pillow
 
+from bitmap_driver import save_bmp, load_bmp
 from solve_1 import bmp_sampler_from_zip, insert_k_layer, read_k_layer
 
 from functools import lru_cache
 import os
+from hashlib import pbkdf2_hmac
 
 
 
@@ -41,7 +43,7 @@ def load_logo_with_fit(logo_path: str, target_shape: tuple[int, int], layers=1) 
     logo = img.resize((side, side), Image.LANCZOS)
 
     # Превращаем в байты
-    watermark = np.array(logo, dtype=np.uint8)
+    watermark = np.array(logo, dtype=np.uint8).reshape(-1) # arr.reshape(-1) <-> arr.reshape(arr.size)
     print("Допустимо: ", capacity_bits,        "bits") # 262112 bits
     print("Получилось:", watermark.nbytes * 8, "bits") # 259584 bits
     assert watermark.nbytes * 8 <= capacity_bits
@@ -58,5 +60,52 @@ def check_resizer():
 
 
 
+def make_random_from_str(password: str, salt="stego-salt", rounds=1024):
+    "Генератор по ключу (PBKDF2 → uint64 tuple → PCG64)"
+    digest = pbkdf2_hmac(
+        hash_name ="sha256",
+        password  =password.encode("utf-8"),
+        salt      =salt.encode("utf-8"),
+        iterations=rounds,
+      # dklen     =32 # default: sha256 -> 256 / 8 = 32 bytes
+    )
+    assert len(digest) == 32
+    # np.random.default_rng(digest) -> SeedSequence expects int or sequence of ints for entropy not b'123'
+    # default_rng выдаёт генератор вида PCG64, а SeedSequence - это просто кортеж из int'ов ЛЮБОЙ длины
+    # внутренее состояние PCG64 состоит из 128-битного числа, так что подобрать seed будет нереально
+    arr = np.frombuffer(digest, dtype=np.uint64)
+    seed = tuple(map(int, arr))
+    return np.random.default_rng(seed)
+
+def embed_logo_lsb_with_key(pix: np.ndarray, logo_path: str, key: str) -> np.ndarray:
+    """
+    Метод 1: LSB‑встраивание с секретным ключом.
+    Логотип автоматически уменьшается до максимально допустимого размера.
+    """
+    assert len(pix.shape) == 2
+
+    _, watermark = load_logo_with_fit(logo_path, pix.shape)
+    random = make_random_from_str(key)
+
+    idxs = np.arange(watermark.size)
+    random.shuffle(idxs)
+    # print(idxs) # [ 52107 229168 135349 ...   6164 246636  33432]
+    shuffled = watermark[idxs]
+    # side = round((shuffled.size // 3) ** 0.5)
+    # img = shuffled.reshape((side, side, 3))
+    # Image.fromarray(img).save("шум.png")
+
+    stego = insert_k_layer(pix, k=1, message=shuffled)
+    return stego
+
+def check_embedder():
+    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    stego = embed_logo_lsb_with_key(pix, "my_logo.png", "meowl")
+    save_bmp("watermarked.bmp", stego, mode="gray")
+
+
+
 if __name__ == "__main__":
-    check_resizer()
+    # check_resizer()
+    # print(make_random_from_str("meowl").random()) # 0.4981653345863766
+    check_embedder()

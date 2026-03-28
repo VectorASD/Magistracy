@@ -18,6 +18,11 @@ def get_k_layer(pix, k):
 def insert_k_layer(pix, k, message, *, slice=False):
     W, H = pix.shape
     capacity = W * H - 32
+    is_buffer = isinstance(message, np.ndarray)
+    if is_buffer:
+        assert message.dtype == np.uint8
+        assert len(message.shape) == 1
+
     need = len(message) * 8
     if capacity < need:
         if slice:
@@ -26,7 +31,8 @@ def insert_k_layer(pix, k, message, *, slice=False):
         else:
             raise ValueError(f"Capacity is {capacity}, but required is {need}") 
 
-    bits = np.unpackbits(np.frombuffer(message, dtype=np.uint8))
+    buffer = message if is_buffer else np.frombuffer(message, dtype=np.uint8)
+    bits = np.unpackbits(buffer)
     assert bits.shape == (need,)
 
     bits = np.pad(bits, (0, capacity+32-need))
