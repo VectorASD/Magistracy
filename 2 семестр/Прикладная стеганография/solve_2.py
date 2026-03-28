@@ -77,7 +77,7 @@ def make_random_from_str(password: str, salt="stego-salt", rounds=1024):
     seed = tuple(map(int, arr))
     return np.random.default_rng(seed)
 
-def embed_logo_lsb_with_key(pix: np.ndarray, logo_path: str, key: str) -> np.ndarray:
+def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str) -> np.ndarray:
     """
     Метод 1: LSB‑встраивание с секретным ключом.
     Логотип автоматически уменьшается до максимально допустимого размера.
@@ -98,14 +98,51 @@ def embed_logo_lsb_with_key(pix: np.ndarray, logo_path: str, key: str) -> np.nda
     stego = insert_k_layer(pix, k=1, message=shuffled)
     return stego
 
+def extract_logo_lsb_with_key(pix: np.ndarray, key: str):
+    "Извлекает логотип, встроенный методом 1 (LSB + перестановка индексов)."
+
+    assert len(pix.shape) == 2
+
+    # 1) Читаем байты из LSB-слоя
+    wm_arr = read_k_layer(pix, k=1, tobytes=False)
+    assert wm_arr.dtype == np.uint8
+
+    # 2) Генерируем ту же перестановку индексов
+    random = make_random_from_str(key)
+    idxs = np.arange(wm_arr.size)
+    random.shuffle(idxs)
+
+    # 3) Обратная перестановка
+    unshuffled = np.empty_like(wm_arr) # копирует форму растра, но заполненную нулями
+    unshuffled[idxs] = wm_arr          # не нужно инвертировать idxs, если можно так!)
+
+    # 4) Восстанавливаем квадратный RGB
+    total = len(unshuffled)
+    assert total % 3 == 0, "Повреждённый watermark: длина не кратна 3"
+
+    pixels = total // 3
+    side = round(pixels ** 0.5)
+    assert side * side * 3 == total, "Повреждённый watermark: не квадрат"
+
+    logo = unshuffled.reshape((side, side, 3))
+    return logo
+
+
+
 def check_embedder():
     pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
-    stego = embed_logo_lsb_with_key(pix, "my_logo.png", "meowl")
+    stego = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png")
     save_bmp("watermarked.bmp", stego, mode="gray")
+
+def check_extractor():
+    stego = load_bmp("watermarked.bmp", to_gray=True)
+    logo = extract_logo_lsb_with_key(stego, "meowl")
+    Image.fromarray(logo).save("unwatermarked.png")
 
 
 
 if __name__ == "__main__":
     # check_resizer()
     # print(make_random_from_str("meowl").random()) # 0.4981653345863766
-    check_embedder()
+    # check_embedder()
+    check_extractor()

@@ -49,7 +49,7 @@ def insert_k_layer(pix, k, message, *, slice=False):
 # ValueError: maximum supported dimension for an ndarray is currently 64, found 101
 # интересно было узнать максимальный ранг формы
 
-def read_k_layer(pix, k):
+def read_k_layer(pix, k, tobytes=True):
     bits = get_k_layer(pix, k)
     W, H = pix.shape
     bits = bits.reshape(W * H)
@@ -59,8 +59,10 @@ def read_k_layer(pix, k):
     # print(need, len(bits)) # 262112 262144
     if need > len(bits) - 32:
         raise ValueError("Corrupted container: message length is invalid")
-    message = np.packbits(bits[:need]).tobytes()
-    return message
+    buffer = np.packbits(bits[:need])
+    if tobytes:
+        return buffer.tobytes()
+    return buffer
 
 
 
