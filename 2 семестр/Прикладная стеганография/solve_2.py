@@ -15,7 +15,7 @@ from hashlib import pbkdf2_hmac
 # capacity_bits и загрузку логотипа в отдельный блок.
 # Вся логика остаётся локальной, а повторные вызовы становятся мгновенными.
 @lru_cache
-def load_logo_with_fit(logo_path: str, target_shape: tuple[int, int], layers=1) -> bytes:
+def load_logo_with_fit(logo_path: str, target_shape: tuple[int, int], *, layers=1, reshape=True) -> bytes:
     """
     Загружает RGB-логотип, уменьшает его так, чтобы его битовый поток
     умещался в capacity_bits, и возвращает байтовую строку.
@@ -43,7 +43,9 @@ def load_logo_with_fit(logo_path: str, target_shape: tuple[int, int], layers=1) 
     logo = img.resize((side, side), Image.LANCZOS)
 
     # Превращаем в байты
-    watermark = np.array(logo, dtype=np.uint8).reshape(-1) # arr.reshape(-1) <-> arr.reshape(arr.size)
+    watermark = np.array(logo, dtype=np.uint8)
+    if reshape:
+        watermark = watermark.reshape(-1) # arr.reshape(-1) <-> arr.reshape(arr.size)
     print("Допустимо: ", capacity_bits,        "bits") # 262112 bits
     print("Получилось:", watermark.nbytes * 8, "bits") # 259584 bits
     assert watermark.nbytes * 8 <= capacity_bits
@@ -129,6 +131,18 @@ def extract_logo_lsb_with_key(pix: np.ndarray, key: str):
 
 
 
+def compare_logos(logo_path: str, stego: np.ndarray, extracted: np.ndarray):
+    _, watermark = load_logo_with_fit(logo_path, stego.shape, reshape=False)
+    print(watermark)
+
+    diff = watermark.astype(np.float32) - extracted.astype(np.float32)
+    mse = float((diff * diff).mean())
+    MAX_I = 255
+    psnr = float(10 * np.log10((MAX_I * MAX_I) / mse) if mse else "inf")
+
+    print("mse:",  mse)  # 0.0
+    print("psnr:", psnr) # inf
+
 def check_embedder():
     pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
     stego = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png")
@@ -136,8 +150,9 @@ def check_embedder():
 
 def check_extractor():
     stego = load_bmp("watermarked.bmp", to_gray=True)
-    logo = extract_logo_lsb_with_key(stego, "meowl")
-    Image.fromarray(logo).save("unwatermarked.png")
+    extracted = extract_logo_lsb_with_key(stego, "meowl")
+    # Image.fromarray(extracted).save("unwatermarked.png")
+    compare_logos("my_logo.png", stego, extracted)
 
 
 
