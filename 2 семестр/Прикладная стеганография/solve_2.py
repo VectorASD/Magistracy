@@ -4,7 +4,7 @@ from PIL import Image # pip install pillow
 from bitmap_driver import save_bmp, load_bmp
 from solve_1 import bmp_sampler_from_zip, insert_k_layer, read_k_layer
 from utils import gradient_from_name
-from gui import overlay_gradient
+from gui import ImageGridGUI
 
 from functools import lru_cache
 import os
@@ -158,10 +158,29 @@ def check_extractor():
 
 
 
+def overlay_gradient(pix, grad):
+    # Нормализация градиента
+    g = grad - grad.min()
+    g = g / (g.max() + 1e-9) # защита от деления на 0
+
+    # Растянуть до размера исходного изображения
+    H, W = pix.shape
+    h, w = g.shape
+    pad_y = (H - h) // 2
+    pad_x = (W - w) // 2
+
+    mask = np.zeros(pix.shape, dtype=np.float32)
+    mask[pad_y:pad_y+h, pad_x:pad_x+w] = g
+
+    # Наложение
+    return (pix.astype(np.float32) * mask).clip(0, 255).astype(np.uint8)
+
 def check_gradient():
     pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
     grad = gradient_from_name(pix, "diff")
-    overlay_gradient(pix, grad)
+    out = overlay_gradient(pix, grad)
+
+    ImageGridGUI(1, 3, (pix, grad, out)).mainloop()
 
 
 

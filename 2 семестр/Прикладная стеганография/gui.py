@@ -341,114 +341,10 @@ class BitPlaneGUI(tk.Tk):
 
 
 
-class HistogramGUI(tk.Toplevel):
-    def __init__(self, master, pixs, current, rows=4, cols=4):
-        super().__init__(master)
-        self.title("Histograms (Original vs Stego)")
-        self.geometry("1200x900")
-
-        plt = None
-        try: import matplotlib.pyplot as plt
-        except ImportError: pass
-        self.plt = plt            
-
-        assert len(pixs) == rows * cols
-        self.pixs = pixs
-        self.zoom = 1
-        self.prev_zoom = None
-        self.images    = [None] * (rows * cols)
-        self.current   = current
-
-        root = ScrollableFrame(self, self.ctrl_cb)
-        root.pack(fill="both", expand=True)
-
-        self.grid = ImageGrid(root.inner, rows=rows, cols=cols)
-        self.grid.pack()
-
-        self.calculate_async()
-
-    def calculate_async(self):
-        # показываем заглушки
-        self.show()
-
-        if self.plt:
-            # запускаем асинхронную генерацию
-            executor = ThreadPoolExecutor(max_workers=8)
-            for idx, pix in enumerate(self.pixs):
-                executor.submit(self.calculate_one, idx, pix)
-
-    def calculate_one(self, idx, pix):
-        # np_hist, bins = np.histogram(pix, bins=256, range=(0, 255))
-        # аналогично:
-        flat = pix.reshape(-1)
-        hist = np.bincount(flat, minlength=256)
-
-        # Рисуем matplotlib-график
-        fig, ax = self.plt.subplots(figsize=(3, 2), dpi=512)
-        ax.plot(hist, color="blue", linewidth=1.5)
-        ax.tick_params(axis='x', colors='green')
-        ax.tick_params(axis='y', colors='green')
-        text = f"img#{idx+1}" if idx < 8 else f"k={idx-7}"
-        if idx == self.current: text += " (CURRENT)"
-        ax.set_title(text, color="black")
-        ax.set_xlim(0, 255)
-
-        # Закидываем в png
-        buf = BytesIO()
-        fig.savefig(buf, format="png", bbox_inches="tight")
-        self.plt.close(fig)
-
-        # Конвертируем в tkinter-картинку
-        buf.seek(0)
-        img = Image.open(buf)
-        self.images.append(img)
-
-        # обновляем GUI
-        self.images[idx] = img
-        self.after(0, lambda: self.show_one(idx))
-
-    def get_placeholder(self):
-        if self.prev_zoom == self.zoom:
-            return self.placeholder
-
-        size = int(256 * self.zoom)
-        placeholder = Image.new("RGB", (size, size), "white")
-        draw = ImageDraw.Draw(placeholder)
-        draw.rectangle((5, 5, size-5, size-5), outline="black", width=5)
-
-        self.prev_zoom = self.zoom
-        self.placeholder = placeholder
-        return placeholder
-
-    def show_one(self, idx):
-        size = int(256 * self.zoom)
-        image = self.images[idx]
-        image = self.get_placeholder() if image is None else image.resize((size, size), Image.LANCZOS if self.zoom < 1.0 else Image.NEAREST)
-        tk_img = ImageTk.PhotoImage(image)
-
-        r, c = divmod(idx, 4)
-        lbl = self.grid.labels[r][c]
-        try:
-            if self.plt is None:
-                lbl.configure(image=tk_img, text="pip install matplotlib", compound="top")
-            else:
-                lbl.configure(image=tk_img)
-        except: pass
-        lbl.image = tk_img
-
-    def show(self):
-        for idx in range(len(self.images)):
-            self.show_one(idx)
-
-    def ctrl_cb(self, direction, units):
-        self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
-        self.show()
-
-
-
 class ImageGridBase:
     def __init__(self, rows=1, cols=1, preset=()):
-        screen_w  = self.winfo_screenwidth()
+        self.update_idletasks()
+        screen_w = self.winfo_screenwidth()
         screen_h = self.winfo_screenheight()
 
         win_w, win_h = 1400, 1000
@@ -459,7 +355,8 @@ class ImageGridBase:
         self.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
         self.images = [None] * (rows * cols)
-        self.zoom = 1.
+        self.zoom   = 1.
+        self.error  = None
 
         root = ScrollableFrame(self, self.ctrl_cb, to_bottom=True)
         root.pack(side="top", fill="both", expand=True)
@@ -467,9 +364,19 @@ class ImageGridBase:
         self.grid = ImageGrid(root.inner, rows=rows, cols=cols)
         self.grid.pack(side="top", pady=0)
 
-        for idx, pix in enumerate(preset):
-            self.set_image(idx, pix, update=False)
+        if isinstance(preset, (tuple, list)):
+            for idx, pix in enumerate(preset):
+                self.set_image(idx, pix, update=False)
+        else:
+            self.set_image(0, preset, update=False)
         self.show()
+
+    def calculate_async(self, cb):
+        if self.plt:
+            # запускаем асинхронную генерацию
+            executor = ThreadPoolExecutor(max_workers=8)
+            for idx, pix in enumerate(self.pixs):
+                executor.submit(cb, idx, pix)
 
     @staticmethod
     @lru_cache
@@ -489,6 +396,7 @@ class ImageGridBase:
         r, c = divmod(idx, len(self.grid.labels[0]))
         lbl = self.grid.labels[r][c]
         try:
+            text = self.error or text
             if text is None:
                 lbl.configure(image=tk_img, text="",   compound="none")
             else:
@@ -520,6 +428,53 @@ class ImageGridGUI(tk.Tk, ImageGridBase):
         self.title("Image-grid Viewer")
 
         ImageGridBase.__init__(self, rows, cols, preset)
+
+
+
+class HistogramGUI(tk.Toplevel, ImageGridBase):
+    def __init__(self, master, pixs, current, rows=4, cols=4):
+        tk.Toplevel.__init__(self, master)
+        self.title("Histograms (Original vs Stego)")
+
+        plt = None
+        try: import matplotlib.pyplot as plt
+        except ImportError: self.error = "pip install matplotlib"
+        self.plt = plt            
+
+        assert len(pixs) == rows * cols
+        self.pixs = pixs
+        self.current   = current
+
+        ImageGridBase.__init__(self, rows, cols) # показываем заглушки
+        self.calculate_async(self.calculate_one)
+
+    def calculate_one(self, idx, pix):
+        # np_hist, bins = np.histogram(pix, bins=256, range=(0, 255))
+        # аналогично:
+        flat = pix.reshape(-1)
+        hist = np.bincount(flat, minlength=256)
+
+        # Рисуем matplotlib-график
+        fig, ax = self.plt.subplots(figsize=(3, 2), dpi=512)
+        ax.plot(hist, color="blue", linewidth=1.5)
+        ax.tick_params(axis='x', colors='green')
+        ax.tick_params(axis='y', colors='green')
+        text = f"img#{idx+1}" if idx < 8 else f"k={idx-7}"
+        if idx == self.current: text += " (CURRENT)"
+        ax.set_title(text, color="black")
+        ax.set_xlim(0, 255)
+
+        # Закидываем в png
+        buf = BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight")
+        self.plt.close(fig)
+
+        # Конвертируем в tkinter-картинку
+        buf.seek(0)
+        img = Image.open(buf)
+
+        # обновляем GUI
+        self.set_image(idx, img)
 
 
 
@@ -564,28 +519,6 @@ def plot_ci(rows, title, filename):
     есть нижняя граница (у нас — нижний доверительный интервал, на бирже — минимум цены)
 То есть форма похожа, но смысл разный.
 """
-
-
-
-def overlay_gradient(pix, grad):
-    # Нормализация градиента
-    g = grad - grad.min()
-    g = g / (g.max() + 1e-9)
-
-    # Растянуть до размера исходного изображения
-    H, W = pix.shape
-    h, w = g.shape
-    pad_y = (H - h) // 2
-    pad_x = (W - w) // 2
-
-    mask = np.zeros_like(pix, dtype=np.float32)
-    mask[pad_y:pad_y+h, pad_x:pad_x+w] = g
-
-    # Наложение
-    out = (pix.astype(np.float32) * mask).clip(0, 255).astype(np.uint8)
-
-    # Рендеринг
-    ImageGridGUI(1, 3, (pix, grad, out)).mainloop()
 
 
 
