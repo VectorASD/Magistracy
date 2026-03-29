@@ -5,6 +5,7 @@ import numpy as np                        # pip install numpy
 
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
 
 """
 tk  — это классические виджеты Tk, созданные ещё в 90‑х.
@@ -175,14 +176,50 @@ class ControlPanel(ttk.Frame):
             meta = {k: v for meta in metas for k, v in meta.items()}
             default = meta.get("default", None)
 
-            # Кнопка
             if len(names) == 1:
                 name = names[0]
-                assert default is None
-                def on_press(cb=callback):
-                    cb()
-                btn = ttk.Button(self, text=name, command=on_press)
-                btn.pack(side="left", padx=4)
+
+                # Текстовый ввод
+                if name.startswith("input_"):
+                    label = name[len("input_"):]
+                    var = tk.StringVar()
+                    if default is not None:
+                        var.set(default)
+
+                    def on_text_change(var=var, cb=callback):
+                        cb(var.get())
+
+                    frame = ttk.Frame(self)
+                    ttk.Label(frame, text=label + ":").pack(side="left")
+                    entry = ttk.Entry(frame, textvariable=var)
+                    entry.pack(side="left")
+                    entry.bind("<KeyRelease>", lambda e: on_text_change())
+                    frame.pack(side="left", padx=4)
+
+                # Файловый ввод
+                elif name.startswith("file_"):
+                    label = name[len("file_"):]
+                    var = tk.StringVar()
+
+                    def on_choose_file(var=var, cb=callback):
+                        path = filedialog.askopenfilename()
+                        if path:
+                            var.set(path)
+                            cb(path)
+
+                    frame = ttk.Frame(self)
+                    ttk.Label(frame, text=label + ":").pack(side="left")
+                    btn = ttk.Button(frame, text="Выбрать файл", command=on_choose_file)
+                    btn.pack(side="left")
+                    frame.pack(side="left", padx=4)
+
+                # Кнопка
+                else:
+                    assert default is None
+                    def on_press(cb=callback):
+                        cb()
+                    btn = ttk.Button(self, text=name, command=on_press)
+                    btn.pack(side="left", padx=4)
 
             # Чекбокс
             elif len(names) == 2 and names[0] == names[1]:
@@ -217,7 +254,11 @@ class ControlPanel(ttk.Frame):
 
     def postinit(self):
         for combo in self.combos:
-            combo.current(combo._default or 0)
+            default = combo._default
+            if   isinstance(default, str): idx = combo['values'].index(default)
+            elif isinstance(default, int): idx = default
+            else:                          idx = 0
+            combo.current(idx)
             combo.event_generate("<<ComboboxSelected>>")
 
 
@@ -342,7 +383,7 @@ class BitPlaneGUI(tk.Tk):
 
 
 class ImageGridBase:
-    def __init__(self, rows=1, cols=1, preset=()):
+    def __init__(self, rows=1, cols=1, preset=(), opts=()):
         self.update_idletasks()
         screen_w = self.winfo_screenwidth()
         screen_h = self.winfo_screenheight()
@@ -364,6 +405,14 @@ class ImageGridBase:
 
         self.grid = ImageGrid(root.inner, rows=rows, cols=cols)
         self.grid.pack(side="top", pady=0)
+
+        if opts:
+            panel = self.panel = ControlPanel(root.inner, opts)
+            panel.pack(side="top", fill="x", pady=5)
+            root.is_combo = panel.is_combo
+            def on_gui_ready():
+                panel.postinit()
+            self.after_idle(on_gui_ready)
 
         if isinstance(preset, (tuple, list)):
             for idx, pix in enumerate(preset):
@@ -448,11 +497,11 @@ class ImageGridBase:
 
 
 class ImageGridGUI(tk.Tk, ImageGridBase):
-    def __init__(self, rows=1, cols=1, preset=()):
+    def __init__(self, rows=1, cols=1, preset=(), opts=()):
         tk.Tk.__init__(self)
         self.title("Image-grid Viewer")
 
-        ImageGridBase.__init__(self, rows, cols, preset)
+        ImageGridBase.__init__(self, rows, cols, preset, opts)
 
 
 

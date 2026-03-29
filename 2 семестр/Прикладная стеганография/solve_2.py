@@ -97,7 +97,7 @@ def make_random_from_str(password: str, salt="stego-salt", rounds=1024):
     seed = tuple(map(int, arr))
     return np.random.default_rng(seed)
 
-prev_order = None
+# prev_order = None
 
 def make_indices_adaptive(pix: np.ndarray, key: str, num_bits: int, kernel_name: str) -> np.ndarray:
     """
@@ -116,17 +116,17 @@ def make_indices_adaptive(pix: np.ndarray, key: str, num_bits: int, kernel_name:
     order = np.argsort(flat)[::-1]                    # по убыванию градиента
     print("order:", order, len(order))
 
-    global prev_order
-    if prev_order is None:
-        prev_order = order.copy()
-    else:
-        diff = np.where(prev_order != order)[0]
-        print("Первое расхождение:", diff[0] if diff.size else "нет")
+    # global prev_order
+    # if prev_order is None:
+    #     prev_order = order.copy()
+    # else:
+    #     diff = np.where(prev_order != order)[0]
+    #     print("Первое расхождение:", diff[0] if diff.size else "нет")
 
     make_random_from_str(key + "|idx").shuffle(order) # генератор НЕ должен зависеть от того, что в embed_logo_lsb_with_key
 
     order = order[:num_bits]
-    print("S order:", order, len(order))
+    # print("S order:", order, len(order))
     return order
 
 def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str, *, kernel_name=None) -> np.ndarray:
@@ -289,11 +289,62 @@ def check_adaptive_extractor():
 
 
 
+class MainGUI:    
+    def FDDSCS(self):
+        # Гибкая декларативная система конфигурации источников данных :)
+        # Flexible declarative data source configuration system (FDDSCS)
+
+        kernel_names = tuple(key for key in GRADIENT_KERNELS if key not in ("diff", "roberts"))
+
+        self.opts = (
+            ("file_original (bmp)",      self.choose_original),
+            ("file_watermark (png)",     self.choose_watermark),
+            ("input_password",           self.setter("password")),
+            ("use kernel", "use kernel", self.setter("is_adaptive")),
+            (*kernel_names,              self.setter("kernel"), {"default": "sobel7"}),
+        )
+
+    def update(self):
+        if self.watermark_path:
+            size = (512, 512) if self.original is None else self.original.shape
+            self.logo, self.watermark = load_logo_with_fit(self.watermark_path, size)
+            self.app.set_image(1, self.logo)
+
+    def choose_original(self, path):
+        self.original = load_bmp(path, to_gray=True)
+        self.app.set_image(0, self.original)
+        self.update()
+
+    def choose_watermark(self, path):
+        self.watermark_path = path
+        self.update()
+
+    def setter(self, name):
+        def cb(value):
+            setattr(self, name, value)
+          # print("SET:", name, value)
+        cb(None)
+        return cb
+
+    def __init__(self):
+        self.original  = None
+        self.watermark = None
+        self.logo      = None
+        self.FDDSCS()
+
+        self.app = ImageGridGUI(1, 3, opts=self.opts)
+
+    def mainloop(self):
+        self.app.mainloop()
+
+
+
 if __name__ == "__main__":
     # check_resizer()
     # print(make_random_from_str("meowl").random()) # 0.4981653345863766
     # check_embedder()
     # check_extractor()
     # check_gradient()
-    check_adaptive_embedder()
-    check_adaptive_extractor()
+    # check_adaptive_embedder()
+    # check_adaptive_extractor()
+    MainGUI().mainloop()
