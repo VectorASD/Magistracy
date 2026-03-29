@@ -355,6 +355,7 @@ class ImageGridBase:
         self.geometry(f"{win_w}x{win_h}+{x}+{y}")
 
         self.images = [None] * (rows * cols)
+        self.texts  = [None] * (rows * cols)
         self.zoom   = 1.
         self.error  = None
 
@@ -370,6 +371,20 @@ class ImageGridBase:
         else:
             self.set_image(0, preset, update=False)
         self.show()
+
+    def to_pos(self, idx):
+        cols = len(self.grid.labels[0])
+        row, column = divmod(idx, cols)
+        return row, column
+
+    def to_idx(self, *args):
+        if len(args) == 1:
+            args = args[0]
+            if isinstance(args, int):
+                return args # уже idx
+        row, column = args
+        cols = len(self.grid.labels[0])
+        return column + cols * row
 
     def calculate_async(self, cb):
         if self.plt:
@@ -387,16 +402,16 @@ class ImageGridBase:
 
         return placeholder
 
-    def show_one(self, idx, text=None):
+    def show_one(self, idx):
         size = int(256 * self.zoom)
         image = self.images[idx]
         image = self.get_placeholder(size) if image is None else image.resize((size, size), Image.LANCZOS if self.zoom < 1.0 else Image.NEAREST)
         tk_img = ImageTk.PhotoImage(image)
 
-        r, c = divmod(idx, len(self.grid.labels[0]))
-        lbl = self.grid.labels[r][c]
+        row, column = self.to_pos(idx)
+        lbl = self.grid.labels[row][column]
         try:
-            text = self.error or text
+            text = self.error or self.texts[idx]
             if text is None:
                 lbl.configure(image=tk_img, text="",   compound="none")
             else:
@@ -405,11 +420,21 @@ class ImageGridBase:
         lbl.image = tk_img
 
     def set_image(self, idx, pix, *, update=True):
+        if pix is None:
+            return self
+        idx = self.to_idx(idx)
+
         if isinstance(pix, np.ndarray):
             pix = Image.fromarray(pix)
         self.images[idx] = pix
         if update:
             self.after(0, lambda: self.show_one(idx))
+        return self
+
+    def set_text(self, idx, text=None):
+        idx = self.to_idx(idx)
+        self.texts[idx] = text
+        self.after(0, lambda: self.show_one(idx))
         return self
 
     def show(self):

@@ -3,7 +3,7 @@ from PIL import Image # pip install pillow
 
 from bitmap_driver import save_bmp, load_bmp
 from solve_1 import bmp_sampler_from_zip, insert_k_layer, read_k_layer
-from utils import gradient_from_name
+from utils import gradient_from_name, GRADIENT_KERNELS
 from gui import ImageGridGUI
 
 from functools import lru_cache
@@ -177,10 +177,18 @@ def overlay_gradient(pix, grad):
 
 def check_gradient():
     pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
-    grad = gradient_from_name(pix, "diff")
-    out = overlay_gradient(pix, grad)
+    preset = [pix]
+    overlays = [None]
+    for kernel_name in GRADIENT_KERNELS:
+        print(f"{kernel_name}...")
+        grad = gradient_from_name(pix, kernel_name)
+        preset.append(grad)
+        overlays.append(overlay_gradient(pix, grad))
 
-    ImageGridGUI(1, 3, (pix, grad, out)).mainloop()
+    gui = ImageGridGUI(2, len(preset), preset + overlays)
+    for i, kernel_name in enumerate(GRADIENT_KERNELS):
+        gui.set_text((1, 1+i), kernel_name)
+    gui.mainloop()
 
 
 
