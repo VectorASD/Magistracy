@@ -159,18 +159,14 @@ def check_extractor():
 
 
 def overlay_gradient(pix, grad):
-    # Нормализация градиента
-    g = grad - grad.min()
-    g = g / (g.max() + 1e-9) # защита от деления на 0
-
     # Растянуть до размера исходного изображения
     H, W = pix.shape
-    h, w = g.shape
+    h, w = grad.shape
     pad_y = (H - h) // 2
     pad_x = (W - w) // 2
 
     mask = np.zeros(pix.shape, dtype=np.float32)
-    mask[pad_y:pad_y+h, pad_x:pad_x+w] = g
+    mask[pad_y:pad_y+h, pad_x:pad_x+w] = grad
 
     # Наложение
     return (pix.astype(np.float32) * mask).clip(0, 255).astype(np.uint8)
@@ -182,7 +178,7 @@ def check_gradient():
     for kernel_name in GRADIENT_KERNELS:
         print(f"{kernel_name}...")
         grad = gradient_from_name(pix, kernel_name)
-        preset.append(grad)
+        preset.append(grad * 255)
         overlays.append(overlay_gradient(pix, grad))
 
     gui = ImageGridGUI(2, len(preset), preset + overlays)
