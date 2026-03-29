@@ -129,18 +129,43 @@ def confidence_interval(avg, std, n, alpha=0.05):
 
 
 
-def conv_kernel(pix: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+def conv_kernel(pix: np.ndarray, kernel: np.ndarray, mode: str="valid") -> np.ndarray:
     """
-    Ужимающая свёртка ядром kernel.
+    Свёртка ядром kernel.
     Использует только ненулевые коэффициенты.
     pix    — 2D float32
     kernel — 2D float32/int
+    mode:
+      - "valid": ужимающая свёртка (как раньше)
+      - "same":  свёртка с паддингом, выход совпадает с размером pix
     """
 
     assert pix.ndim == 2
     kh, kw = kernel.shape
-
     H, W = pix.shape
+    if mode not in ("valid", "same"):
+        raise ValueError("mode должен быть 'valid' или 'same'")
+
+    if mode == "same":
+        if kh % 2 == 0 or kw % 2 == 0:
+            raise ValueError(
+                "Больше невозможно поддерживать ядра чётного размера (diff и roberts)"
+                "из-за особенности адаптивного режима (просто нет центра в свёртке, но padding нужен!)"
+            )
+
+        pad_y = kh // 2
+        pad_x = kw // 2
+
+        pix = np.pad(
+            pix,
+            ((pad_y, pad_y), (pad_x, pad_x)),
+            mode='edge'
+        )
+
+        # после паддинга размер меняется
+        H, W = pix.shape
+
+    # общая логика для обоих режимов
     out_h = H - kh + 1
     out_w = W - kw + 1
 
@@ -246,16 +271,16 @@ GRADIENT_KERNELS = {
     ),
 }
 
-def gradient(pix: np.ndarray, kernel_x: np.ndarray, kernel_y: np.ndarray) -> np.ndarray:
-    gx = conv_kernel(pix, kernel_x)
-    gy = conv_kernel(pix, kernel_y)
+def gradient(pix: np.ndarray, kernel_x: np.ndarray, kernel_y: np.ndarray, mode: str="valid") -> np.ndarray:
+    gx = conv_kernel(pix, kernel_x, mode)
+    gy = conv_kernel(pix, kernel_y, mode)
     grad = np.abs(gx) + np.abs(gy)
 
     # Нормализация градиента
     g = grad - grad.min()
     return g / (g.max() + 1e-9) # защита от деления на 0
 
-def gradient_from_name(pix: np.ndarray, name: str):
+def gradient_from_name(pix: np.ndarray, name: str, mode: str="valid"):
     if name == "roberts":
         kx, ky = GRADIENT_KERNELS[name]
         kx = np.array(kx, dtype=np.float32)
@@ -265,7 +290,7 @@ def gradient_from_name(pix: np.ndarray, name: str):
         kx = np.array(k, dtype=np.float32)
         ky = kx.T
 
-    return gradient(pix, kx, ky)
+    return gradient(pix, kx, ky, mode)
 
 
 

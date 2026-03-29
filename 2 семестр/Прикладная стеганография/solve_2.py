@@ -33,9 +33,13 @@ def load_logo_with_fit(logo_path: str, target_shape: tuple[int, int], *, layers=
 
     orig_bits = W0 * H0 * 3 * 8              # Сколько бит нужно на исходный логотип
 
-    # Логотип и так помещается
-    if orig_bits <= capacity_bits:
-        return np.array(img).tobytes()
+    # --- логотип слишком маленький ---
+    if orig_bits < capacity_bits:
+        raise ValueError(
+            f"Логотип слишком маленький: {orig_bits} бит, "
+            f"а контейнер позволяет {capacity_bits} бит. "
+            f"Используйте логотип большего размера."
+        )
 
     target_pixels = capacity_bits // (3 * 8) # Требуемая площадь
     side = int(target_pixels ** 0.5)         # Новая сторона (квадрат)
@@ -52,6 +56,18 @@ def load_logo_with_fit(logo_path: str, target_shape: tuple[int, int], *, layers=
     print("Получилось:", watermark.nbytes * 8, "bits") # 259584 bits
     assert watermark.nbytes * 8 <= capacity_bits
     return logo, watermark
+
+@lru_cache
+def get_logo_size_with_fit(target_shape: tuple[int, int], layers=1):
+    "Просто реализована та же логика, что и в load_logo_with_fit, но только для размеров"
+    W, H = target_shape
+    capacity_bits = W * H * layers - 32
+    target_pixels = capacity_bits // (3 * 8) # Требуемая площадь
+    side = int(target_pixels ** 0.5)         # Новая сторона (квадрат)
+    side = max(1, side)                      # Минимум 1×1
+    return (side, side, 3)
+
+
 
 def check_resizer():
     logo_path = "my_logo.png"
@@ -81,55 +97,123 @@ def make_random_from_str(password: str, salt="stego-salt", rounds=1024):
     seed = tuple(map(int, arr))
     return np.random.default_rng(seed)
 
-def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str) -> np.ndarray:
+prev_order = None
+
+def make_indices_adaptive(pix: np.ndarray, key: str, num_bits: int, kernel_name: str) -> np.ndarray:
+    """
+    Индексы для адаптивного метода:
+    сортировка по градиенту + перемешивание по ключу.
+    """
+    H, W = pix.shape
+    total = H * W
+
+    grad = gradient_from_name(pix, kernel_name, mode="same") # 2D карта
+    flat = grad.reshape(total)                               # 1D
+    print("SIZE:", W, "x", H)
+    print("key:", key)
+    print("num_bits:", num_bits)
+
+    order = np.argsort(flat)[::-1]                    # по убыванию градиента
+    print("order:", order, len(order))
+
+    global prev_order
+    if prev_order is None:
+        prev_order = order.copy()
+    else:
+        diff = np.where(prev_order != order)[0]
+        print("Первое расхождение:", diff[0] if diff.size else "нет")
+
+    make_random_from_str(key + "|idx").shuffle(order) # генератор НЕ должен зависеть от того, что в embed_logo_lsb_with_key
+
+    order = order[:num_bits]
+    print("S order:", order, len(order))
+    return order
+
+def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str, *, kernel_name=None) -> np.ndarray:
     """
     Метод 1: LSB‑встраивание с секретным ключом.
     Логотип автоматически уменьшается до максимально допустимого размера.
     """
     assert pix.ndim == 2
-
-    _, watermark = load_logo_with_fit(logo_path, pix.shape)
     random = make_random_from_str(key)
+    _, watermark = load_logo_with_fit(logo_path, pix.shape)
 
-    idxs = np.arange(watermark.size)
-    random.shuffle(idxs)
-    # print(idxs) # [ 52107 229168 135349 ...   6164 246636  33432]
-    shuffled = watermark[idxs]
-    # side = round((shuffled.size // 3) ** 0.5)
-    # img = shuffled.reshape((side, side, 3))
-    # Image.fromarray(img).save("шум.png")
+    if kernel_name is None:
+        idxs = np.arange(watermark.size) # [ 52107 229168 135349 ...   6164 246636  33432]
+        random.shuffle(idxs)
+        shuffled = watermark[idxs]
 
-    stego = insert_k_layer(pix, k=1, message=shuffled)
-    return stego
+        stego = insert_k_layer(pix, k=1, message=shuffled)
+        return stego
 
-def extract_logo_lsb_with_key(pix: np.ndarray, key: str):
+    # адаптивный режим
+    wm_bytes = watermark.reshape(-1)
+    num_bytes = wm_bytes.size
+
+    idxs_bytes = np.arange(num_bytes)
+    random.shuffle(idxs_bytes)
+
+    shuffled_bytes = wm_bytes[idxs_bytes]
+
+    wm_bits = np.unpackbits(shuffled_bytes)
+    num_bits = wm_bits.size
+
+    indices = make_indices_adaptive(pix, key, num_bits, kernel_name)
+
+    return insert_k_layer(pix, k=1, message=wm_bits, indices=indices)
+
+def extract_logo_lsb_with_key(pix: np.ndarray, key: str, *, kernel_name=None, orig_pix=None):
     "Извлекает логотип, встроенный методом 1 (LSB + перестановка индексов)."
-
     assert pix.ndim == 2
 
-    # 1) Читаем байты из LSB-слоя
-    wm_arr = read_k_layer(pix, k=1, tobytes=False)
+    if kernel_name is None:
+        # 1) Читаем байты из LSB-слоя
+        wm_arr = read_k_layer(pix, k=1, tobytes=False)
+        assert wm_arr.dtype == np.uint8
+
+        # 2) Генерируем ту же перестановку индексов
+        random = make_random_from_str(key)
+        idxs = np.arange(wm_arr.size)
+        random.shuffle(idxs)
+
+        # 3) Обратная перестановка
+        unshuffled = np.empty_like(wm_arr) # копирует форму растра, но заполненную нулями
+        unshuffled[idxs] = wm_arr          # не нужно инвертировать idxs, если можно так!)
+
+        # 4) Восстанавливаем квадратный RGB
+        total = len(unshuffled)
+        assert total % 3 == 0, "Повреждённый watermark: длина не кратна 3"
+
+        pixels = total // 3
+        side = round(pixels ** 0.5)
+        assert side * side * 3 == total, "Повреждённый watermark: не квадрат"
+
+        logo = unshuffled.reshape((side, side, 3))
+        return logo
+
+    # адаптивный режим
+    # 1) Загружаем watermark, чтобы узнать его размер, но без логики с растром
+    W, H, C = get_logo_size_with_fit(pix.shape)
+    num_bytes = W * H * C
+    num_bits = num_bytes * 8
+
+    # 2) Генерируем адаптивные индексы (как в embed)
+    indices = make_indices_adaptive(orig_pix, key, num_bits, kernel_name)
+
+    # 3) Читаем только эти позиции
+    wm_arr = read_k_layer(pix, k=1, tobytes=False, indices=indices)
     assert wm_arr.dtype == np.uint8
 
-    # 2) Генерируем ту же перестановку индексов
+    # 4) Обратная перестановка watermark (как в embed)
     random = make_random_from_str(key)
-    idxs = np.arange(wm_arr.size)
+    idxs = np.arange(num_bytes)
     random.shuffle(idxs)
 
-    # 3) Обратная перестановка
-    unshuffled = np.empty_like(wm_arr) # копирует форму растра, но заполненную нулями
-    unshuffled[idxs] = wm_arr          # не нужно инвертировать idxs, если можно так!)
+    unshuffled = np.empty_like(wm_arr)
+    unshuffled[idxs] = wm_arr
 
-    # 4) Восстанавливаем квадратный RGB
-    total = len(unshuffled)
-    assert total % 3 == 0, "Повреждённый watermark: длина не кратна 3"
-
-    pixels = total // 3
-    side = round(pixels ** 0.5)
-    assert side * side * 3 == total, "Повреждённый watermark: не квадрат"
-
-    logo = unshuffled.reshape((side, side, 3))
-    return logo
+    # 5) Восстанавливаем квадратный RGB
+    return unshuffled.reshape((W, H, C))
 
 
 
@@ -159,6 +243,10 @@ def check_extractor():
 
 
 def overlay_gradient(pix, grad):
+    """
+    Просто умножаем исходное изображение на градиент.
+    Это лучше выглядело бы на цветных картинках.
+    """
     # Растянуть до размера исходного изображения
     H, W = pix.shape
     h, w = grad.shape
@@ -186,6 +274,19 @@ def check_gradient():
         gui.set_text((1, 1+i), kernel_name)
     gui.mainloop()
 
+def check_adaptive_embedder():
+    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    stego = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png", kernel_name="sobel7")
+    save_bmp("watermarked2.bmp",      stego, mode="gray")
+    save_bmp("watermarked2_orig.bmp", pix,   mode="gray")
+
+def check_adaptive_extractor():
+    pix   = load_bmp("watermarked2_orig.bmp", to_gray=True)
+    stego = load_bmp("watermarked2.bmp", to_gray=True)
+    extracted = extract_logo_lsb_with_key(stego, "meowl", kernel_name="sobel7", orig_pix=pix)
+    Image.fromarray(extracted).save("unwatermarked.png")
+    #compare_logos("my_logo.png", stego, extracted)
+
 
 
 if __name__ == "__main__":
@@ -193,4 +294,6 @@ if __name__ == "__main__":
     # print(make_random_from_str("meowl").random()) # 0.4981653345863766
     # check_embedder()
     # check_extractor()
-    check_gradient()
+    # check_gradient()
+    check_adaptive_embedder()
+    check_adaptive_extractor()
