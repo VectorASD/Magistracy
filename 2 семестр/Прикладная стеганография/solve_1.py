@@ -21,7 +21,7 @@ def insert_k_layer(pix, k, message, *, slice=False):
     is_buffer = isinstance(message, np.ndarray)
     if is_buffer:
         assert message.dtype == np.uint8
-        assert len(message.shape) == 1
+        assert message.ndim == 1
 
     need = len(message) * 8
     if capacity < need:

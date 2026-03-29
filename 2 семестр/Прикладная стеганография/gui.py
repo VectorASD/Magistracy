@@ -22,6 +22,7 @@ import platform
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
+from functools import lru_cache
 
 win = platform.system() == "Windows"
 
@@ -445,6 +446,83 @@ class HistogramGUI(tk.Toplevel):
 
 
 
+class ImageGridBase:
+    def __init__(self, rows=1, cols=1, preset=()):
+        screen_w  = self.winfo_screenwidth()
+        screen_h = self.winfo_screenheight()
+
+        win_w, win_h = 1400, 1000
+
+        x = (screen_w - win_w) // 2
+        y = (screen_h - win_h) // 2
+
+        self.geometry(f"{win_w}x{win_h}+{x}+{y}")
+
+        self.images = [None] * (rows * cols)
+        self.zoom = 1.
+
+        root = ScrollableFrame(self, self.ctrl_cb, to_bottom=True)
+        root.pack(side="top", fill="both", expand=True)
+
+        self.grid = ImageGrid(root.inner, rows=rows, cols=cols)
+        self.grid.pack(side="top", pady=0)
+
+        for idx, pix in enumerate(preset):
+            self.set_image(idx, pix, update=False)
+        self.show()
+
+    @staticmethod
+    @lru_cache
+    def get_placeholder(size):
+        placeholder = Image.new("RGB", (size, size), "white")
+        draw = ImageDraw.Draw(placeholder)
+        draw.rectangle((5, 5, size-5, size-5), outline="black", width=5)
+
+        return placeholder
+
+    def show_one(self, idx, text=None):
+        size = int(256 * self.zoom)
+        image = self.images[idx]
+        image = self.get_placeholder(size) if image is None else image.resize((size, size), Image.LANCZOS if self.zoom < 1.0 else Image.NEAREST)
+        tk_img = ImageTk.PhotoImage(image)
+
+        r, c = divmod(idx, len(self.grid.labels[0]))
+        lbl = self.grid.labels[r][c]
+        try:
+            if text is None:
+                lbl.configure(image=tk_img, text="",   compound="none")
+            else:
+                lbl.configure(image=tk_img, text=text, compound="top")
+        except: pass
+        lbl.image = tk_img
+
+    def set_image(self, idx, pix, *, update=True):
+        if isinstance(pix, np.ndarray):
+            pix = Image.fromarray(pix)
+        self.images[idx] = pix
+        if update:
+            self.after(0, lambda: self.show_one(idx))
+        return self
+
+    def show(self):
+        for idx in range(len(self.images)):
+            self.show_one(idx)
+
+    def ctrl_cb(self, direction, units):
+        self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
+        self.show()
+
+
+
+class ImageGridGUI(tk.Tk, ImageGridBase):
+    def __init__(self, rows=1, cols=1, preset=()):
+        tk.Tk.__init__(self)
+        self.title("Image-grid Viewer")
+
+        ImageGridBase.__init__(self, rows, cols, preset)
+
+
+
 def plot_ci(rows, title, filename):
     import matplotlib.pyplot as plt # pip install matplotlib
 
@@ -489,6 +567,31 @@ def plot_ci(rows, title, filename):
 
 
 
+def overlay_gradient(pix, grad):
+    # Нормализация градиента
+    g = grad - grad.min()
+    g = g / (g.max() + 1e-9)
+
+    # Растянуть до размера исходного изображения
+    H, W = pix.shape
+    h, w = g.shape
+    pad_y = (H - h) // 2
+    pad_x = (W - w) // 2
+
+    mask = np.zeros_like(pix, dtype=np.float32)
+    mask[pad_y:pad_y+h, pad_x:pad_x+w] = g
+
+    # Наложение
+    out = (pix.astype(np.float32) * mask).clip(0, 255).astype(np.uint8)
+
+    # Рендеринг
+    ImageGridGUI(1, 3, (pix, grad, out)).mainloop()
+
+
+
 if __name__ == "__main__":
     from solve_1 import MainGUI
-    MainGUI().mainloop()
+    from solve_2 import check_gradient
+
+    # MainGUI().mainloop()
+    check_gradient()

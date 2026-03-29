@@ -3,6 +3,8 @@ from PIL import Image # pip install pillow
 
 from bitmap_driver import save_bmp, load_bmp
 from solve_1 import bmp_sampler_from_zip, insert_k_layer, read_k_layer
+from utils import gradient_from_name
+from gui import overlay_gradient
 
 from functools import lru_cache
 import os
@@ -84,7 +86,7 @@ def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str) -> np.nda
     Метод 1: LSB‑встраивание с секретным ключом.
     Логотип автоматически уменьшается до максимально допустимого размера.
     """
-    assert len(pix.shape) == 2
+    assert pix.ndim == 2
 
     _, watermark = load_logo_with_fit(logo_path, pix.shape)
     random = make_random_from_str(key)
@@ -103,7 +105,7 @@ def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str) -> np.nda
 def extract_logo_lsb_with_key(pix: np.ndarray, key: str):
     "Извлекает логотип, встроенный методом 1 (LSB + перестановка индексов)."
 
-    assert len(pix.shape) == 2
+    assert pix.ndim == 2
 
     # 1) Читаем байты из LSB-слоя
     wm_arr = read_k_layer(pix, k=1, tobytes=False)
@@ -156,8 +158,16 @@ def check_extractor():
 
 
 
+def check_gradient():
+    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    grad = gradient_from_name(pix, "diff")
+    overlay_gradient(pix, grad)
+
+
+
 if __name__ == "__main__":
     # check_resizer()
     # print(make_random_from_str("meowl").random()) # 0.4981653345863766
     # check_embedder()
-    check_extractor()
+    # check_extractor()
+    check_gradient()
