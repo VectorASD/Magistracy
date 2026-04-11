@@ -166,7 +166,7 @@ def extract_logo_lsb_with_key(pix: np.ndarray, key: str, *, kernel_name=None, or
     "Извлекает логотип, встроенный методом 1 (LSB + перестановка индексов)."
     assert pix.ndim == 2
 
-    if kernel_name is None:
+    if kernel_name is None or orig_pix is None:
         # 1) Читаем байты из LSB-слоя
         wm_arr = read_k_layer(pix, k=1, tobytes=False)
         assert wm_arr.dtype == np.uint8
@@ -289,6 +289,26 @@ def check_adaptive_extractor():
 
 
 
+def save_it(pix, error, title):
+    from tkinter import messagebox, filedialog
+
+    if pix is None:
+        messagebox.showerror("Ошибка источника", error)
+        return
+
+    path = filedialog.asksaveasfilename(
+        title=title,
+        defaultextension=".png",
+        filetypes=[("BMP", "*.bmp"), ("PNG", "*.png"), ("Все файлы", "*.*")]
+    )
+
+    if path:
+        try:
+            Image.fromarray(pix).convert("L").save(path)
+        except Exception as e:
+            messagebox.showerror("Ошибка сохранения", e)
+    # иначе, пользователь отменил asksaveasfilename
+
 class MainGUI:
     def FDDSCS(self):
         # Гибкая декларативная система конфигурации источников данных :)
@@ -297,12 +317,23 @@ class MainGUI:
         kernel_names = tuple(key for key in GRADIENT_KERNELS if key not in ("diff", "roberts"))
 
         self.opts = (
-            ("file_original (bmp)",      self.choose_original),
+            ("file_stego (bmp)",         self.choose_original),
             ("file_watermark (png)",     self.choose_watermark),
             ("input_password",           self.setter("password"), {"default": "meowl"}),
             ("use kernel", "use kernel", self.setter("is_adaptive")),
             (*kernel_names,              self.setter("kernel"), {"default": "sobel7"}),
+            ("save stego",   self.save_stego),
+            ("save grad",    self.save_grad),
+            ("save unstego", self.save_unstego),
+            ("file_grad original (bmp)", self.choose_grad_original),
         )
+
+    def save_stego(self):
+        save_it(self.stego, "Сначала выберите оригинал и водяной знак", "Сохранить стегоконтейнер")
+    def save_grad(self):
+        save_it(self.grad, "Сначала выберите оригинал, водяной знак и ядро", "Сохранить локальный градиент")
+    def save_unstego(self):
+        save_it(self.extracted, "Сначала выберите стегоконтер, а если включено ядро, то ещё и оригинал", "Сохранить извлечённый watermark")
 
     def update(self):
         if self.watermark_path:
@@ -324,7 +355,12 @@ class MainGUI:
             self.app.set_image(4, delta)
 
         if self.original is not None:
-            self.extracted = extract_logo_lsb_with_key(self.original, self.password) #, kernel_name="sobel7", orig_pix=pix)
+            try:
+                self.extracted = extract_logo_lsb_with_key(self.original, self.password, kernel_name=self.kernel, orig_pix=self.orig_pix)
+            except ValueError as e:
+                if e.args != ("Corrupted container: message length is invalid",):
+                    raise e from None
+                self.extracted = None
             self.app.set_image(5, self.extracted)
 
     def choose_original(self, path):
@@ -334,6 +370,10 @@ class MainGUI:
 
     def choose_watermark(self, path):
         self.watermark_path = path
+        self.update()
+
+    def choose_grad_original(self, path):
+        self.orig_pix = load_bmp(path, to_gray=True)
         self.update()
 
     def setter(self, name):
@@ -350,6 +390,7 @@ class MainGUI:
         self.watermark = None
         self.logo      = None
         self.stego     = None
+        self.orig_pix  = None
         self.FDDSCS()
 
         self.app = ImageGridGUI(2, 3, opts=self.opts)
