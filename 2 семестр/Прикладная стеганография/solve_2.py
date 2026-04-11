@@ -4,11 +4,14 @@ from PIL import Image # pip install pillow
 from bitmap_driver import save_bmp, load_bmp
 from solve_1 import bmp_sampler_from_zip, insert_k_layer, read_k_layer
 from utils import gradient_from_name, GRADIENT_KERNELS
-from gui import ImageGridGUI
+from gui import ImageGridGUI, plot_ci
+from utils import confidence_interval
 
 from functools import lru_cache
 import os
 from hashlib import pbkdf2_hmac
+
+from tkinter import messagebox, filedialog
 
 
 
@@ -52,8 +55,8 @@ def load_logo_with_fit(logo_path: str, target_shape: tuple[int, int], *, layers=
     watermark = np.array(logo, dtype=np.uint8)
     if reshape:
         watermark = watermark.reshape(-1) # arr.reshape(-1) <-> arr.reshape(arr.size)
-    print("Допустимо: ", capacity_bits,        "bits") # 262112 bits
-    print("Получилось:", watermark.nbytes * 8, "bits") # 259584 bits
+  # print("Допустимо: ", capacity_bits,        "bits") # 262112 bits
+  # print("Получилось:", watermark.nbytes * 8, "bits") # 259584 bits
     assert watermark.nbytes * 8 <= capacity_bits
     return logo, watermark
 
@@ -290,8 +293,6 @@ def check_adaptive_extractor():
 
 
 def save_it(pix, error, title):
-    from tkinter import messagebox, filedialog
-
     if pix is None:
         messagebox.showerror("Ошибка источника", error)
         return
@@ -309,23 +310,26 @@ def save_it(pix, error, title):
             messagebox.showerror("Ошибка сохранения", e)
     # иначе, пользователь отменил asksaveasfilename
 
+
+
 class MainGUI:
+    kernel_names = tuple(key for key in GRADIENT_KERNELS if key not in ("diff", "roberts"))
+
     def FDDSCS(self):
         # Гибкая декларативная система конфигурации источников данных :)
         # Flexible declarative data source configuration system (FDDSCS)
-
-        kernel_names = tuple(key for key in GRADIENT_KERNELS if key not in ("diff", "roberts"))
 
         self.opts = (
             ("file_stego (bmp)",         self.choose_original),
             ("file_watermark (png)",     self.choose_watermark),
             ("input_password",           self.setter("password"), {"default": "meowl"}),
             ("use kernel", "use kernel", self.setter("is_adaptive")),
-            (*kernel_names,              self.setter("kernel"), {"default": "sobel7"}),
+            (*MainGUI.kernel_names,      self.setter("kernel"), {"default": "sobel7"}),
             ("save stego",   self.save_stego),
             ("save grad",    self.save_grad),
             ("save unstego", self.save_unstego),
             ("file_grad original (bmp)", self.choose_grad_original),
+            ("ci_graph",     self.confidence_interval_async),
         )
 
     def save_stego(self):
@@ -383,6 +387,55 @@ class MainGUI:
             self.update()
         cb(None)
         return cb
+
+    def confidence_interval_async(self):
+        if self.watermark_path is None:
+            messagebox.showerror("Ошибка", "Необходимо указать логотип перед считание доверительного интервала PSNR")
+            return
+        from multiprocessing import Process
+        ci_process = Process(target=MainGUI.confidence_interval, args=(self.password, self.watermark_path))
+        ci_process.start()
+
+    @staticmethod
+    def confidence_interval(password, watermark_path):
+        MAX_I = 255.0
+        alpha = 0.05
+        results = []
+
+        for base in ("BOSSbase", "medical", "portrait"):
+            match base:
+                case "BOSSbase": path = "assets/bossbase_containers.zip"
+                case "medical":  path = "assets/medical_containers.zip"
+                case "portrait": path = "assets/portrait_containers.zip"
+
+            print(f"Анализирую {base}...")
+            pixs = bmp_sampler_from_zip(path, filter=False)
+            assert len(pixs) == 100
+
+            for kernel_name in (None, *MainGUI.kernel_names):
+                psnrs = []
+                for orig in pixs:
+                    stego, _ = embed_logo_lsb_with_key(orig, password, watermark_path, kernel_name=kernel_name)
+                    diff = orig.astype(np.float32) - stego.astype(np.float32)
+                    mse = (diff * diff).mean()
+                    psnr = float(10.0 * np.log10((MAX_I * MAX_I) / mse) if mse else "inf")
+                    psnrs.append(psnr)
+
+                arr = np.array(psnrs)
+                avg = float(arr.mean())
+                std = float(arr.std(ddof=1))
+                low, high = confidence_interval(avg, std, len(arr), alpha)
+
+                results.append((base, "LSB (not adaptive)" if kernel_name is None else kernel_name, std, low, avg, high))
+
+        import csv
+        with open("solve_2_psnr_ci_table.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(("base", "mode", "std", "low", "avg", "high"))
+            writer.writerows(results)
+        print("CSV сохранён: solve_2_psnr_ci_table.csv")
+
+        plot_ci(results, title="Доверительные интервалы PSNR для разных ядер", filename="solve_2_psnr_ci_graph.png")
 
     def __init__(self):
         self.original  = None

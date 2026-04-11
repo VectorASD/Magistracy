@@ -585,7 +585,7 @@ def plot_ci(rows, title, filename):
     plt.tight_layout()
     plt.savefig(filename, dpi=200)
     plt.close()
-    print("График сохранён: psnr_ci_graph.png")
+    print(f"График сохранён: {filename}")
 """
 Почему «свечи» (plt.errorbar) похожи на свечи на криптобирже?
 Потому что визуально:
