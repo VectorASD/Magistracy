@@ -15,46 +15,89 @@ def get_k_layer(pix, k):
     if k != 8: shifted &= 1
     return shifted
 
-def insert_k_layer(pix, k, message, *, slice=False):
+def insert_k_layer(pix, k, message, *, slice=False, indices=None):
+    """
+    Встраивает message (0 и 1) в k-й бит каждого пикселя.
+    Если indices=None  — используется обычный порядок (0..N-1).
+    Если indices задан — message записывается только в эти позиции.
+    """
     W, H = pix.shape
     capacity = W * H - 32
-    need = len(message) * 8
+    is_buffer = isinstance(message, np.ndarray)
+    if is_buffer:
+        assert message.dtype == np.uint8
+        assert message.ndim == 1
+
+    need = len(message) * (8 if indices is None else 1)
     if capacity < need:
         if slice:
             message = message[:capacity // 8]
-            need = len(message) * 8
+            need = len(message) * (8 if indices is None else 1)
         else:
-            raise ValueError(f"Capacity is {capacity}, but required is {need}") 
-
-    bits = np.unpackbits(np.frombuffer(message, dtype=np.uint8))
-    assert bits.shape == (need,)
-
-    bits = np.pad(bits, (0, capacity+32-need))
-    for i in range(32):
-        bits[-1-i] = need >> i & 1
-    bits = bits.reshape(W, H)
-    assert bits.shape == (W, H)
+            raise ValueError(f"Capacity is {capacity}, but required is {need}")
 
     shift = k-1
     mask = ~(1 << shift) & 255
+    if indices is not None:
+        assert is_buffer, "В режиме индексов, buffer уже должен быть np.ndarray из битов"
+        bits = message
+        assert bits.shape == (need,)
+
+        # новый адаптивный способ
+        flat = pix.flatten() # reshape(-1), но гарантирует копию, вместо view (отображения на том же куске памяти)
+        indices = np.asarray(indices)
+        assert indices.size <= bits.size, "bits должно быть не меньше, чем indices"
+        use_bits = bits[:indices.size]
+        flat[indices] = (flat[indices] & mask) | (use_bits << shift)
+        return flat.reshape((H, W))
+
+    buffer = message if is_buffer else np.frombuffer(message, dtype=np.uint8)
+    bits = np.unpackbits(buffer)
+    assert bits.shape == (need,)
+
+    # старый последовательный способ
+    bits = np.pad(bits, (0, capacity+32-need))
+    for i in range(32):
+        bits[-1-i] = need >> i & 1
+
+    bits = bits.reshape(W, H)
+    assert bits.shape == (W, H)
+
     return pix & mask | bits << shift
 
 # print(bits.reshape((1,) * 100 + (32,)))
 # ValueError: maximum supported dimension for an ndarray is currently 64, found 101
 # интересно было узнать максимальный ранг формы
 
-def read_k_layer(pix, k):
+def read_k_layer(pix, k, tobytes=True, indices=None):
+    """
+    Читает k-й битовый слой.
+    Если indices=None  — старый режим (последовательное чтение + длина в конце).
+    Если indices задан — адаптивный режим (чтение только указанных позиций).
+    """
     bits = get_k_layer(pix, k)
     W, H = pix.shape
-    bits = bits.reshape(W * H)
-    need = 0
-    for i in range(32):
-        need |= int(bits[-1-i]) << i
-    # print(need, len(bits)) # 262112 262144
-    if need > len(bits) - 32:
-        raise ValueError("Corrupted container: message length is invalid")
-    message = np.packbits(bits[:need]).tobytes()
-    return message
+
+    if indices is not None:
+        # адаптивный режим
+        flat = bits.reshape(W * H) # flatten НЕ нужен, т.к. мы не меняем здесь данные
+        indices = np.asarray(indices)
+        use_bits = flat[indices]       # читаем только нужные позиции
+    else:
+        # старый последовательный режим
+        bits = bits.reshape(W * H)
+        need = 0
+        for i in range(32):
+            need |= int(bits[-1-i]) << i
+        # print(need, len(bits)) # 262112 262144
+        if need > len(bits) - 32:
+            raise ValueError("Corrupted container: message length is invalid")
+        use_bits = bits[:need]
+
+    buffer = np.packbits(use_bits)
+    if tobytes:
+        return buffer.tobytes()
+    return buffer
 
 
 

@@ -5,6 +5,7 @@ import numpy as np                        # pip install numpy
 
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
 
 """
 tk  — это классические виджеты Tk, созданные ещё в 90‑х.
@@ -22,6 +23,7 @@ import platform
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
+from functools import lru_cache
 
 win = platform.system() == "Windows"
 
@@ -174,14 +176,51 @@ class ControlPanel(ttk.Frame):
             meta = {k: v for meta in metas for k, v in meta.items()}
             default = meta.get("default", None)
 
-            # Кнопка
             if len(names) == 1:
                 name = names[0]
-                assert default is None
-                def on_press(cb=callback):
-                    cb()
-                btn = ttk.Button(self, text=name, command=on_press)
-                btn.pack(side="left", padx=4)
+
+                # Текстовый ввод
+                if name.startswith("input_"):
+                    label = name[len("input_"):]
+                    var = tk.StringVar()
+                    if default is not None:
+                        var.set(default)
+                        callback(default)
+
+                    def on_text_change(var=var, cb=callback):
+                        cb(var.get())
+
+                    frame = ttk.Frame(self)
+                    ttk.Label(frame, text=label + ":").pack(side="left")
+                    entry = ttk.Entry(frame, textvariable=var)
+                    entry.pack(side="left")
+                    entry.bind("<KeyRelease>", lambda e: on_text_change())
+                    frame.pack(side="left", padx=4)
+
+                # Файловый ввод
+                elif name.startswith("file_"):
+                    label = name[len("file_"):]
+                    var = tk.StringVar()
+
+                    def on_choose_file(var=var, cb=callback):
+                        path = filedialog.askopenfilename()
+                        if path:
+                            var.set(path)
+                            cb(path)
+
+                    frame = ttk.Frame(self)
+                    ttk.Label(frame, text=label + ":").pack(side="left")
+                    btn = ttk.Button(frame, text="Выбрать файл", command=on_choose_file)
+                    btn.pack(side="left")
+                    frame.pack(side="left", padx=4)
+
+                # Кнопка
+                else:
+                    assert default is None
+                    def on_press(cb=callback):
+                        cb()
+                    btn = ttk.Button(self, text=name, command=on_press)
+                    btn.pack(side="left", padx=4)
 
             # Чекбокс
             elif len(names) == 2 and names[0] == names[1]:
@@ -216,7 +255,11 @@ class ControlPanel(ttk.Frame):
 
     def postinit(self):
         for combo in self.combos:
-            combo.current(combo._default or 0)
+            default = combo._default
+            if   isinstance(default, str): idx = combo['values'].index(default)
+            elif isinstance(default, int): idx = default
+            else:                          idx = 0
+            combo.current(idx)
             combo.event_generate("<<ComboboxSelected>>")
 
 
@@ -340,41 +383,145 @@ class BitPlaneGUI(tk.Tk):
 
 
 
-class HistogramGUI(tk.Toplevel):
-    def __init__(self, master, pixs, current, rows=4, cols=4):
-        super().__init__(master)
-        self.title("Histograms (Original vs Stego)")
-        self.geometry("1200x900")
+class ImageGridBase:
+    def __init__(self, rows=1, cols=1, preset=(), opts=()):
+        self.update_idletasks()
+        screen_w = self.winfo_screenwidth()
+        screen_h = self.winfo_screenheight()
 
-        plt = None
-        try: import matplotlib.pyplot as plt
-        except ImportError: pass
-        self.plt = plt            
+        win_w, win_h = 1400, 1000
 
-        assert len(pixs) == rows * cols
-        self.pixs = pixs
-        self.zoom = 1
-        self.prev_zoom = None
-        self.images    = [None] * (rows * cols)
-        self.current   = current
+        x = (screen_w - win_w) // 2
+        y = (screen_h - win_h) // 2
 
-        root = ScrollableFrame(self, self.ctrl_cb)
-        root.pack(fill="both", expand=True)
+        self.geometry(f"{win_w}x{win_h}+{x}+{y}")
+
+        self.images = [None] * (rows * cols)
+        self.texts  = [None] * (rows * cols)
+        self.zoom   = 1.
+        self.error  = None
+
+        root = ScrollableFrame(self, self.ctrl_cb, to_bottom=True)
+        root.pack(side="top", fill="both", expand=True)
 
         self.grid = ImageGrid(root.inner, rows=rows, cols=cols)
-        self.grid.pack()
+        self.grid.pack(side="top", pady=0)
 
-        self.calculate_async()
+        if opts:
+            panel = self.panel = ControlPanel(root.inner, opts)
+            panel.pack(side="top", fill="x", pady=5)
+            root.is_combo = panel.is_combo
+            def on_gui_ready():
+                panel.postinit()
+            self.after_idle(on_gui_ready)
 
-    def calculate_async(self):
-        # показываем заглушки
+        if isinstance(preset, (tuple, list)):
+            for idx, pix in enumerate(preset):
+                self.set_image(idx, pix, update=False)
+        else:
+            self.set_image(0, preset, update=False)
         self.show()
 
+    def to_pos(self, idx):
+        cols = len(self.grid.labels[0])
+        row, column = divmod(idx, cols)
+        return row, column
+
+    def to_idx(self, *args):
+        if len(args) == 1:
+            args = args[0]
+            if isinstance(args, int):
+                return args # уже idx
+        row, column = args
+        cols = len(self.grid.labels[0])
+        return column + cols * row
+
+    def calculate_async(self, cb):
         if self.plt:
             # запускаем асинхронную генерацию
             executor = ThreadPoolExecutor(max_workers=8)
             for idx, pix in enumerate(self.pixs):
-                executor.submit(self.calculate_one, idx, pix)
+                executor.submit(cb, idx, pix)
+
+    @staticmethod
+    @lru_cache
+    def get_placeholder(size):
+        placeholder = Image.new("RGB", (size, size), "white")
+        draw = ImageDraw.Draw(placeholder)
+        draw.rectangle((5, 5, size-5, size-5), outline="black", width=5)
+
+        return placeholder
+
+    def show_one(self, idx):
+        size = int(256 * self.zoom)
+        image = self.images[idx]
+        image = self.get_placeholder(size) if image is None else image.resize((size, size), Image.LANCZOS if self.zoom < 1.0 else Image.NEAREST)
+        tk_img = ImageTk.PhotoImage(image)
+
+        row, column = self.to_pos(idx)
+        lbl = self.grid.labels[row][column]
+        try:
+            text = self.error or self.texts[idx]
+            if text is None:
+                lbl.configure(image=tk_img, text="",   compound="none")
+            else:
+                lbl.configure(image=tk_img, text=text, compound="top")
+        except: pass
+        lbl.image = tk_img
+
+    def set_image(self, idx, pix, *, update=True):
+        idx = self.to_idx(idx)
+        if pix is None and self.images[idx] is None:
+            return self
+
+        if isinstance(pix, np.ndarray):
+            pix = Image.fromarray(pix)
+        self.images[idx] = pix
+        if update:
+            self.after(0, lambda: self.show_one(idx))
+        return self
+
+    def set_text(self, idx, text=None):
+        idx = self.to_idx(idx)
+        self.texts[idx] = text
+        self.after(0, lambda: self.show_one(idx))
+        return self
+
+    def show(self):
+        for idx in range(len(self.images)):
+            self.show_one(idx)
+
+    def ctrl_cb(self, direction, units):
+        self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
+        self.show()
+
+
+
+class ImageGridGUI(tk.Tk, ImageGridBase):
+    def __init__(self, rows=1, cols=1, preset=(), opts=()):
+        tk.Tk.__init__(self)
+        self.title("Image-grid Viewer")
+
+        ImageGridBase.__init__(self, rows, cols, preset, opts)
+
+
+
+class HistogramGUI(tk.Toplevel, ImageGridBase):
+    def __init__(self, master, pixs, current, rows=4, cols=4):
+        tk.Toplevel.__init__(self, master)
+        self.title("Histograms (Original vs Stego)")
+
+        plt = None
+        try: import matplotlib.pyplot as plt
+        except ImportError: self.error = "pip install matplotlib"
+        self.plt = plt            
+
+        assert len(pixs) == rows * cols
+        self.pixs = pixs
+        self.current   = current
+
+        ImageGridBase.__init__(self, rows, cols) # показываем заглушки
+        self.calculate_async(self.calculate_one)
 
     def calculate_one(self, idx, pix):
         # np_hist, bins = np.histogram(pix, bins=256, range=(0, 255))
@@ -400,48 +547,9 @@ class HistogramGUI(tk.Toplevel):
         # Конвертируем в tkinter-картинку
         buf.seek(0)
         img = Image.open(buf)
-        self.images.append(img)
 
         # обновляем GUI
-        self.images[idx] = img
-        self.after(0, lambda: self.show_one(idx))
-
-    def get_placeholder(self):
-        if self.prev_zoom == self.zoom:
-            return self.placeholder
-
-        size = int(256 * self.zoom)
-        placeholder = Image.new("RGB", (size, size), "white")
-        draw = ImageDraw.Draw(placeholder)
-        draw.rectangle((5, 5, size-5, size-5), outline="black", width=5)
-
-        self.prev_zoom = self.zoom
-        self.placeholder = placeholder
-        return placeholder
-
-    def show_one(self, idx):
-        size = int(256 * self.zoom)
-        image = self.images[idx]
-        image = self.get_placeholder() if image is None else image.resize((size, size), Image.LANCZOS if self.zoom < 1.0 else Image.NEAREST)
-        tk_img = ImageTk.PhotoImage(image)
-
-        r, c = divmod(idx, 4)
-        lbl = self.grid.labels[r][c]
-        try:
-            if self.plt is None:
-                lbl.configure(image=tk_img, text="pip install matplotlib", compound="top")
-            else:
-                lbl.configure(image=tk_img)
-        except: pass
-        lbl.image = tk_img
-
-    def show(self):
-        for idx in range(len(self.images)):
-            self.show_one(idx)
-
-    def ctrl_cb(self, direction, units):
-        self.zoom = max(0.2, min(self.zoom / 1.25 ** direction, 2))
-        self.show()
+        self.set_image(idx, img)
 
 
 
@@ -477,7 +585,7 @@ def plot_ci(rows, title, filename):
     plt.tight_layout()
     plt.savefig(filename, dpi=200)
     plt.close()
-    print("График сохранён: psnr_ci_graph.png")
+    print(f"График сохранён: {filename}")
 """
 Почему «свечи» (plt.errorbar) похожи на свечи на криптобирже?
 Потому что визуально:
@@ -491,4 +599,7 @@ def plot_ci(rows, title, filename):
 
 if __name__ == "__main__":
     from solve_1 import MainGUI
-    MainGUI().mainloop()
+    from solve_2 import check_gradient
+
+    # MainGUI().mainloop()
+    check_gradient()

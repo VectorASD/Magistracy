@@ -1,5 +1,9 @@
+import numpy as np # pip install numpy
+
 import math
 from functools import lru_cache
+
+
 
 """
 Функция norminv(p) реализует аппроксимацию обратной CDF нормального
@@ -122,6 +126,171 @@ def confidence_interval(avg, std, n, alpha=0.05):
     z = z_from_alpha(alpha)
     margin = z * std / math.sqrt(n)
     return avg - margin, avg + margin
+
+
+
+def conv_kernel(pix: np.ndarray, kernel: np.ndarray, mode: str="valid") -> np.ndarray:
+    """
+    Свёртка ядром kernel.
+    Использует только ненулевые коэффициенты.
+    pix    — 2D float32
+    kernel — 2D float32/int
+    mode:
+      - "valid": ужимающая свёртка (как раньше)
+      - "same":  свёртка с паддингом, выход совпадает с размером pix
+    """
+
+    assert pix.ndim == 2
+    kh, kw = kernel.shape
+    H, W = pix.shape
+    if mode not in ("valid", "same"):
+        raise ValueError("mode должен быть 'valid' или 'same'")
+
+    if mode == "same":
+        if kh % 2 == 0 or kw % 2 == 0:
+            raise ValueError(
+                "Больше невозможно поддерживать ядра чётного размера (diff и roberts)"
+                "из-за особенности адаптивного режима (просто нет центра в свёртке, но padding нужен!)"
+            )
+
+        pad_y = kh // 2
+        pad_x = kw // 2
+
+        pix = np.pad(
+            pix,
+            ((pad_y, pad_y), (pad_x, pad_x)),
+            mode='edge'
+        )
+
+        # после паддинга размер меняется
+        H, W = pix.shape
+
+    # общая логика для обоих режимов
+    out_h = H - kh + 1
+    out_w = W - kw + 1
+
+    out = np.zeros((out_h, out_w), dtype=np.float32)
+
+    for dy in range(kh):
+        for dx in range(kw):
+            k = kernel[dy, dx]
+            if k == 0:
+                continue
+
+            region = pix[dy:dy+out_h, dx:dx+out_w]
+
+            # Оптимизация:
+            sign, k = k < 0, abs(k)
+
+            if k == 1: term = region
+            else:      term = region * k
+
+            if sign: out -= term
+            else:    out += term
+
+    return out
+
+GRADIENT_KERNELS = {
+    # 1. Простые разностные операторы
+    "diff": (
+        (-1, 1),  # dx: 1×2
+        ( 0, 0),
+    ),
+    # Если не заполнить нулями матрицы до квадратных, то получим:
+    #   operands could not be broadcast together with shapes (512,511) (511,512)
+    #   т.е. градиенты просто будут разной формы, а broadcast на
+    #   разные неединичные значения (511 и 512) в любом одном и том же измерении НЕВОЗМОЖЕН
+
+    # 2. Центральная разность
+    "central": (
+        (-1, 0, 1),  # dx: 1×3
+        ( 0, 0, 0),
+        ( 0, 0, 0),
+    ),
+
+    # 5. Шарр 3×3
+    "scharr3": (
+        ( 3, 0, -3),
+        (10, 0,-10),
+        ( 3, 0, -3),
+    ),
+
+    # 6. Робертс 2×2
+    "roberts": (
+        (
+            (1, 0),
+            (0,-1),
+        ),
+        (
+            (0, 1),
+            (-1,0),
+        ),
+    ),
+
+    # 3. Превитт 3×3
+    "prewitt3": (
+        (-1, 0, 1),
+        (-1, 0, 1),
+        (-1, 0, 1),
+    ),
+
+    # 7. Превитт 5×5
+    "prewitt5": (
+        (-1,-1, 0, 1, 1),
+        (-1,-1, 0, 1, 1),
+        (-1,-1, 0, 1, 1),
+        (-1,-1, 0, 1, 1),
+        (-1,-1, 0, 1, 1),
+    ),
+
+    # 4. Собель 3×3
+    "sobel3": (
+        (-1, 0, 1),
+        (-2, 0, 2),
+        (-1, 0, 1),
+    ),
+
+    # 8. Собель 5×5
+    "sobel5": (
+        (-5,  -4, 0,  4,  5),
+        (-8, -10, 0, 10,  8),
+        (-10,-20, 0, 20, 10),
+        (-8, -10, 0, 10,  8),
+        (-5,  -4, 0,  4,  5),
+    ),
+
+    # 9. Собель 7×7
+    "sobel7": (
+        (-3, -2, -1, 0, 1, 2, 3),
+        (-5, -4, -2, 0, 2, 4, 5),
+        (-6, -8, -4, 0, 4, 8, 6),
+        (-7,-10, -5, 0, 5,10, 7),
+        (-6, -8, -4, 0, 4, 8, 6),
+        (-5, -4, -2, 0, 2, 4, 5),
+        (-3, -2, -1, 0, 1, 2, 3),
+    ),
+}
+
+def gradient(pix: np.ndarray, kernel_x: np.ndarray, kernel_y: np.ndarray, mode: str="valid") -> np.ndarray:
+    gx = conv_kernel(pix, kernel_x, mode)
+    gy = conv_kernel(pix, kernel_y, mode)
+    grad = np.abs(gx) + np.abs(gy)
+
+    # Нормализация градиента
+    g = grad - grad.min()
+    return g / (g.max() + 1e-9) # защита от деления на 0
+
+def gradient_from_name(pix: np.ndarray, name: str, mode: str="valid"):
+    if name == "roberts":
+        kx, ky = GRADIENT_KERNELS[name]
+        kx = np.array(kx, dtype=np.float32)
+        ky = np.array(ky, dtype=np.float32)
+    else:
+        k = GRADIENT_KERNELS[name]
+        kx = np.array(k, dtype=np.float32)
+        ky = kx.T
+
+    return gradient(pix, kx, ky, mode)
 
 
 
