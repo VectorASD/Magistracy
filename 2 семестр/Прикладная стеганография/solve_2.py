@@ -109,12 +109,12 @@ def make_indices_adaptive(pix: np.ndarray, key: str, num_bits: int, kernel_name:
 
     grad = gradient_from_name(pix, kernel_name, mode="same") # 2D карта
     flat = grad.reshape(total)                               # 1D
-    print("SIZE:", W, "x", H)
-    print("key:", key)
-    print("num_bits:", num_bits)
+  # print("SIZE:", W, "x", H)
+  # print("key:", key)
+  # print("num_bits:", num_bits)
 
     order = np.argsort(flat)[::-1]                    # по убыванию градиента
-    print("order:", order, len(order))
+  # print("order:", order, len(order))
 
     # global prev_order
     # if prev_order is None:
@@ -127,7 +127,7 @@ def make_indices_adaptive(pix: np.ndarray, key: str, num_bits: int, kernel_name:
 
     order = order[:num_bits]
     # print("S order:", order, len(order))
-    return order
+    return order, grad
 
 def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str, *, kernel_name=None) -> np.ndarray:
     """
@@ -144,7 +144,7 @@ def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str, *, kernel
         shuffled = watermark[idxs]
 
         stego = insert_k_layer(pix, k=1, message=shuffled)
-        return stego
+        return stego, None
 
     # адаптивный режим
     wm_bytes = watermark.reshape(-1)
@@ -158,9 +158,9 @@ def embed_logo_lsb_with_key(pix: np.ndarray, key: str, logo_path: str, *, kernel
     wm_bits = np.unpackbits(shuffled_bytes)
     num_bits = wm_bits.size
 
-    indices = make_indices_adaptive(pix, key, num_bits, kernel_name)
+    indices, grad = make_indices_adaptive(pix, key, num_bits, kernel_name)
 
-    return insert_k_layer(pix, k=1, message=wm_bits, indices=indices)
+    return insert_k_layer(pix, k=1, message=wm_bits, indices=indices), grad
 
 def extract_logo_lsb_with_key(pix: np.ndarray, key: str, *, kernel_name=None, orig_pix=None):
     "Извлекает логотип, встроенный методом 1 (LSB + перестановка индексов)."
@@ -198,7 +198,7 @@ def extract_logo_lsb_with_key(pix: np.ndarray, key: str, *, kernel_name=None, or
     num_bits = num_bytes * 8
 
     # 2) Генерируем адаптивные индексы (как в embed)
-    indices = make_indices_adaptive(orig_pix, key, num_bits, kernel_name)
+    indices, _ = make_indices_adaptive(orig_pix, key, num_bits, kernel_name)
 
     # 3) Читаем только эти позиции
     wm_arr = read_k_layer(pix, k=1, tobytes=False, indices=indices)
@@ -231,7 +231,7 @@ def compare_logos(logo_path: str, stego: np.ndarray, extracted: np.ndarray):
 
 def check_embedder():
     pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
-    stego = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png")
+    stego, _ = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png")
     save_bmp("watermarked.bmp", stego, mode="gray")
 
 def check_extractor():
@@ -276,7 +276,7 @@ def check_gradient():
 
 def check_adaptive_embedder():
     pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
-    stego = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png", kernel_name="sobel7")
+    stego, _ = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png", kernel_name="sobel7")
     save_bmp("watermarked2.bmp",      stego, mode="gray")
     save_bmp("watermarked2_orig.bmp", pix,   mode="gray")
 
@@ -289,7 +289,7 @@ def check_adaptive_extractor():
 
 
 
-class MainGUI:    
+class MainGUI:
     def FDDSCS(self):
         # Гибкая декларативная система конфигурации источников данных :)
         # Flexible declarative data source configuration system (FDDSCS)
@@ -299,7 +299,7 @@ class MainGUI:
         self.opts = (
             ("file_original (bmp)",      self.choose_original),
             ("file_watermark (png)",     self.choose_watermark),
-            ("input_password",           self.setter("password")),
+            ("input_password",           self.setter("password"), {"default": "meowl"}),
             ("use kernel", "use kernel", self.setter("is_adaptive")),
             (*kernel_names,              self.setter("kernel"), {"default": "sobel7"}),
         )
@@ -309,6 +309,23 @@ class MainGUI:
             size = (512, 512) if self.original is None else self.original.shape
             self.logo, self.watermark = load_logo_with_fit(self.watermark_path, size)
             self.app.set_image(1, self.logo)
+
+            if self.original is not None:
+                kernel_name = self.kernel if self.is_adaptive else None
+                self.stego, grad = embed_logo_lsb_with_key(self.original, self.password, self.watermark_path, kernel_name=kernel_name)
+                self.app.set_image(2, self.stego)
+                if grad is not None:
+                    grad *= 255
+                self.app.set_image(3, grad)
+                self.grad = grad
+
+        if self.original is not None and self.stego is not None:
+            delta = ((self.original != self.stego) * 255).astype(np.uint8)
+            self.app.set_image(4, delta)
+
+        if self.original is not None:
+            self.extracted = extract_logo_lsb_with_key(self.original, self.password) #, kernel_name="sobel7", orig_pix=pix)
+            self.app.set_image(5, self.extracted)
 
     def choose_original(self, path):
         self.original = load_bmp(path, to_gray=True)
@@ -323,16 +340,19 @@ class MainGUI:
         def cb(value):
             setattr(self, name, value)
           # print("SET:", name, value)
+            self.update()
         cb(None)
         return cb
 
     def __init__(self):
         self.original  = None
+        self.watermark_path = None
         self.watermark = None
         self.logo      = None
+        self.stego     = None
         self.FDDSCS()
 
-        self.app = ImageGridGUI(1, 3, opts=self.opts)
+        self.app = ImageGridGUI(2, 3, opts=self.opts)
 
     def mainloop(self):
         self.app.mainloop()

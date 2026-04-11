@@ -185,6 +185,7 @@ class ControlPanel(ttk.Frame):
                     var = tk.StringVar()
                     if default is not None:
                         var.set(default)
+                        callback(default)
 
                     def on_text_change(var=var, cb=callback):
                         cb(var.get())
@@ -469,9 +470,9 @@ class ImageGridBase:
         lbl.image = tk_img
 
     def set_image(self, idx, pix, *, update=True):
-        if pix is None:
-            return self
         idx = self.to_idx(idx)
+        if pix is None and self.images[idx] is None:
+            return self
 
         if isinstance(pix, np.ndarray):
             pix = Image.fromarray(pix)
