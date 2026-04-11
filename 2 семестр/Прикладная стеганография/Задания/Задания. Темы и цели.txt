@@ -11,7 +11,7 @@
 Задание 3:
 	Тема: Реализация и исследование  алгоритмов обратимой стеганографии с сохранением целостности контейнера.
 	Цель: Исследовать различные подходы к обратимой стеганографии на основе методов сдвига гистограмм, описанных в статье "Histogram Shifting as a Data Hiding Technique: An Overview of Recent Developments".
-	Файлы: 'Задание 3. Histogram Shifting as a Data Hiding Technique An Overview of Recent Developments.pdf'
+	Файлы: 'Задание 3.pdf' и 'Задание 3. Histogram Shifting as a Data Hiding Technique An Overview of Recent Developments.pdf'
 
 Задание 4:
 	Тема: Применение средств стегоанализа для исследования стегоустойчивости метода внедрения. 
