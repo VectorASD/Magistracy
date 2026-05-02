@@ -33,6 +33,37 @@ def pick_best(hist, x, y):
         return None
     return max(arr, key=lambda i: hist[i])
 
+def refine_peak(hist, peak, zero):
+    "Для шага 6: уточнение пика внутри пары (peak, zero)"
+    if peak is None:
+        return  # нечего уточнять
+    assert zero is not None
+
+    left  = min(peak, zero)
+    right = max(peak, zero)
+
+    # Step.3 внутри пары
+    a_local = safe_argmax_interval(hist, left, right)
+
+    # Step.4 внутри пары
+    aL, aR = top2_in_interval(hist, left, right)
+
+    # Step.5 внутри пары
+    return pick_best(hist, a_local, pick_best(hist, aL, aR))
+
+
+
+def find_nearest_zero(hist, peak):
+    zeros = np.where(hist == 0)[0]
+    zeros = zeros[zeros != peak]  # исключаем сам peak, если вдруг hist[peak] == 0
+
+    if zeros.size:
+        # выбираем zero с минимальной дистанцией до peak
+        idx = np.argmin(np.abs(zeros - peak))
+        return int(zeros[idx])
+
+    raise RuntimeError(f"Плохая гистограмма: {hist}, peak={peak}")
+
 
 
 class HistogramShifting:
@@ -54,7 +85,7 @@ class HistogramShifting:
                 self.load_gray_from_io(file)
         return self
 
-    def insert(self):
+    def Ni_et_al_2006(self):
         #   Step.1
         # hist, bin_edges = np.histogram(self.pix, bins=256, range=(0, 255)) # Тормозной варианта из-за вычислений bin_edges, что нам не нужен,
                                                                              # потому что RDH‑методы работают строго с целыми значениями яркости.
@@ -83,8 +114,42 @@ class HistogramShifting:
         p3 = pick_best(hist, a32, a3)
       # print("picks:", p1, p2, p3)  # 1 7 10
 
+        #   Step.6
+        p1 = refine_peak(hist, p1, b1)
+        p2 = refine_peak(hist, p2, b2)
+        p3 = refine_peak(hist, p3, b3)
+      # print(p1, p2, p3)  # None 6 None
+
+        # В статье прямо указано:
+        #    All of these three pairs are treated as cases of peak and zero points pairs.
+        # Но не сказано, что все три пары обязаны иметь пики.
+        # Если пара не содержит пика → она просто не участвует в embedding.
+
+        #   Step.7 в учебнике хоть и нет такого пункта, т.к. не уточняются детали, но получать здесь None - нормально
+        pairs = tuple((pick, zero) for pick, zero in ((p1, b1), (p2, b2), (p3, b3)) if pick is not None)
+        if not pairs:
+            # Тем более, мы можем получить сразу из всех трёх refine_peak значения None,
+            # тогда делаем fallback на однопиковый HS 2004 года.
+            pairs = self.Ni_et_al_2004(hist)
+
+        for pick, zero in pairs:
+            print(f"(p={pick}, b={zero})")
+
+        return pairs
+
+    def Ni_et_al_2004(self, hist=None):
+        if hist is None:
+            # на тот случай, если кому-то понадобится алгоритм 2004 года без 2006 года...
+            hist = np.bincount(self.pix.flatten(), minlength=256)
+            assert hist.shape == (256,)
+
+        peak = int(np.argmax(hist))  # cast np.int64 to int
+        zero = find_nearest_zero(hist, peak)
+        return (peak, zero),
+
 
 
 if __name__ == "__main__":
     HS = HistogramShifting().load_gray_from_zip(os.path.join("assets", "bossbase_containers.zip"), "205.bmp")
-    HS.insert()
+  # HS.Ni_et_al_2004()
+    HS.Ni_et_al_2006()
