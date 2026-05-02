@@ -189,6 +189,88 @@ class HistogramShifting:
         pairs = self.Ni_et_al_2006()
         return int(sum(hist[peak] for peak, zero in pairs))
 
+    def embed_one_pair(self, peak, zero, payload_bits):
+        work = self.pix.astype(np.int16, copy=True)
+        h, w = work.shape
+        total = payload_bits.size
+        bit_pos = 0
+
+        # 1. SHIFT interval
+        if zero < peak:
+            mask = (work > zero) & (work < peak)
+            work[mask] -= 1
+        else:
+            mask = (work < zero) & (work > peak)
+            work[mask] += 1
+
+        # 2. EMBED bits (linear scan)
+        for i in range(h * w):
+            if bit_pos >= total:
+                break
+
+            v = work.flat[i]
+
+            if v == peak:
+                # embed 0 → leave as is
+                bit = payload_bits[bit_pos]
+                if bit == 1:
+                    # embed 1 → shift toward zero
+                    if zero < peak:
+                        work.flat[i] -= 1
+                    else:
+                        work.flat[i] += 1
+                bit_pos += 1
+
+        return work.astype(np.uint8)
+
+    def extract_one_pair(self, peak, zero, stego, total_bits):
+        work = stego.astype(np.int16, copy=True)
+        h, w = work.shape
+        extracted = np.empty(total_bits, dtype=np.uint8)
+        bit_pos = 0
+
+        # 1. READ bits (linear scan)
+        for i in range(h * w):
+            if bit_pos >= total_bits:
+                break
+
+            v = work.flat[i]
+
+            if zero < peak:
+                if v == peak:
+                    extracted[bit_pos] = 0
+                    bit_pos += 1
+                elif v == peak - 1:
+                    extracted[bit_pos] = 1
+                    bit_pos += 1
+            else:
+                if v == peak:
+                    extracted[bit_pos] = 0
+                    bit_pos += 1
+                elif v == peak + 1:
+                    extracted[bit_pos] = 1
+                    bit_pos += 1
+
+        # 2. UNDO embedding
+        for i in range(h * w):
+            v = work.flat[i]
+            if zero < peak:
+                if v == peak - 1:
+                    work.flat[i] = peak
+            else:
+                if v == peak + 1:
+                    work.flat[i] = peak
+
+        # 3. UNDO shift
+        if zero < peak:
+            mask = (work > zero) & (work < peak)
+            work[mask] += 1
+        else:
+            mask = (work < zero) & (work > peak)
+            work[mask] -= 1
+
+        return extracted, work.astype(np.uint8)
+
     def embedder(self):
         if self.stego is not None:
             return self.stego
@@ -198,80 +280,45 @@ class HistogramShifting:
         if self.data is None:
             raise RuntimeError("Сначала загрузите данные для встраивания посредством load_data")
 
-        capacity_bits = self.get_capacity()  # триггерит фактическое выссчитывание self.hist и self.pairs
-        capacity_bytes = capacity_bits // 8
-
-      # print("capacity:", capacity_bytes, "b.") # 1197 b.
-      # print("data:", len(self.data), "b.")     # 453541 b. (весь Философский Камень Гарри Поттера в кодировке windows-1251, т.е. все русские и английский буквы по байту)
-
-        if len(self.data) < capacity_bytes:
-            raise RuntimeError(f"Недостаточно данных: нужно минимум {capacity_bytes} байт, а загружено только {len(self.data)}")
-
-        payload = self.data[:capacity_bytes]
-        payload_bits = np.unpackbits(np.frombuffer(payload, dtype=np.uint8)).astype(np.uint8)
-      # print(payload_bits.size, capacity_bits) # 9576 9576, шанс 1/8 увидеть одинаковые числа, а выпал :)
-
-        bit_pos = 0
-        total_bits = payload_bits.size
-
-        # Рабочая область, чтобы не было переполнений из-за np.uint8...
-        work = self.pix.astype(np.int16, copy=True)
-        if self.debug:
-            print("work:", work, sep='\n')
-            print("payload_bits:", payload_bits)
-
-        # Важно! Без этих данных, не получится сделать нормальный экстрактор
-        self.bits_per_pair = bits_per_pair = []
-
+        # Получаем пары (peak, zero)
         pairs = self.Ni_et_al_2006()
         print("PAIRS (embedder):", pairs)
+
+        # Вместимость (по сумме пиков)
+        capacity_bits = self.get_capacity()
+        capacity_bytes = capacity_bits // 8
+
+        if len(self.data) < capacity_bytes:
+            raise RuntimeError(
+                f"Недостаточно данных: нужно минимум {capacity_bytes} байт, а загружено только {len(self.data)}"
+            )
+
+        # Берём payload ровно под вместимость
+        payload = self.data[:capacity_bytes]
+        payload_bits = np.unpackbits(np.frombuffer(payload, dtype=np.uint8)).astype(np.uint8)
+
+        # Рабочая копия
+        work = self.pix.astype(np.int16, copy=True)
+
+        # Встраиваем ПО ОДНОЙ паре (как в оригинальном HS)
+        bit_pos = 0
+        total_bits = payload_bits.size
 
         for peak, zero in pairs:
             if bit_pos >= total_bits:
                 break
 
-            # --- Сдвиг интервала ---
-            if zero < peak:
-                mask_shift = (work > zero) & (work < peak)
-                work[mask_shift] -= 1
-            else:
-                mask_shift = (work < zero) & (work > peak)
-                work[mask_shift] += 1
-            if self.debug:
-                print(f"after shift (zero={zero}, peak={peak}):", work, sep='\n')
-
-            # --- Встраивание битов в пиксели == peak ---
-            mask_peak = (work == peak)
-            idx = np.flatnonzero(mask_peak)
-            n_avail = idx.size
-            if n_avail == 0:
-                if self.debug:
-                    print("n_avail == 0")
-                bits_per_pair.append(0)
-                continue
-
-            n_need = min(n_avail, total_bits - bit_pos)
-            bits_chunk = payload_bits[bit_pos:bit_pos + n_need]
-
-            idx_chunk = idx[:n_need]
-            ones_mask = bits_chunk == 1
-
-            if zero < peak:
-                work.flat[idx_chunk[ones_mask]] -= 1
-            else:
-                work.flat[idx_chunk[ones_mask]] += 1
-            # work.flat - это вид (subview) на плоское представлением того же ndarray, только в 1D форме: (work.size,)
-            if self.debug:
-                print(f"after embed (idx_chunk[ones_mask]={idx_chunk[ones_mask]}):", work, sep='\n')
-            bits_per_pair.append(n_need)
-
-            bit_pos += n_need
+            # Встраиваем часть payload в эту пару
+            chunk = payload_bits[bit_pos:]
+            work = self.embed_one_pair(peak, zero, chunk)
+            bit_pos += chunk.size
 
         # Сохраняем stego-картинку под Lazy.
         # Иными словами, повторные вызовы метода embedder дадут уже self.stego напрямую,
-        # пока не будет вызваны методы с side-эффектом на этот метод: load_gray_from_* или load_data
-        self.stego = stego = work.astype(np.uint8)
-        return stego
+        # пока не будет вызваны методы с side-эффектом на этот метод:
+        self.stego = work.astype(np.uint8)
+        self.total_bits_embedded = bit_pos # добиваем проблему с появлением 262055 / 262144 (прямо совсем мало пикселей не сошлось, уже совсем странно!!!)
+        return self.stego
 
     def save_stego(self, path):
         stego = self.embedder()
@@ -281,78 +328,35 @@ class HistogramShifting:
     def extractor(self):
         if self.stego is None:
             raise RuntimeError("Сначала вызовите embedder() или load_gray_from_*(..., stego=True)")
-        if self.bits_per_pair is None:
-            raise RuntimeError("Нет лога bits_per_pair")
 
         pairs = self.Ni_et_al_2006()
-        print("bits_per_pair:", self.bits_per_pair)
+        print("PAIRS (extractor):", pairs)
+
+        # Вместимость = сколько бит было встроено
+        total_bits = self.get_capacity()
+        print("total_bits:", total_bits)
+        total_bits = self.total_bits_embedded
+        print("total_bits:", total_bits)
+
+        # Рабочая копия
         work = self.stego.astype(np.int16, copy=True)
-        if self.debug:
-            print("Начался экстратор")
-            print("work:", work, sep="\n")
-            print("bits_per_pair:", self.bits_per_pair)
-            print("hist:", self.get_hist())
 
-        # Реальное число встроенных бит
-        total_bits = sum(self.bits_per_pair)
+        # Извлекаем ПО ОДНОЙ паре (как в оригинальном HS)
+        bit_pos = 0
         extracted_bits = np.empty(total_bits, dtype=np.uint8)
-        bit_pos = total_bits  # заполняем с конца
 
-        # Идём по парам и логам в обратном порядке
-        for (peak, zero), n_used in zip(reversed(pairs), reversed(self.bits_per_pair)):
-            if n_used == 0:
-                # Эта пара ничего не встраивала — просто откатываем интервал
-                if zero < peak:
-                    mask_shift = (work > zero) & (work < peak)
-                    work[mask_shift] += 1
-                else:
-                    mask_shift = (work < zero) & (work > peak)
-                    work[mask_shift] -= 1
-                continue
+        for peak, zero in pairs:
+            if bit_pos >= total_bits:
+                break
 
-            # 1. Находим кандидатов (как в embedder, но уже на текущем work)
-            if zero < peak:
-                mask = (work == peak) | (work == peak - 1)
-                idx = np.flatnonzero(mask)
-                vals = work.flat[idx]
-                bits = (vals == (peak - 1)).astype(np.uint8)
-            else:
-                mask = (work == peak) | (work == peak + 1)
-                idx = np.flatnonzero(mask)
-                vals = work.flat[idx]
-                bits = (vals == (peak + 1)).astype(np.uint8)
-            if self.debug:
-                print(f"after candidator (bits={bits}, bit_pos={bit_pos}, n_used={n_used}):", work, sep='\n')
+            # Извлекаем часть
+            chunk_bits, work = self.extract_one_pair(peak, zero, work, total_bits - bit_pos)
+            extracted_bits[bit_pos:bit_pos + chunk_bits.size] = chunk_bits
+            bit_pos += chunk_bits.size
 
-            # ВАЖНО: эмбеддер использовал только первые n_used позиций
-            idx = idx[:n_used]
-            bits = bits[:n_used]
-
-            # 2. Записываем биты
-            bit_pos -= n_used
-            extracted_bits[bit_pos:bit_pos + n_used] = bits
-
-            # 3. Откатываем embedding
-            ones_idx = idx[bits == 1]
-            if ones_idx.size > 0:
-                work.flat[ones_idx] = peak
-                if self.debug:
-                    print(f"after embedding (peak={peak}, ones_idx={ones_idx}):", work, sep='\n')
-
-            # 4. Откатываем интервал
-            if zero < peak:
-                mask_shift = (work > zero) & (work < peak)
-                work[mask_shift] += 1
-            else:
-                mask_shift = (work < zero) & (work > peak)
-                work[mask_shift] -= 1
-            if self.debug:
-                print(f"after interval (zero={zero}, peak={peak}):", work, sep='\n')
-
-        restored = work.astype(np.uint8)
         extracted_bytes = np.packbits(extracted_bits).tobytes()
+        restored = work.astype(np.uint8)
         return extracted_bytes, restored
-
 
 
 
