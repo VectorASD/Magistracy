@@ -22,7 +22,7 @@ def top2_in_interval(hist, left, right):
         return None, None
     segment = hist[left+1:right]
     assert len(segment) >= 2, "Где-то выход за пределы массива?"
-    top1, top2 = np.argsort(segment)[-2:]  # два индекса максимальных значений справа
+    top1, top2 = sorted(np.argsort(segment, kind="heap")[-2:])  # два индекса максимальных значений справа
     assert top1 < top2
     return (left + 1 + top1, left + 1 + top2)  # индексы сегмента в индексы гистограммы
 
@@ -108,9 +108,9 @@ class HistogramShifting:
         hist = self.get_hist()
 
         #   Step.2
-        argsorted = np.argsort(hist)  # argsort - та же самая сортировка, но выдаёт индексы значений вместо самих значений
+        argsorted = np.argsort(hist, kind="heap")  # argsort - та же самая сортировка, но выдаёт индексы значений вместо самих значений
         assert argsorted.shape == (256,)
-        b1, b2, b3 = argsorted[:3]
+        b1, b2, b3 = sorted(argsorted[:3])  # np.argsort(hist, kind="quicksort"), т.е. порядок не гарантируется b1 < b2 < b3, по этому и сортируем
       # print(b1, b2, b3)  # 2 4 11
 
         #   Step.3
@@ -141,7 +141,7 @@ class HistogramShifting:
         # Если пара не содержит пика → она просто не участвует в embedding.
 
         #   Step.7 в учебнике хоть и нет такого пункта, т.к. не уточняются детали, но получать здесь None - нормально
-        self.pairs = tuple((pick, zero) for pick, zero in ((p1, b1), (p2, b2), (p3, b3)) if pick is not None)
+        self.pairs = tuple((int(pick), int(zero)) for pick, zero in ((p1, b1), (p2, b2), (p3, b3)) if pick is not None)
         #   Тем более, мы можем получить сразу из всех трёх refine_peak значения None,
         #   тогда делаем fallback на однопиковый HS 2004 года.
         pairs = self.Ni_et_al_2004()
@@ -161,10 +161,18 @@ class HistogramShifting:
         self.pairs = pairs = (peak, zero),
         return pairs
 
+    def get_capacity(self):
+        hist = self.get_hist()
+        pairs = self.Ni_et_al_2006()
+        print("hist:", hist)
+        print("pairs:", pairs)
+        print("capacity:", sum(hist[peak] for peak, zero in pairs), "bits")
+        return sum(hist[peak] for peak, zero in pairs)
+
 
 
 if __name__ == "__main__":
     HS = HistogramShifting().load_gray_from_zip(os.path.join("assets", "bossbase_containers.zip"), "205.bmp")
   # HS.Ni_et_al_2004()
-    pairs = HS.Ni_et_al_2006()
-
+  # HS.Ni_et_al_2006()
+    HS.get_capacity()
