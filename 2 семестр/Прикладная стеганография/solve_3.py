@@ -164,7 +164,7 @@ class HistogramShifting:
 
         #   Step.7 в учебнике хоть и нет такого пункта, т.к. не уточняются детали, но получать здесь None - нормально
         self.pairs = tuple((int(pick), int(zero)) for pick, zero in ((p1, b1), (p2, b2), (p3, b3))
-                           if pick is not None and hist[zero] == 0)[:1]
+                           if pick is not None and hist[zero] == 0)
         #   Тем более, мы можем получить сразу из всех трёх refine_peak значения None,
         #   тогда делаем fallback на однопиковый HS 2004 года.
         pairs = self.Ni_et_al_2004()
@@ -189,77 +189,60 @@ class HistogramShifting:
         pairs = self.Ni_et_al_2006()
         return int(sum(hist[peak] for peak, zero in pairs))
 
-    def embed_one_pair(self, peak, zero, payload_bits):
-        work = self.pix.astype(np.int16, copy=True)
+    def embed_one_pair(self, work, peak, zero, payload_bits):
         h, w = work.shape
         total = payload_bits.size
-        bit_pos = 0
 
         # 1. SHIFT interval
         if zero < peak:
             mask = (work > zero) & (work < peak)
             work[mask] -= 1
+            delta = -1
         else:
             mask = (work < zero) & (work > peak)
             work[mask] += 1
+            delta = +1
 
-        # 2. EMBED bits (linear scan)
+        # 2. EMBED bits
+        used = 0
+        flat = work.flat
+
         for i in range(h * w):
-            if bit_pos >= total:
+            if used >= total:
                 break
 
-            v = work.flat[i]
+            if flat[i] == peak:
+                if payload_bits[used] == 1:
+                    flat[i] = peak + delta
+                used += 1
 
-            if v == peak:
-                # embed 0 → leave as is
-                bit = payload_bits[bit_pos]
-                if bit == 1:
-                    # embed 1 → shift toward zero
-                    if zero < peak:
-                        work.flat[i] -= 1
-                    else:
-                        work.flat[i] += 1
-                bit_pos += 1
+        return work, used
 
-        return work.astype(np.uint8)
-
-    def extract_one_pair(self, peak, zero, stego, total_bits):
-        work = stego.astype(np.int16, copy=True)
+    def extract_one_pair(self, peak, zero, work, total_bits):
         h, w = work.shape
         extracted = np.empty(total_bits, dtype=np.uint8)
         bit_pos = 0
 
-        # 1. READ bits (linear scan)
+        delta = -1 if zero < peak else +1
+        flat = work.flat
+
+        # 1. READ bits
         for i in range(h * w):
             if bit_pos >= total_bits:
                 break
 
-            v = work.flat[i]
+            v = flat[i]
+            if v == peak:
+                extracted[bit_pos] = 0
+                bit_pos += 1
+            elif v == peak + delta:
+                extracted[bit_pos] = 1
+                bit_pos += 1
 
-            if zero < peak:
-                if v == peak:
-                    extracted[bit_pos] = 0
-                    bit_pos += 1
-                elif v == peak - 1:
-                    extracted[bit_pos] = 1
-                    bit_pos += 1
-            else:
-                if v == peak:
-                    extracted[bit_pos] = 0
-                    bit_pos += 1
-                elif v == peak + 1:
-                    extracted[bit_pos] = 1
-                    bit_pos += 1
-
-        # 2. UNDO embedding
+        # 2. UNDO embed
         for i in range(h * w):
-            v = work.flat[i]
-            if zero < peak:
-                if v == peak - 1:
-                    work.flat[i] = peak
-            else:
-                if v == peak + 1:
-                    work.flat[i] = peak
+            if flat[i] == peak + delta:
+                flat[i] = peak
 
         # 3. UNDO shift
         if zero < peak:
@@ -269,55 +252,43 @@ class HistogramShifting:
             mask = (work < zero) & (work > peak)
             work[mask] -= 1
 
-        return extracted, work.astype(np.uint8)
+        return extracted, work
 
     def embedder(self):
         if self.stego is not None:
             return self.stego
 
         if self.pix is None:
-            raise RuntimeError("Сначала загрузите изображение посредством любого метода load_gray_from_*")
+            raise RuntimeError("Сначала загрузите изображение")
         if self.data is None:
-            raise RuntimeError("Сначала загрузите данные для встраивания посредством load_data")
+            raise RuntimeError("Сначала загрузите данные")
 
-        # Получаем пары (peak, zero)
-        pairs = self.Ni_et_al_2006()
-        print("PAIRS (embedder):", pairs)
-
-        # Вместимость (по сумме пиков)
         capacity_bits = self.get_capacity()
         capacity_bytes = capacity_bits // 8
 
         if len(self.data) < capacity_bytes:
-            raise RuntimeError(
-                f"Недостаточно данных: нужно минимум {capacity_bytes} байт, а загружено только {len(self.data)}"
-            )
+            raise RuntimeError("Недостаточно данных")
 
-        # Берём payload ровно под вместимость
         payload = self.data[:capacity_bytes]
         payload_bits = np.unpackbits(np.frombuffer(payload, dtype=np.uint8)).astype(np.uint8)
 
-        # Рабочая копия
         work = self.pix.astype(np.int16, copy=True)
 
-        # Встраиваем ПО ОДНОЙ паре (как в оригинальном HS)
         bit_pos = 0
         total_bits = payload_bits.size
+        self.bits_per_pair = bits_per_pair = []
 
-        for peak, zero in pairs:
+        for peak, zero in self.Ni_et_al_2006():
             if bit_pos >= total_bits:
                 break
 
-            # Встраиваем часть payload в эту пару
             chunk = payload_bits[bit_pos:]
-            work = self.embed_one_pair(peak, zero, chunk)
-            bit_pos += chunk.size
+            work, used = self.embed_one_pair(work, peak, zero, chunk)
 
-        # Сохраняем stego-картинку под Lazy.
-        # Иными словами, повторные вызовы метода embedder дадут уже self.stego напрямую,
-        # пока не будет вызваны методы с side-эффектом на этот метод:
+            bits_per_pair.append(used)
+            bit_pos += used
+
         self.stego = work.astype(np.uint8)
-        self.total_bits_embedded = bit_pos # добиваем проблему с появлением 262055 / 262144 (прямо совсем мало пикселей не сошлось, уже совсем странно!!!)
         return self.stego
 
     def save_stego(self, path):
@@ -326,37 +297,24 @@ class HistogramShifting:
         return self
 
     def extractor(self):
-        if self.stego is None:
-            raise RuntimeError("Сначала вызовите embedder() или load_gray_from_*(..., stego=True)")
+        if self.stego is None or self.bits_per_pair is None:
+            raise RuntimeError("Сначала выполните embedder")
 
-        pairs = self.Ni_et_al_2006()
-        print("PAIRS (extractor):", pairs)
+        total_bits = sum(self.bits_per_pair)
 
-        # Вместимость = сколько бит было встроено
-        total_bits = self.get_capacity()
-        print("total_bits:", total_bits)
-        total_bits = self.total_bits_embedded
-        print("total_bits:", total_bits)
-
-        # Рабочая копия
+        extracted_bits = np.empty(total_bits, dtype=np.uint8)
         work = self.stego.astype(np.int16, copy=True)
 
-        # Извлекаем ПО ОДНОЙ паре (как в оригинальном HS)
-        bit_pos = 0
-        extracted_bits = np.empty(total_bits, dtype=np.uint8)
+        bit_pos = total_bits
 
-        for peak, zero in pairs:
-            if bit_pos >= total_bits:
-                break
+        for (peak, zero), n_bits in zip(reversed(self.Ni_et_al_2006()), reversed(self.bits_per_pair)):
+            start = bit_pos - n_bits
+            bits, work = self.extract_one_pair(peak, zero, work, n_bits)
+            extracted_bits[start:bit_pos] = bits
+            bit_pos -= n_bits
 
-            # Извлекаем часть
-            chunk_bits, work = self.extract_one_pair(peak, zero, work, total_bits - bit_pos)
-            extracted_bits[bit_pos:bit_pos + chunk_bits.size] = chunk_bits
-            bit_pos += chunk_bits.size
-
-        extracted_bytes = np.packbits(extracted_bits).tobytes()
-        restored = work.astype(np.uint8)
-        return extracted_bytes, restored
+        data = np.packbits(extracted_bits).tobytes()
+        return data, work.astype(np.uint8)
 
 
 
