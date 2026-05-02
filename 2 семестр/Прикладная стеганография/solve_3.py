@@ -67,10 +67,16 @@ def find_nearest_zero(hist, peak):
 
 
 class HistogramShifting:
-    def __init__(self):
+    def clear(self):
         self.pix = None
+        self.hist = None
+        self.pairs = None
+
+    def __init__(self):
+        self.clear()
 
     def load_gray_from_io(self, file):
+        self.clear()
         self.pix = read_bmp(file, to_gray=True)
         return self
 
@@ -85,12 +91,21 @@ class HistogramShifting:
                 self.load_gray_from_io(file)
         return self
 
+    def get_hist(self):
+        # hist, bin_edges = np.histogram(self.pix, bins=256, range=(0, 255))  # Тормозной вариант из-за вычислений bin_edges, что нам не нужно,
+                                                                              # потому что RDH‑методы работают строго с целыми значениями яркости
+        if self.hist is None:
+            self.hist = hist = np.bincount(self.pix.flatten(), minlength=256) # Прямой способ получить hist (сколько какой пиксель встречается раз)
+            assert hist.shape == (256,)
+            return hist
+        return self.hist
+
     def Ni_et_al_2006(self):
+        if self.pairs:
+            return self.pairs
+
         #   Step.1
-        # hist, bin_edges = np.histogram(self.pix, bins=256, range=(0, 255)) # Тормозной варианта из-за вычислений bin_edges, что нам не нужен,
-                                                                             # потому что RDH‑методы работают строго с целыми значениями яркости.
-        hist = np.bincount(self.pix.flatten(), minlength=256)                # Прямой способ получить hist (сколько какой пиксель встречается раз).
-        assert hist.shape == (256,)
+        hist = self.get_hist()
 
         #   Step.2
         argsorted = np.argsort(hist)  # argsort - та же самая сортировка, но выдаёт индексы значений вместо самих значений
@@ -126,30 +141,30 @@ class HistogramShifting:
         # Если пара не содержит пика → она просто не участвует в embedding.
 
         #   Step.7 в учебнике хоть и нет такого пункта, т.к. не уточняются детали, но получать здесь None - нормально
-        pairs = tuple((pick, zero) for pick, zero in ((p1, b1), (p2, b2), (p3, b3)) if pick is not None)
-        if not pairs:
-            # Тем более, мы можем получить сразу из всех трёх refine_peak значения None,
-            # тогда делаем fallback на однопиковый HS 2004 года.
-            pairs = self.Ni_et_al_2004(hist)
+        self.pairs = tuple((pick, zero) for pick, zero in ((p1, b1), (p2, b2), (p3, b3)) if pick is not None)
+        #   Тем более, мы можем получить сразу из всех трёх refine_peak значения None,
+        #   тогда делаем fallback на однопиковый HS 2004 года.
+        pairs = self.Ni_et_al_2004()
 
         for pick, zero in pairs:
             print(f"(p={pick}, b={zero})")
 
         return pairs
 
-    def Ni_et_al_2004(self, hist=None):
-        if hist is None:
-            # на тот случай, если кому-то понадобится алгоритм 2004 года без 2006 года...
-            hist = np.bincount(self.pix.flatten(), minlength=256)
-            assert hist.shape == (256,)
-
+    def Ni_et_al_2004(self):
+        if self.pairs:
+            # если Ni_et_al_2006 дал не пустой self.pairs, тогда мы просто выйдем этим путём :)
+            return self.pairs
+        hist = self.get_hist()
         peak = int(np.argmax(hist))  # cast np.int64 to int
         zero = find_nearest_zero(hist, peak)
-        return (peak, zero),
+        self.pairs = pairs = (peak, zero),
+        return pairs
 
 
 
 if __name__ == "__main__":
     HS = HistogramShifting().load_gray_from_zip(os.path.join("assets", "bossbase_containers.zip"), "205.bmp")
   # HS.Ni_et_al_2004()
-    HS.Ni_et_al_2006()
+    pairs = HS.Ni_et_al_2006()
+
