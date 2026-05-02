@@ -1,6 +1,6 @@
 import numpy as np  # pip install numpy
 
-from bitmap_driver import read_bmp
+from bitmap_driver import read_bmp, save_bmp
 
 import zipfile
 import os
@@ -71,9 +71,11 @@ class HistogramShifting:
         self.pix = None
         self.hist = None
         self.pairs = None
+        self.stego = None
 
     def __init__(self):
         self.clear()
+        self.data = None
 
     def load_gray_from_io(self, file):
         self.clear()
@@ -89,6 +91,12 @@ class HistogramShifting:
         with zipfile.ZipFile(zip_name, "r") as zip:
             with zip.open(name, "r") as file:
                 self.load_gray_from_io(file)
+        return self
+
+    def load_data(self, path):
+        with open(path, "rb") as file:
+            self.data = file.read()
+        self.stego = None
         return self
 
     def get_hist(self):
@@ -164,15 +172,87 @@ class HistogramShifting:
     def get_capacity(self):
         hist = self.get_hist()
         pairs = self.Ni_et_al_2006()
-        print("hist:", hist)
-        print("pairs:", pairs)
-        print("capacity:", sum(hist[peak] for peak, zero in pairs), "bits")
         return sum(hist[peak] for peak, zero in pairs)
+
+    def embedder(self):
+        if self.stego is not None:
+            return self.stego
+
+        if self.pix is None:
+            raise RuntimeError("Сначала загрузите изображение посредством любого метода load_gray_from_*")
+        if self.data is None:
+            raise RuntimeError("Сначала загрузите данные для встраивания посредством load_data")
+
+        capacity_bits = self.get_capacity()  # триггерит фактическое выссчитывание self.hist и self.pairs
+        capacity_bytes = capacity_bits // 8
+
+      # print("capacity:", capacity_bytes, "b.") # 1197 b.
+      # print("data:", len(self.data), "b.")     # 453541 b. (весь Философский Камень Гарри Поттера в кодировке windows-1251, т.е. все русские и английский буквы по байту)
+
+        if len(self.data) < capacity_bytes:
+            raise RuntimeError(f"Недостаточно данных: нужно минимум {capacity_bytes} байт, а загружено только {len(self.data)}")
+
+        payload = self.data[:capacity_bytes]
+        payload_bits = np.unpackbits(np.frombuffer(payload, dtype=np.uint8)).astype(np.uint8)
+      # print(len(payload_bits), capacity_bits) # 9576 9576, шанс 1/8 увидеть одинаковые числа, а выпал :)
+
+        bit_pos = 0
+        total_bits = len(payload_bits)
+
+        # Рабочая область, чтобы не было переполнений из-за np.uint8...
+        work = self.pix.astype(np.int16, copy=True)
+
+        for peak, zero in self.Ni_et_al_2006():
+            if bit_pos >= total_bits:
+                break
+
+            # --- Сдвиг интервала ---
+            if zero < peak:
+                mask_shift = (work > zero) & (work < peak)
+                work[mask_shift] -= 1
+            else:
+                mask_shift = (work < zero) & (work > peak)
+                work[mask_shift] += 1
+
+            # --- Встраивание битов в пиксели == peak ---
+            mask_peak = (work == peak)
+            idx = np.flatnonzero(mask_peak)
+            n_avail = len(idx)
+            if n_avail == 0:
+                continue
+
+            n_need = min(n_avail, total_bits - bit_pos)
+            bits_chunk = payload_bits[bit_pos:bit_pos + n_need]
+
+            ones_mask = bits_chunk == 1
+
+            if zero < peak:
+                work.flat[idx[ones_mask]] -= 1
+            else:
+                work.flat[idx[ones_mask]] += 1
+            # work.flat - это вид (subview) на плоское представлением того же ndarray, только в 1D форме: (len(work),)
+
+            bit_pos += n_need
+
+        # Сохраняем stego-картинку под Lazy.
+        # Иными словами, повторные вызовы метода embedder дадут уже self.stego напрямую,
+        # пока не будет вызваны методы с side-эффектом на этот метод: load_gray_from_* или load_data
+        self.stego = stego = work.astype(np.uint8)
+        return stego
+
+    def save_stego(self, path):
+        stego = self.embedder()
+        save_bmp(path, stego, mode="gray")
+        return self
 
 
 
 if __name__ == "__main__":
-    HS = HistogramShifting().load_gray_from_zip(os.path.join("assets", "bossbase_containers.zip"), "205.bmp")
+    zip_path = os.path.join("assets", "bossbase_containers.zip")
+    data_path = os.path.join("assets", "Harry Potter and the Philosopher's Stone.txt")
+    HS = HistogramShifting().load_gray_from_zip(zip_path, "205.bmp").load_data(data_path)
   # HS.Ni_et_al_2004()
   # HS.Ni_et_al_2006()
-    HS.get_capacity()
+  # HS.get_capacity()
+  # HS.embedder()
+    HS.save_stego("205_HS.bmp")
