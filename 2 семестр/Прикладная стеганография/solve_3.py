@@ -377,6 +377,9 @@ class MainGUI:
             ("utf-8", "windows-1251", self.encoding_cb),
             ("newline",),
             ("textarea_unstego",),
+            ("newline",),
+            ("button 1",),
+            ("button 2",),
         )
 
     def choose_original(self, path):

@@ -158,6 +158,69 @@ class ScrollableFrame(ttk.Frame):
         else:                # Windows / macOS
             scroll_fn(-1 * (event.delta // 120), "units")
 
+class ResizableTextFrame(ttk.Frame):
+    def __init__(self, master, min_w=150, min_h=80, **kw):
+        super().__init__(master, **kw)
+
+        # Фиксированный контейнер
+        self.grid_propagate(False)
+        self.pack_propagate(False)
+
+        # Text через place
+        self.text = tk.Text(self, wrap="word")
+        self.text.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Scrollbar
+        self.scroll = ttk.Scrollbar(self, orient="vertical", command=self.text.yview)
+        self.scroll.place(relx=1.0, y=0, relheight=1.0, anchor="ne")
+        self.text.configure(yscrollcommand=self.scroll.set)
+
+        # Sizegrip
+        self.grip = ttk.Sizegrip(self)
+        self.grip.place(relx=1.0, rely=1.0, anchor="se")
+
+        self.grip.bind("<ButtonPress-1>", self._start)
+        self.grip.bind("<B1-Motion>", self._resize)
+        self.grip.bind("<ButtonRelease-1>", self._stop)
+
+        self.config(width=min_w, height=min_h)
+
+    def _start(self, e):
+        self._sx = self.winfo_pointerx()
+        self._sy = self.winfo_pointery()
+        self._sw = self.winfo_width()
+        self._sh = self.winfo_height()
+
+        root = self.winfo_toplevel()
+      # root.resizable(False, False) ПОЛНОЕ ПЕРЕСОЗДАНИЕ ОКНА с визуальным эффектом?!?!?! разве так сложно это было сделать через maxsize и minsize?!?!?!
+
+        self._old_minsize = root.minsize()
+        self._old_maxsize = root.maxsize()
+        w, h = root.winfo_width(), root.winfo_height()
+        root.minsize(w, h)
+        root.maxsize(w, h)
+
+    def _resize(self, e):
+        dx = self.winfo_pointerx() - self._sx
+        dy = self.winfo_pointery() - self._sy
+
+        w = max(48, self._sw + dx)
+        h = max(32, self._sh + dy)
+
+        # Меняем размер ТОЛЬКО контейнера
+        self.config(width=w, height=h)
+
+    def _stop(self, e):
+        root = self.winfo_toplevel()
+      # root.resizable(True, True) ПОЛНОЕ ПЕРЕСОЗДАНИЕ ОКНА с визуальным эффектом?!?!?! разве так сложно это было сделать через maxsize и minsize?!?!?!
+
+        geometry = f"{root.winfo_width()}x{root.winfo_height()}+{root.winfo_x()}+{root.winfo_y()}"
+        # def release():
+        root.geometry(geometry)  # выглядит, как бессмысленный код, на практике это ЛУЧШИЙ способ сбросить requested size
+        root.minsize(*self._old_minsize)
+        root.maxsize(*self._old_maxsize)
+        # root.after_idle(release)
+
 class ControlPanel(ttk.Frame):
     def __init__(self, master, opts):
         super().__init__(master)
@@ -166,7 +229,7 @@ class ControlPanel(ttk.Frame):
         self.is_combo = tk.BooleanVar()
 
         current_row = ttk.Frame(self)
-        current_row.pack(fill="x")
+        current_row.pack(anchor="w")
         self.rows = [current_row]
 
         for entry in opts:
@@ -230,27 +293,22 @@ class ControlPanel(ttk.Frame):
 
                     ttk.Label(outer, text=label + ":").pack(side="left", anchor="n")
 
-                    inner = ttk.Frame(outer)
-                    inner.pack(side="left", fill="both", expand=True)
+                    res = ResizableTextFrame(outer)
+                    res.pack(side="left", fill="both", expand=True)
 
-                    text = tk.Text(inner, wrap="word", height=6)
-                    text.pack(side="left", fill="both", expand=True)
+                    text = res.text
+                    text._entered = False
+                    self.texts.append(text)
 
-                    scroll = ttk.Scrollbar(inner, orient="vertical", command=text.yview)
-                    scroll.pack(side="right", fill="y")
-
-                    text.configure(yscrollcommand=scroll.set)
-
-                    if default and callback is not None:
+                    if default:
                         text.insert("1.0", default)
-                        callback(default)
+                        if callback is not None:
+                            callback(default)
 
                     def on_text_change(event=None, txt=text, cb=callback):
                         if cb is not None:
                             cb(txt.get("1.0", "end-1c"))
 
-                    text._entered = False
-                    self.texts.append(text)
                     def is_textarea(event, txt=text):
                         txt._entered = event.type == tk.EventType.Enter
                         is_any = any(w._entered for w in self.combos) or any(w._entered for w in self.texts)
@@ -262,7 +320,7 @@ class ControlPanel(ttk.Frame):
 
                 elif name == "newline":
                     current_row = ttk.Frame(self)
-                    current_row.pack(fill="x")
+                    current_row.pack(anchor="w")
                     self.rows.append(current_row)
 
                 # Кнопка
