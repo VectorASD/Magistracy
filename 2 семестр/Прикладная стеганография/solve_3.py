@@ -242,45 +242,38 @@ class HistogramShifting:
             delta = +1
 
         # 2. EMBED bits
-        used = 0
-        flat = work.flat
+        flat = work.ravel()  # shape 2D -> 1D
+        is_peak = (flat == peak)
+        peak_idx = np.nonzero(is_peak)[0]  # np.nonzero - синоним на np.where(is_peak != 0)[0]
 
-        for i in range(h * w):
-            if used >= total:
-                break
-
-            if flat[i] == peak:
-                if payload_bits[used] == 1:
-                    flat[i] = peak + delta
-                used += 1
+        used = min(total, peak_idx.size)
+        if used > 0:
+            sel = peak_idx[:used]
+            bits = payload_bits[:used]
+            # меняем только там, где бит = 1
+            flat[sel[bits == 1]] += delta
 
         return work, used
 
     def extract_one_pair(self, peak, zero, work, total_bits):
         h, w = work.shape
-        extracted = np.empty(total_bits, dtype=np.uint8)
-        bit_pos = 0
-
+        flat = work.ravel()
         delta = -1 if zero < peak else +1
-        flat = work.flat
 
         # 1. READ bits
-        for i in range(h * w):
-            if bit_pos >= total_bits:
-                break
+        is_peak      = (flat == peak)
+        is_peak_d    = (flat == peak + delta)
+        candidates   = np.nonzero(is_peak | is_peak_d)[0]
 
-            v = flat[i]
-            if v == peak:
-                extracted[bit_pos] = 0
-                bit_pos += 1
-            elif v == peak + delta:
-                extracted[bit_pos] = 1
-                bit_pos += 1
+        count = min(total_bits, candidates.size)
+        extracted = np.zeros(total_bits, dtype=np.uint8)
+
+        if count > 0:
+            sel = candidates[:count]
+            extracted[:count] = (flat[sel] == peak + delta).astype(np.uint8)
 
         # 2. UNDO embed
-        for i in range(h * w):
-            if flat[i] == peak + delta:
-                flat[i] = peak
+        flat[flat == peak + delta] = peak
 
         # 3. UNDO shift
         if zero < peak:
