@@ -221,6 +221,8 @@ class ResizableTextFrame(ttk.Frame):
         root.maxsize(*self._old_maxsize)
         # root.after_idle(release)
 
+
+
 class ControlPanel(ttk.Frame):
     def __init__(self, master, opts):
         super().__init__(master)
@@ -233,6 +235,8 @@ class ControlPanel(ttk.Frame):
         self.rows = [current_row]
 
         for entry in opts:
+            if not isinstance(entry, (tuple, list)):
+                entry = entry,
             names     = tuple(item for item in entry if isinstance(item, (str, bool, int, float, complex)))
             callbacks = tuple(item for item in entry if callable(item))
             metas     = tuple(item for item in entry if isinstance(item, dict))
@@ -501,12 +505,10 @@ class BitPlaneGUI(tk.Tk):
 
 
 class ImageGridBase:
-    def __init__(self, rows=1, cols=1, *, preset=(), opts=(), texts=()):
+    def __init__(self, rows=1, cols=1, *, preset=(), opts=(), texts=(), win_w = 1400, win_h = 800):
         self.update_idletasks()
         screen_w = self.winfo_screenwidth()
         screen_h = self.winfo_screenheight()
-
-        win_w, win_h = 1400, 1000
 
         x = (screen_w - win_w) // 2
         y = (screen_h - win_h) // 2
