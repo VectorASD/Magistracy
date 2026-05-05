@@ -272,7 +272,7 @@ def check_gradient():
         preset.append(grad * 255)
         overlays.append(overlay_gradient(pix, grad))
 
-    gui = ImageGridGUI(2, len(preset), preset + overlays)
+    gui = ImageGridGUI(2, len(preset), preset = preset + overlays)
     for i, kernel_name in enumerate(GRADIENT_KERNELS):
         gui.set_text((1, 1+i), kernel_name)
     gui.mainloop()

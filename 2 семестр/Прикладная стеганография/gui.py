@@ -162,6 +162,7 @@ class ControlPanel(ttk.Frame):
     def __init__(self, master, opts):
         super().__init__(master)
         self.combos = []
+        self.texts = []
         self.is_combo = tk.BooleanVar()
 
         for entry in opts:
@@ -214,6 +215,45 @@ class ControlPanel(ttk.Frame):
                     btn.pack(side="left")
                     frame.pack(side="left", padx=4)
 
+                # Многострочный ввод
+                elif name.startswith("textarea_"):
+                    label = name[len("textarea_"):]
+                    default = meta.get("default", "")
+
+                    outer = ttk.Frame(self)
+                    outer.pack(side="left", padx=4, fill="both", expand=True)
+
+                    ttk.Label(outer, text=label + ":").pack(anchor="w")
+
+                    inner = ttk.Frame(outer)
+                    inner.pack(fill="both", expand=True)
+
+                    text = tk.Text(inner, wrap="word", height=6)
+                    text.pack(side="left", fill="both", expand=True)
+
+                    scroll = ttk.Scrollbar(inner, orient="vertical", command=text.yview)
+                    scroll.pack(side="right", fill="y")
+
+                    text.configure(yscrollcommand=scroll.set)
+
+                    if default:
+                        text.insert("1.0", default)
+                        callback(default)
+
+                    def on_text_change(event=None, txt=text, cb=callback):
+                        cb(txt.get("1.0", "end-1c"))
+
+                    text._entered = False
+                    self.texts.append(text)
+                    def is_textarea(event, txt=text):
+                        txt._entered = event.type == tk.EventType.Enter
+                        is_any = any(w._entered for w in self.combos) or any(w._entered for w in self.texts)
+                        self.is_combo.set(is_any)
+
+                    text.bind("<Enter>", is_textarea)
+                    text.bind("<Leave>", is_textarea)
+                    text.bind("<KeyRelease>", on_text_change)
+
                 # Кнопка
                 else:
                     assert default is None
@@ -243,7 +283,7 @@ class ControlPanel(ttk.Frame):
                     # >>> tk.EventType.Enter -> <EventType.Enter: '7'>
                     # >>> tk.EventType.Leave -> <EventType.Leave: '8'>
                     event.widget._entered = event.type == tk.EventType.Enter
-                    is_combo = any(combo._entered for combo in self.combos)
+                    is_combo = any(combo._entered for combo in self.combos) or any(w._entered for w in self.texts)
                     self.is_combo.set(is_combo)
                 combo.bind("<<ComboboxSelected>>", on_select)
                 combo.bind("<Enter>", is_combo)
@@ -261,6 +301,11 @@ class ControlPanel(ttk.Frame):
             else:                          idx = 0
             combo.current(idx)
             combo.event_generate("<<ComboboxSelected>>")
+
+    def set_text(self, idx, new_text):
+        text = self.texts[idx]
+        text.delete("1.0", "end")
+        text.insert("1.0", new_text)
 
 
 
@@ -384,7 +429,7 @@ class BitPlaneGUI(tk.Tk):
 
 
 class ImageGridBase:
-    def __init__(self, rows=1, cols=1, preset=(), opts=()):
+    def __init__(self, rows=1, cols=1, *, preset=(), opts=(), texts=()):
         self.update_idletasks()
         screen_w = self.winfo_screenwidth()
         screen_h = self.winfo_screenheight()
@@ -406,6 +451,9 @@ class ImageGridBase:
 
         self.grid = ImageGrid(root.inner, rows=rows, cols=cols)
         self.grid.pack(side="top", pady=0)
+
+        for idx, text in enumerate(texts):
+            self.texts[idx] = text
 
         if opts:
             panel = self.panel = ControlPanel(root.inner, opts)
@@ -498,11 +546,11 @@ class ImageGridBase:
 
 
 class ImageGridGUI(tk.Tk, ImageGridBase):
-    def __init__(self, rows=1, cols=1, preset=(), opts=()):
+    def __init__(self, rows=1, cols=1, *, preset=(), opts=(), texts=()):
         tk.Tk.__init__(self)
         self.title("Image-grid Viewer")
 
-        ImageGridBase.__init__(self, rows, cols, preset, opts)
+        ImageGridBase.__init__(self, rows, cols, preset=preset, opts=opts, texts=texts)
 
 
 
@@ -598,8 +646,10 @@ def plot_ci(rows, title, filename):
 
 
 if __name__ == "__main__":
-    from solve_1 import MainGUI
+    from solve_1 import MainGUI as MainGUI_1
     from solve_2 import check_gradient
+    from solve_3 import MainGUI as MainGUI_3
 
-    # MainGUI().mainloop()
-    check_gradient()
+  # MainGUI_1().mainloop()
+  # check_gradient()
+    MainGUI_3().mainloop()

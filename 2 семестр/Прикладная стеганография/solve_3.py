@@ -1,6 +1,6 @@
 import numpy as np  # pip install numpy
 
-from bitmap_driver import read_bmp, save_bmp
+from bitmap_driver import read_bmp, load_bmp, save_bmp
 
 import zipfile
 import os
@@ -363,7 +363,66 @@ def debug():
 
 
 
-if __name__ == "__main__":
+from solve_2 import save_it
+from gui import ImageGridGUI, plot_ci
+
+class MainGUI:
+    def FDDSCS(self):
+        # Гибкая декларативная система конфигурации источников данных :)
+        # Flexible declarative data source configuration system (FDDSCS)
+
+        self.opts = (
+            ("file_original (bmp)",   self.choose_original),
+            ("file_stego (any)",      self.choose_stego),
+            ("utf-8", "windows-1251", self.encoding_cb),
+            ("textarea_unstego",      lambda text: None),
+        )
+
+    def choose_original(self, path):
+        self.original = load_bmp(path, to_gray=True)
+        self.app.set_image(0, self.original)
+        self.update()
+
+    def choose_stego(self, path):
+        self.stego_text_path = path
+        self.update()
+
+    def encoding_cb(self, encoding):
+        self.encoding = encoding
+        if self.unstego_text is not None:
+            self.app.panel.set_text(0, self.unstego_text.decode(self.encoding, errors="replace"))
+
+    def update(self):
+        if self.original is not None and self.stego_text_path:
+            HS = HistogramShifting().load_gray_from_pix(self.original).load_data(self.stego_text_path)
+
+            self.stego = HS.embedder()
+            self.app.set_image(1, self.stego)
+
+            self.unstego_text, self.unstego = HS.extractor()
+            self.app.set_image(2, self.unstego)
+            self.app.panel.set_text(0, self.unstego_text.decode(self.encoding, errors="replace"))
+
+            delta = ((self.original != self.unstego) * 255).astype(np.uint8)
+            self.app.set_image(3, delta)
+
+    def __init__(self):
+        self.original        = None
+        self.stego_text_path = None
+        self.stego           = None
+        self.unstego         = None
+        self.unstego_text    = None
+        self.encoding        = None
+        self.FDDSCS()
+
+        self.app = ImageGridGUI(1, 4, opts=self.opts, texts=("original", "stego", "unstego", "delta"))
+
+    def mainloop(self):
+        self.app.mainloop()
+
+
+
+def main():
     zip_path = os.path.join("assets", "bossbase_containers.zip")
     data_path = os.path.join("assets", "Harry Potter and the Philosopher's Stone.txt")
     HS = HistogramShifting().load_gray_from_zip(zip_path, "205.bmp").load_data(data_path)
@@ -374,3 +433,9 @@ if __name__ == "__main__":
     data, restored = HS.save_stego("205_HS.bmp").extractor()
     print(data.decode("windows-1251"))
     print(sum(sum(restored == HS.pix)), "/", HS.pix.size)
+
+
+
+if __name__ == "__main__":
+  # main()
+    MainGUI().mainloop()
