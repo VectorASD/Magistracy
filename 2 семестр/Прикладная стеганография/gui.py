@@ -165,15 +165,19 @@ class ControlPanel(ttk.Frame):
         self.texts = []
         self.is_combo = tk.BooleanVar()
 
+        current_row = ttk.Frame(self)
+        current_row.pack(fill="x")
+        self.rows = [current_row]
+
         for entry in opts:
             names     = tuple(item for item in entry if isinstance(item, (str, bool, int, float, complex)))
             callbacks = tuple(item for item in entry if callable(item))
             metas     = tuple(item for item in entry if isinstance(item, dict))
 
             assert names, "Нужны имена"
-            assert len(callbacks) == 1, "Должен быть ровно один callback"
+            assert len(callbacks) <= 1, "Должен быть ровно один callback"
 
-            callback = callbacks[0]
+            callback = callbacks[0] if len(callbacks) == 1 else None
             meta = {k: v for meta in metas for k, v in meta.items()}
             default = meta.get("default", None)
 
@@ -184,14 +188,15 @@ class ControlPanel(ttk.Frame):
                 if name.startswith("input_"):
                     label = name[len("input_"):]
                     var = tk.StringVar()
-                    if default is not None:
+                    if default is not None and callback is not None:
                         var.set(default)
                         callback(default)
 
                     def on_text_change(var=var, cb=callback):
-                        cb(var.get())
+                        if cb is not None:
+                            cb(var.get())
 
-                    frame = ttk.Frame(self)
+                    frame = ttk.Frame(current_row)
                     ttk.Label(frame, text=label + ":").pack(side="left")
                     entry = ttk.Entry(frame, textvariable=var)
                     entry.pack(side="left")
@@ -205,11 +210,11 @@ class ControlPanel(ttk.Frame):
 
                     def on_choose_file(var=var, cb=callback):
                         path = filedialog.askopenfilename()
-                        if path:
+                        if path and cb is not None:
                             var.set(path)
                             cb(path)
 
-                    frame = ttk.Frame(self)
+                    frame = ttk.Frame(current_row)
                     ttk.Label(frame, text=label + ":").pack(side="left")
                     btn = ttk.Button(frame, text="Выбрать файл", command=on_choose_file)
                     btn.pack(side="left")
@@ -220,13 +225,13 @@ class ControlPanel(ttk.Frame):
                     label = name[len("textarea_"):]
                     default = meta.get("default", "")
 
-                    outer = ttk.Frame(self)
+                    outer = ttk.Frame(current_row)
                     outer.pack(side="left", padx=4, fill="both", expand=True)
 
-                    ttk.Label(outer, text=label + ":").pack(anchor="w")
+                    ttk.Label(outer, text=label + ":").pack(side="left", anchor="n")
 
                     inner = ttk.Frame(outer)
-                    inner.pack(fill="both", expand=True)
+                    inner.pack(side="left", fill="both", expand=True)
 
                     text = tk.Text(inner, wrap="word", height=6)
                     text.pack(side="left", fill="both", expand=True)
@@ -236,12 +241,13 @@ class ControlPanel(ttk.Frame):
 
                     text.configure(yscrollcommand=scroll.set)
 
-                    if default:
+                    if default and callback is not None:
                         text.insert("1.0", default)
                         callback(default)
 
                     def on_text_change(event=None, txt=text, cb=callback):
-                        cb(txt.get("1.0", "end-1c"))
+                        if cb is not None:
+                            cb(txt.get("1.0", "end-1c"))
 
                     text._entered = False
                     self.texts.append(text)
@@ -254,12 +260,18 @@ class ControlPanel(ttk.Frame):
                     text.bind("<Leave>", is_textarea)
                     text.bind("<KeyRelease>", on_text_change)
 
+                elif name == "newline":
+                    current_row = ttk.Frame(self)
+                    current_row.pack(fill="x")
+                    self.rows.append(current_row)
+
                 # Кнопка
                 else:
                     assert default is None
                     def on_press(cb=callback):
-                        cb()
-                    btn = ttk.Button(self, text=name, command=on_press)
+                        if cb is not None:
+                            cb()
+                    btn = ttk.Button(current_row, text=name, command=on_press)
                     btn.pack(side="left", padx=4)
 
             # Чекбокс
@@ -269,15 +281,17 @@ class ControlPanel(ttk.Frame):
                 if default is not None:
                     var.set(default)
                 def on_toggle(var=var, cb=callback):
-                    cb(var.get())
-                chk = ttk.Checkbutton(self, text=name, variable=var, command=on_toggle)
+                    if cb is not None:
+                        cb(var.get())
+                chk = ttk.Checkbutton(current_row, text=name, variable=var, command=on_toggle)
                 chk.pack(side="left", padx=4)
 
             # Выпадающий список
             else:
-                combo = ttk.Combobox(self, values=names, state="readonly")
+                combo = ttk.Combobox(current_row, values=names, state="readonly")
                 def on_select(event=None, cb=callback, combo=combo):
-                    cb(combo.get())
+                    if cb is not None:
+                        cb(combo.get())
                 def is_combo(event):
                     # print(event.type) # 7 и 8
                     # >>> tk.EventType.Enter -> <EventType.Enter: '7'>

@@ -375,7 +375,8 @@ class MainGUI:
             ("file_original (bmp)",   self.choose_original),
             ("file_stego (any)",      self.choose_stego),
             ("utf-8", "windows-1251", self.encoding_cb),
-            ("textarea_unstego",      lambda text: None),
+            ("newline",),
+            ("textarea_unstego",),
         )
 
     def choose_original(self, path):
