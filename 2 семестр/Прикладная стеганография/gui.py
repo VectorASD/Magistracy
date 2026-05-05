@@ -227,7 +227,8 @@ class ControlPanel(ttk.Frame):
     def __init__(self, master, opts):
         super().__init__(master)
         self.combos = []
-        self.texts = []
+        self.texts  = []
+        self.inputs = []
         self.is_combo = tk.BooleanVar()
 
         current_row = ttk.Frame(self)
@@ -255,11 +256,8 @@ class ControlPanel(ttk.Frame):
                 if name.startswith("input_"):
                     label = name[len("input_"):]
                     var = tk.StringVar()
-                    if default is not None and callback is not None:
-                        var.set(default)
-                        callback(default)
 
-                    def on_text_change(var=var, cb=callback):
+                    def on_text_change(e, var=var, cb=callback):
                         if cb is not None:
                             cb(var.get())
 
@@ -267,8 +265,16 @@ class ControlPanel(ttk.Frame):
                     ttk.Label(frame, text=label + ":").pack(side="left")
                     entry = ttk.Entry(frame, textvariable=var)
                     entry.pack(side="left")
-                    entry.bind("<KeyRelease>", lambda e: on_text_change())
+                    entry.bind("<KeyRelease>", on_text_change)
+                    entry._var = var
                     frame.pack(side="left", padx=4)
+
+                    if default is not None:
+                        default = str(default)
+                        var.set(default)
+                        if callback is not None:
+                            frame.after_idle(lambda cb=callback, d=default: cb(d))
+                    self.inputs.append(entry)
 
                 # Файловый ввод
                 elif name.startswith("file_"):
@@ -309,7 +315,7 @@ class ControlPanel(ttk.Frame):
                         if callback is not None:
                             callback(default)
 
-                    def on_text_change(event=None, txt=text, cb=callback):
+                    def on_text_change(e, txt=text, cb=callback):
                         if cb is not None:
                             cb(txt.get("1.0", "end-1c"))
 
@@ -378,10 +384,14 @@ class ControlPanel(ttk.Frame):
             combo.current(idx)
             combo.event_generate("<<ComboboxSelected>>")
 
-    def set_text(self, idx, new_text):
+    def set_textarea_text(self, idx, new_text):
         text = self.texts[idx]
         text.delete("1.0", "end")
         text.insert("1.0", new_text)
+
+    def set_input_text(self, idx, new_text):
+        entry = self.inputs[idx]
+        entry._var.set(new_text)
 
 
 

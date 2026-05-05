@@ -292,7 +292,7 @@ def check_adaptive_extractor():
 
 
 
-def save_it(pix, error, title):
+def save_it(pix: np.ndarray, error: str, title: str):
     if pix is None:
         messagebox.showerror("Ошибка источника", error)
         return
@@ -309,6 +309,30 @@ def save_it(pix, error, title):
         except Exception as e:
             messagebox.showerror("Ошибка сохранения", e)
     # иначе, пользователь отменил asksaveasfilename
+
+def save_binary(data: bytes, error: str, title: str):
+    if data is None:
+        messagebox.showerror("Ошибка источника", error)
+        return
+
+    path = filedialog.asksaveasfilename(
+        title=title,
+        defaultextension=".txt",
+        filetypes=[
+            ("Text", "*.txt"),
+            ("Binary", "*.bin"),
+            ("All files", "*.*"),
+        ]
+    )
+
+    if not path:
+        return  # пользователь отменил
+
+    try:
+        with open(path, "wb") as f:
+            f.write(data)
+    except Exception as e:
+        messagebox.showerror("Ошибка сохранения", str(e))
 
 
 

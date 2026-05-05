@@ -98,7 +98,7 @@ class HistogramShifting:
     def clear(self):
         self.pix = None
         self.hist = None
-        self.pairs = None
+        self.pairs = {}
         self.stego = None
         self.bits_per_pair = None
 
@@ -150,9 +150,12 @@ class HistogramShifting:
             return hist
         return self.hist
 
-    def Ni_et_al_2006(self, seed=0, probs=64):
-        if self.pairs:
-            return self.pairs
+    def Ni_et_al_2006(self, *, seed=0, probs=64):
+        probs = max(1, probs)
+        key = seed, probs
+        try: return self.pairs[key]
+        except KeyError: pass
+
         rng = np.random.default_rng(seed) if isinstance(seed, int) else seed
         pairs_arr = []
 
@@ -198,33 +201,39 @@ class HistogramShifting:
             #   Тем более, мы можем получить сразу из всех трёх refine_peak значения None,
             #   тогда делаем fallback на однопиковый HS 2004 года.
             if not pairs:
-                pairs = self.Ni_et_al_2004(rng, use_cache=False)
+                pairs = self.Ni_et_al_2004(seed=rng)
             capacity = int(sum(hist[peak] for peak, zero in pairs))
             pairs_arr.append((capacity, pairs))
           # print(capacity, pairs)
 
-        capacity, self.pairs = max(pairs_arr)
+        capacity, pairs = max(pairs_arr)
         for pick, zero in pairs:
             print(f"(p={pick}, b={zero})")
         print("capacity:", capacity // 8, "b.")
 
+        self.pairs[key] = pairs
         return pairs
 
-    def Ni_et_al_2004(self, seed=0, *, use_cache=True):
-        if use_cache and self.pairs:
+    def Ni_et_al_2004(self, *, seed=0):
+        key = seed if isinstance(seed, int) else None
+        try:
             # если Ni_et_al_2006 дал не пустой self.pairs, тогда мы просто выйдем этим путём :)
-            return self.pairs        
+            return self.pairs[key]
+        except KeyError: pass
+
         rng = np.random.default_rng(seed) if isinstance(seed, int) else seed
 
         hist = self.get_hist()
         peak = int(stable_argmax(hist, rng))  # cast np.int64 to int
         zero = find_nearest_zero(hist, peak, rng)
-        self.pairs = pairs = (peak, zero),
+        pairs = (peak, zero),
+        if key is not None:
+            self.pairs[key] = pairs
         return pairs
 
-    def get_capacity(self):
+    def get_capacity(self, *, seed=0, probs=64):
         hist = self.get_hist()
-        pairs = self.Ni_et_al_2006()
+        pairs = self.Ni_et_al_2006(seed=seed, probs=probs)
         return int(sum(hist[peak] for peak, zero in pairs))
 
     def embed_one_pair(self, work, peak, zero, payload_bits):
@@ -285,7 +294,7 @@ class HistogramShifting:
 
         return extracted, work
 
-    def embedder(self):
+    def embedder(self, *, seed=0, probs=64):
         if self.stego is not None:
             return self.stego
 
@@ -294,7 +303,7 @@ class HistogramShifting:
         if self.data is None:
             raise RuntimeError("Сначала загрузите данные")
 
-        capacity_bits = self.get_capacity()
+        capacity_bits = self.get_capacity(seed=seed, probs=probs)
         capacity_bytes = capacity_bits // 8
 
         if len(self.data) < capacity_bytes:
@@ -309,7 +318,7 @@ class HistogramShifting:
         total_bits = payload_bits.size
         self.bits_per_pair = bits_per_pair = []
 
-        for peak, zero in self.Ni_et_al_2006():
+        for peak, zero in self.Ni_et_al_2006(seed=seed, probs=probs):
             if bit_pos >= total_bits:
                 break
 
@@ -327,9 +336,9 @@ class HistogramShifting:
         save_bmp(path, stego, mode="gray")
         return self
 
-    def extractor(self):
+    def extractor(self, *, seed=0, probs=64):
         if self.stego is None or self.bits_per_pair is None:
-            raise RuntimeError("Сначала выполните embedder")
+            raise RuntimeError("Сначала выполните embedder или load_gray_from_*(..., stego=...) с указанием HS.bits_per_pair = ...")
 
         total_bits = sum(self.bits_per_pair)
 
@@ -338,7 +347,7 @@ class HistogramShifting:
 
         bit_pos = total_bits
 
-        for (peak, zero), n_bits in zip(reversed(self.Ni_et_al_2006()), reversed(self.bits_per_pair)):
+        for (peak, zero), n_bits in zip(reversed(self.Ni_et_al_2006(seed=seed, probs=probs)), reversed(self.bits_per_pair)):
             start = bit_pos - n_bits
             bits, work = self.extract_one_pair(peak, zero, work, n_bits)
             extracted_bits[start:bit_pos] = bits
@@ -363,8 +372,12 @@ def debug():
 
 
 
-from solve_2 import save_it
+from solve_2 import save_it, save_binary
 from gui import ImageGridGUI, plot_ci
+
+def try_int(text: str):
+    text = "".join(let for let in text if let.isdigit())
+    return int(text) if text else 0
 
 class MainGUI:
     def FDDSCS(self):
@@ -372,14 +385,19 @@ class MainGUI:
         # Flexible declarative data source configuration system (FDDSCS)
 
         self.opts = (
-            ("file_original (bmp)",   self.choose_original),
-            ("file_stego (any)",      self.choose_stego),
-            ("utf-8", "windows-1251", self.encoding_cb),
+            ("file_original (bmp)",          self.choose_original),
+            ("file_stego (any)",             self.choose_stego),
+            ("unstego mode", "unstego mode", self.choose_mode),
+            ("input_seed",                   self.enter_seed, {"default": 0}),
+            ("input_probs",                  self.enter_probs, {"default": 64}),
+            ("input_bits_per_pair",          self.input_bits_per_pair),
+            "newline",
+            ("utf-8", "windows-1251",        self.encoding_cb),
             "newline",
             "textarea_unstego",
             "newline",
-            "button 1",
-            "button 2",
+            ("save stego image", self.save_stego_image),
+            ("save unstego text", self.save_unstego_text),
         )
 
     def choose_original(self, path):
@@ -391,32 +409,68 @@ class MainGUI:
         self.stego_text_path = path
         self.update()
 
+    def choose_mode(self, mode):
+        self.unstego_mode = mode
+        self.update()
+
+    def enter_seed(self, seed):
+        self.seed = try_int(seed)
+        self.update()
+
+    def enter_probs(self, probs):
+        self.probs = try_int(probs)
+        self.update()
+
+    def input_bits_per_pair(self, bits_per_pair):
+        self.bits_per_pair = tuple(map(try_int, bits_per_pair.split(",")))
+        self.update()
+
     def encoding_cb(self, encoding):
         self.encoding = encoding
         if self.unstego_text is not None:
-            self.app.panel.set_text(0, self.unstego_text.decode(self.encoding, errors="replace"))
+            self.app.panel.set_textarea_text(0, self.unstego_text.decode(self.encoding, errors="replace"))
 
     def update(self):
         if self.original is not None and self.stego_text_path:
-            HS = HistogramShifting().load_gray_from_pix(self.original).load_data(self.stego_text_path)
+            HS = HistogramShifting().load_gray_from_pix(self.original)
 
-            self.stego = HS.embedder()
+            if self.unstego_mode:
+                try: self.stego = load_bmp(self.stego_text_path, to_gray=True)
+                except ValueError:
+                    return
+                HS.load_gray_from_pix(self.stego, stego=True)
+                HS.bits_per_pair = self.bits_per_pair
+            else:
+                HS.load_data(self.stego_text_path)
+                self.stego = HS.embedder(seed=self.seed, probs=self.probs)
+                self.bits_per_pair = HS.bits_per_pair
             self.app.set_image(1, self.stego)
 
-            self.unstego_text, self.unstego = HS.extractor()
+            self.unstego_text, self.unstego = HS.extractor(seed=self.seed, probs=self.probs)
             self.app.set_image(2, self.unstego)
-            self.app.panel.set_text(0, self.unstego_text.decode(self.encoding, errors="replace"))
+            self.app.panel.set_textarea_text(0, self.unstego_text.decode(self.encoding, errors="replace"))
+            self.app.panel.set_input_text(2, ", ".join(map(str, HS.bits_per_pair)))
 
             delta = ((self.original != self.unstego) * 255).astype(np.uint8)
             self.app.set_image(3, delta)
+
+    def save_stego_image(self):
+        save_it(self.stego, "Сначала выберите оригинал и внедряемые данные", "Сохранить стегоконтейнер")
+
+    def save_unstego_text(self):
+        save_binary(self.unstego_text, "Сначала получите текстовый unstego", "Сохранить извлечённые данные")
 
     def __init__(self):
         self.original        = None
         self.stego_text_path = None
         self.stego           = None
+        self.unstego_mode    = False
         self.unstego         = None
         self.unstego_text    = None
         self.encoding        = None
+        self.seed          = 0
+        self.probs         = 64
+        self.bits_per_pair = None
         self.FDDSCS()
 
         self.app = ImageGridGUI(1, 4, opts=self.opts, texts=("original", "stego", "unstego", "delta"))
