@@ -7,23 +7,22 @@ import os
 
 
 
-def safe_argmax_interval(hist, left, right):
+def safe_argmax_interval(hist, left, right, rng):
     "Используется в шаге 3, т.к. в шаге 2 могут появиться нули друг за дружкой, что сделают интервалы пустыми"
     if right - left <= 1:
         return None
     segment = hist[left+1:right]
     assert segment.size >= 1, "Где-то выход за пределы массива?"
-    local_idx = np.argmax(segment)
+    local_idx = stable_argmax(segment, rng)
     return (left + 1) + local_idx
 
-def top2_in_interval(hist, left, right):
+def top2_in_interval(hist, left, right, rng):
     "Тот же самый safe_argmax_interval, но уже 2 элемента вместо одного"
     if right - left <= 2:
         return None, None
     segment = hist[left+1:right]
     assert segment.size >= 2, "Где-то выход за пределы массива?"
-    top1, top2 = sorted(np.argsort(segment, kind="heap")[-2:])  # два индекса максимальных значений справа
-    assert top1 < top2
+    top1, top2 = sorted(stable_argsort(segment, 2, rng, min=False))  # два индекса максимальных значений справа
     return (left + 1 + top1, left + 1 + top2)  # индексы сегмента в индексы гистограммы
 
 def pick_best(hist, x, y):
@@ -33,7 +32,7 @@ def pick_best(hist, x, y):
         return None
     return max(arr, key=lambda i: hist[i])
 
-def refine_peak(hist, peak, zero):
+def refine_peak(hist, peak, zero, rng):
     "Для шага 6: уточнение пика внутри пары (peak, zero)"
     if peak is None:
         return  # нечего уточнять
@@ -43,26 +42,52 @@ def refine_peak(hist, peak, zero):
     right = max(peak, zero)
 
     # Step.3 внутри пары
-    a_local = safe_argmax_interval(hist, left, right)
+    a_local = safe_argmax_interval(hist, left, right, rng)
 
     # Step.4 внутри пары
-    aL, aR = top2_in_interval(hist, left, right)
+    aL, aR = top2_in_interval(hist, left, right, rng)
 
     # Step.5 внутри пары
     return pick_best(hist, a_local, pick_best(hist, aL, aR))
 
 
 
-def find_nearest_zero(hist, peak):
+def find_nearest_zero(hist, peak, rng):
     zeros = np.where(hist == 0)[0]
     zeros = zeros[zeros != peak]  # исключаем сам peak, если вдруг hist[peak] == 0
 
     if zeros.size:
         # выбираем zero с минимальной дистанцией до peak
-        idx = np.argmin(np.abs(zeros - peak))
+        idx = stable_argmin(np.abs(zeros - peak), rng)
         return int(zeros[idx])
 
     raise RuntimeError(f"Плохая гистограмма: {hist}, peak={peak}")
+
+
+
+def stable_argsort(arr, count, rng, min=True):
+    assert count <= arr.size
+    indexes = np.argsort(arr)
+    assert indexes.shape == (arr.size,)
+
+    base = indexes[:count] if min else indexes[-count:]
+    vals = arr[base]                # Все минимумы, что подходят в кандидаты
+    mask = np.isin(arr, vals)       # Набор нулей и единиц по нужным индексам
+    candidates = np.where(mask)[0]  # Превращается в сами индексы
+
+    # rng.shuffle(candidates)
+    # return candidates[:count]  # после shuffle не важно, что мы выберем
+    return rng.choice(candidates, size=count, replace=False)
+
+def stable_argmax(arr, rng):
+    max_val = arr.max()
+    candidates = np.where(arr == max_val)[0]
+    return rng.choice(candidates)  # size=1, replace не имеет смысла
+
+def stable_argmin(arr, rng):
+    max_val = arr.min()
+    candidates = np.where(arr == max_val)[0]
+    return rng.choice(candidates)  # size=1, replace не имеет смысла
 
 
 
@@ -122,65 +147,75 @@ class HistogramShifting:
             return hist
         return self.hist
 
-    def Ni_et_al_2006(self):
+    def Ni_et_al_2006(self, seed=0):
         if self.pairs:
             return self.pairs
+        rng = np.random.default_rng(seed) if isinstance(seed, int) else seed
+        pairs_arr = []
 
-        #   Step.1
-        hist = self.get_hist()
+        for i in range(64):  # допустим, при 64-ёх пробах получим почти наилучшую ёмкость
+            #   Step.1
+            hist = self.get_hist()
 
-        #   Step.2
-        argsorted = np.argsort(hist, kind="heap")  # argsort - та же самая сортировка, но выдаёт индексы значений вместо самих значений
-        assert argsorted.shape == (256,)
-        b1, b2, b3 = sorted(argsorted[:3])  # np.argsort(hist, kind="heap"), т.е. порядок не гарантируется b1 < b2 < b3, по этому и сортируем
-      # print(b1, b2, b3)  # 2 4 11
+            #   Step.2
+            argsorted = stable_argsort(hist, 3, rng)
+            b1, b2, b3 = sorted(argsorted)  # для гарантии порядка b1 < b2 < b3
+          # print(b1, b2, b3)  # 2 4 11
 
-        #   Step.3
-        a1 = safe_argmax_interval(hist, 0, b1)
-        a3 = safe_argmax_interval(hist, b2, b3)
-      # print(a1, a3)  # 1 10
+            #   Step.3
+            a1 = safe_argmax_interval(hist, 0, b1, rng)
+            a3 = safe_argmax_interval(hist, b2, b3, rng)
+          # print(a1, a3)  # 1 10
 
-        #   Step.4
-        a12, a21 = top2_in_interval(hist, b1, b2)
-        a23, a32 = top2_in_interval(hist, b2, b3)
-      # print(a12, a21, "|", a23, a32)  # None None | 7 10
+            #   Step.4
+            a12, a21 = top2_in_interval(hist, b1, b2, rng)
+            a23, a32 = top2_in_interval(hist, b2, b3, rng)
+          # print(a12, a21, "|", a23, a32)  # None None | 7 10
 
-        #   Step.5
-        p1 = pick_best(hist, a1, a12)
-        p2 = pick_best(hist, a21, a23)
-        p3 = pick_best(hist, a32, a3)
-      # print("picks:", p1, p2, p3)  # 1 7 10
+            #   Step.5
+            p1 = pick_best(hist, a1, a12)
+            p2 = pick_best(hist, a21, a23)
+            p3 = pick_best(hist, a32, a3)
+          # print("picks:", p1, p2, p3)  # 1 7 10
 
-        #   Step.6
-        p1 = refine_peak(hist, p1, b1)
-        p2 = refine_peak(hist, p2, b2)
-        p3 = refine_peak(hist, p3, b3)
-      # print(p1, p2, p3)  # None 6 None
+            #   Step.6
+            p1 = refine_peak(hist, p1, b1, rng)
+            p2 = refine_peak(hist, p2, b2, rng)
+            p3 = refine_peak(hist, p3, b3, rng)
+          # print(p1, p2, p3)  # None 6 None
 
-        # В статье прямо указано:
-        #    All of these three pairs are treated as cases of peak and zero points pairs.
-        # Но не сказано, что все три пары обязаны иметь пики.
-        # Если пара не содержит пика → она просто не участвует в embedding.
+            # В статье прямо указано:
+            #    All of these three pairs are treated as cases of peak and zero points pairs.
+            # Но не сказано, что все три пары обязаны иметь пики.
+            # Если пара не содержит пика → она просто не участвует в embedding.
 
-        #   Step.7 в учебнике хоть и нет такого пункта, т.к. не уточняются детали, но получать здесь None - нормально
-        self.pairs = tuple((int(pick), int(zero)) for pick, zero in ((p1, b1), (p2, b2), (p3, b3))
-                           if pick is not None and hist[zero] == 0)
-        #   Тем более, мы можем получить сразу из всех трёх refine_peak значения None,
-        #   тогда делаем fallback на однопиковый HS 2004 года.
-        pairs = self.Ni_et_al_2004()
+            #   Step.7 в учебнике хоть и нет такого пункта, т.к. не уточняются детали, но получать здесь None - нормально
+            pairs = tuple((int(pick), int(zero)) for pick, zero in ((p1, b1), (p2, b2), (p3, b3))
+                            if pick is not None and hist[zero] == 0)
+            #   Тем более, мы можем получить сразу из всех трёх refine_peak значения None,
+            #   тогда делаем fallback на однопиковый HS 2004 года.
+            if not pairs:
+                pairs = self.Ni_et_al_2004(rng, use_cache=False)
+            capacity = int(sum(hist[peak] for peak, zero in pairs))
+            pairs_arr.append((capacity, pairs))
 
+        print(max(pairs_arr))
+        exit()
+        self.pairs = pairs
         for pick, zero in pairs:
             print(f"(p={pick}, b={zero})")
 
         return pairs
 
-    def Ni_et_al_2004(self):
-        if self.pairs:
+    def Ni_et_al_2004(self, seed=0, *, use_cache=True):
+        if use_cache and self.pairs:
             # если Ni_et_al_2006 дал не пустой self.pairs, тогда мы просто выйдем этим путём :)
-            return self.pairs
+            return self.pairs        
+        rng = np.random.default_rng(seed) if isinstance(seed, int) else seed
+
         hist = self.get_hist()
-        peak = int(np.argmax(hist))  # cast np.int64 to int
-        zero = find_nearest_zero(hist, peak)
+        peak = int(stable_argmax(hist, rng))  # cast np.int64 to int
+        zero = find_nearest_zero(hist, peak, rng)
         self.pairs = pairs = (peak, zero),
         return pairs
 
