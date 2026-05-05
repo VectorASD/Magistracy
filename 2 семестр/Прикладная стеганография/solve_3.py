@@ -147,13 +147,13 @@ class HistogramShifting:
             return hist
         return self.hist
 
-    def Ni_et_al_2006(self, seed=0):
+    def Ni_et_al_2006(self, seed=0, probs=64):
         if self.pairs:
             return self.pairs
         rng = np.random.default_rng(seed) if isinstance(seed, int) else seed
         pairs_arr = []
 
-        for i in range(64):  # допустим, при 64-ёх пробах получим почти наилучшую ёмкость
+        for i in range(probs):  # допустим, при 64-ёх пробах получим почти наилучшую ёмкость
             #   Step.1
             hist = self.get_hist()
 
@@ -199,11 +199,10 @@ class HistogramShifting:
             capacity = int(sum(hist[peak] for peak, zero in pairs))
             pairs_arr.append((capacity, pairs))
 
-        print(max(pairs_arr))
-        exit()
-        self.pairs = pairs
+        capacity, self.pairs = max(pairs_arr)
         for pick, zero in pairs:
             print(f"(p={pick}, b={zero})")
+        print("capacity:", capacity // 8, "b.")
 
         return pairs
 
