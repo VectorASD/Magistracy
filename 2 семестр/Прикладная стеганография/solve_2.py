@@ -74,7 +74,7 @@ def get_logo_size_with_fit(target_shape: tuple[int, int], layers=1):
 
 def check_resizer():
     logo_path = "my_logo.png"
-    pixs = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)
+    pixs, _ = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)
     target = pixs[0]
     logo, watermark = load_logo_with_fit(logo_path, target.shape)
     os.makedirs("result", exist_ok=True)
@@ -233,7 +233,7 @@ def compare_logos(logo_path: str, stego: np.ndarray, extracted: np.ndarray):
     print("psnr:", psnr) # inf
 
 def check_embedder():
-    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    pix, _ = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
     stego, _ = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png")
     save_bmp("watermarked.bmp", stego, mode="gray")
 
@@ -263,7 +263,7 @@ def overlay_gradient(pix, grad):
     return (pix.astype(np.float32) * mask).clip(0, 255).astype(np.uint8)
 
 def check_gradient():
-    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    pix, _ = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
     preset = [pix]
     overlays = [None]
     for kernel_name in GRADIENT_KERNELS:
@@ -278,7 +278,7 @@ def check_gradient():
     gui.mainloop()
 
 def check_adaptive_embedder():
-    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    pix, _ = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
     stego, _ = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png", kernel_name="sobel7")
     save_bmp("watermarked2.bmp",      stego, mode="gray")
     save_bmp("watermarked2_orig.bmp", pix,   mode="gray")
@@ -433,7 +433,7 @@ class MainGUI:
                 case "portrait": path = "assets/portrait_containers.zip"
 
             print(f"Анализирую {base}...")
-            pixs = bmp_sampler_from_zip(path, filter=False)
+            pixs, _ = bmp_sampler_from_zip(path, filter=False)
             assert len(pixs) == 100
 
             for kernel_name in (None, *MainGUI.kernel_names):

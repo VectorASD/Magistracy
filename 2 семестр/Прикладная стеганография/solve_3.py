@@ -1,6 +1,9 @@
 import numpy as np  # pip install numpy
 
 from bitmap_driver import read_bmp, load_bmp, save_bmp
+from gui import ImageGridGUI
+from solve_1 import bmp_sampler_from_zip
+from solve_2 import save_it, save_binary
 
 import zipfile
 import os
@@ -376,12 +379,76 @@ def debug():
 
 
 
-from solve_2 import save_it, save_binary
-from gui import ImageGridGUI
-
 def try_int(text: str):
     text = "".join(let for let in text if let.isdigit())
     return int(text) if text else 0
+
+def ranges_intersect(r1, r2):
+    return not (r1[1] < r2[0] or r2[1] < r1[0])
+
+
+def is_reversible(hist, pairs):
+    ranges = []
+    errors = set()
+    dense_ranges = []
+
+    # 1. Построить диапазоны
+    for p, z in pairs:
+        if p == z:
+            errors.add("peak == zero")
+            return ", ".join(errors)
+
+        if z < p:
+            r = (z+1, p)
+        else:
+            r = (p+1, z)
+
+        ranges.append((p, z, r))
+
+    # 2. Пересечения диапазонов
+    only_ranges = [r for (_, _, r) in ranges]
+    for i in range(len(only_ranges)):
+        for j in range(i+1, len(only_ranges)):
+            if ranges_intersect(only_ranges[i], only_ranges[j]):
+                errors.add("Пересечение диапазонов")
+
+    # 3. Опасные границы
+    for p, z, r in ranges:
+        if z < p and r[1] == 255:   # сдвиг вверх в 255
+            errors.add("Сдвиг к 255")
+        if z > p and r[0] == 0:     # сдвиг вниз в 0
+            errors.add("Сдвиг к 0")
+
+    # 4. Каскады (мягкая версия)
+    sorted_ranges = sorted(ranges, key=lambda x: x[2][0])
+    for i in range(len(sorted_ranges)-1):
+        (_, _, r1) = sorted_ranges[i]
+        (_, _, r2) = sorted_ranges[i+1]
+
+        # каскад только если диапазоны почти соприкасаются И оба широкие
+        if (r1[1] + 1 == r2[0]) and ((r1[1]-r1[0] > 20) or (r2[1]-r2[0] > 20)):
+            errors.add("Каскадный эффект")
+
+    # 5. Плотность (мягкая версия)
+    total = sum(hist)
+    for p, z, r in ranges:
+        width = r[1] - r[0] + 1
+        if width <= 20:
+            continue
+
+        count = sum(hist[i] for i in range(r[0], r[1]+1))
+        if count > total * 0.20:  # 20% вместо 10%
+            dense_ranges.append(r)
+
+    if dense_ranges:
+        errors.add("Слишком плотный интервал: " + ", ".join(str(r) for r in dense_ranges))
+
+    if not errors:
+        return "OK"
+
+    return ", ".join(errors)
+
+
 
 class MainGUI:
     def FDDSCS(self):
@@ -486,22 +553,24 @@ class MainGUI:
                 case "portrait": path = "assets/portrait_containers.zip"
 
             print(f"Анализирую {base}...")
-            from solve_1 import bmp_sampler_from_zip
-            pixs = bmp_sampler_from_zip(path, filter=False)
+            pixs, filenames = bmp_sampler_from_zip(path, filter=False)
             assert len(pixs) == 100
 
             mses       = []
             capacities = []
             equals     = 0
-            for i, orig in enumerate(pixs, start=1):
-              # print(f"  {i}/100")
+            for i, orig in enumerate(pixs):
+              # print(f"  {i+1}/100")
                 HS = HistogramShifting(debug=False).load_gray_from_pix(orig).load_data(data, is_data=True)
                 stego = HS.embedder()
                 unstego_text, unstego = HS.extractor()
 
                 pix_eqials = (orig == unstego).sum()
                 capacity   = sum(HS.bits_per_pair)
-                print(pix_eqials, "/", orig.size, pix_eqials == orig.size, HS.pairs[(0, 64)], HS.bits_per_pair, len(unstego_text))
+                pairs      = HS.pairs[(0, 64)]
+                hist       = HS.get_hist()
+                print(pix_eqials, "/", orig.size, pix_eqials == orig.size, pairs, HS.bits_per_pair, len(unstego_text), filenames[i])
+                print("   ", is_reversible(hist, pairs))
 
                 diff = orig.astype(np.float32) - stego.astype(np.float32)
                 mse = (diff * diff).mean()
