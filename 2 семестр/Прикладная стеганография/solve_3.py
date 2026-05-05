@@ -102,7 +102,7 @@ class HistogramShifting:
         self.stego = None
         self.bits_per_pair = None
 
-    def __init__(self, *, debug=False):
+    def __init__(self, *, debug=True):
         self.clear()
         self.data = None
         self.debug = debug
@@ -134,9 +134,13 @@ class HistogramShifting:
                 self.load_gray_from_io(file, stego=stego)
         return self
 
-    def load_data(self, path):
-        with open(path, "rb") as file:
-            self.data = file.read()
+    def load_data(self, path, *, is_data=False):
+        if is_data:
+            assert isinstance(path, bytes)
+            self.data = path
+        else:
+            with open(path, "rb") as file:
+                self.data = file.read()
         self.stego = None
         self.bits_per_pair = None
         return self
@@ -207,10 +211,10 @@ class HistogramShifting:
           # print(capacity, pairs)
 
         capacity, pairs = max(pairs_arr)
-        for pick, zero in pairs:
-            print(f"(p={pick}, b={zero})")
-        print("capacity:", capacity // 8, "b.")
-
+        if self.debug:
+            for pick, zero in pairs:
+                print(f"(p={pick}, b={zero})")
+            print("capacity:", capacity // 8, "b.")
         self.pairs[key] = pairs
         return pairs
 
@@ -366,14 +370,14 @@ def debug():
     HS.embedder()
     data, restored = HS.extractor()
     print(data.decode("windows-1251"))
-    print(sum(sum(restored == HS.pix)), "/", HS.pix.size)
+    print((restored == HS.pix).sum(), "/", HS.pix.size)
     exit()
 # debug()
 
 
 
 from solve_2 import save_it, save_binary
-from gui import ImageGridGUI, plot_ci
+from gui import ImageGridGUI
 
 def try_int(text: str):
     text = "".join(let for let in text if let.isdigit())
@@ -396,8 +400,10 @@ class MainGUI:
             "newline",
             "textarea_unstego",
             "newline",
-            ("save stego image", self.save_stego_image),
+            ("save stego image",  self.save_stego_image),
             ("save unstego text", self.save_unstego_text),
+            "newline",
+            ("PSNR",              self.PSNR_async),
         )
 
     def choose_original(self, path):
@@ -460,6 +466,59 @@ class MainGUI:
     def save_unstego_text(self):
         save_binary(self.unstego_text, "Сначала получите текстовый unstego", "Сохранить извлечённые данные")
 
+    def PSNR_async(self):
+        from multiprocessing import Process
+        ci_process = Process(target=MainGUI.PSNR, args=())
+        ci_process.start()
+
+    @staticmethod
+    def PSNR():
+        data_path = os.path.join("assets", "Harry Potter and the Philosopher's Stone.txt")
+        with open(data_path, "rb") as file:
+            data = file.read()
+
+        MAX_I = 255.0
+        psnrs = []
+        for base in ("BOSSbase", "medical", "portrait"):
+            match base:
+                case "BOSSbase": path = "assets/bossbase_containers.zip"
+                case "medical":  path = "assets/medical_containers.zip"
+                case "portrait": path = "assets/portrait_containers.zip"
+
+            print(f"Анализирую {base}...")
+            from solve_1 import bmp_sampler_from_zip
+            pixs = bmp_sampler_from_zip(path, filter=False)
+            assert len(pixs) == 100
+
+            mses       = []
+            capacities = []
+            equals     = 0
+            for i, orig in enumerate(pixs, start=1):
+              # print(f"  {i}/100")
+                HS = HistogramShifting(debug=False).load_gray_from_pix(orig).load_data(data, is_data=True)
+                stego = HS.embedder()
+                unstego_text, unstego = HS.extractor()
+
+                pix_eqials = (orig == unstego).sum()
+                capacity   = sum(HS.bits_per_pair)
+                print(pix_eqials, "/", orig.size, pix_eqials == orig.size, HS.pairs[(0, 64)], HS.bits_per_pair, len(unstego_text))
+
+                diff = orig.astype(np.float32) - stego.astype(np.float32)
+                mse = (diff * diff).mean()
+
+                mses.append(mse)
+                capacities.append(capacity)
+                equals += (pix_eqials == orig.size)
+
+            print("capacities:", capacities, "bits.")
+            print("capacities_avg:", np.mean(capacities), "bits.")
+            print("equals:", equals, "%")
+
+            mean_mse = np.mean(mses)
+            psnr = float(10.0 * np.log10((MAX_I * MAX_I) / mean_mse) if mean_mse else "inf")
+            psnrs.append(psnr)
+        print("PSNRs:", psnrs)  # [51.52054214477539, 54.005733489990234, 51.46250915527344]
+
     def __init__(self):
         self.original        = None
         self.stego_text_path = None
@@ -490,7 +549,7 @@ def main():
   # HS.embedder()
     data, restored = HS.save_stego("205_HS.bmp").extractor()
     print(data.decode("windows-1251"))
-    print(sum(sum(restored == HS.pix)), "/", HS.pix.size)
+    print((restored == HS.pix).sum(), "/", HS.pix.size)
 
 
 
