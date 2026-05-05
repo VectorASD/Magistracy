@@ -48,7 +48,10 @@ def refine_peak(hist, peak, zero, rng):
     aL, aR = top2_in_interval(hist, left, right, rng)
 
     # Step.5 внутри пары
-    return pick_best(hist, a_local, pick_best(hist, aL, aR))
+    b = pick_best(hist, a_local, pick_best(hist, aL, aR))
+    if b is not None and not hist[b]:
+        b = None  # чтобы peak не встал на нулевое значение
+    return b
 
 
 
@@ -198,6 +201,7 @@ class HistogramShifting:
                 pairs = self.Ni_et_al_2004(rng, use_cache=False)
             capacity = int(sum(hist[peak] for peak, zero in pairs))
             pairs_arr.append((capacity, pairs))
+          # print(capacity, pairs)
 
         capacity, self.pairs = max(pairs_arr)
         for pick, zero in pairs:
@@ -354,9 +358,9 @@ class HistogramShifting:
 
 def debug():
     np.random.seed(42)
-    pix = np.random.randint(0, 251, size=(512,512), dtype=np.uint8)
+    pix = np.random.randint(0, 253, size=(512,512), dtype=np.uint8)
     data_path = os.path.join("assets", "Harry Potter and the Philosopher's Stone.txt")
-    HS = HistogramShifting(debug=True).load_gray_from_pix(pix).load_data(data_path)
+    HS = HistogramShifting().load_gray_from_pix(pix).load_data(data_path)
     HS.embedder()
     data, restored = HS.extractor()
     print(data.decode("windows-1251"))
