@@ -685,7 +685,7 @@ class HistogramGUI(tk.Toplevel, ImageGridBase):
 
 
 
-def plot_ci(rows, title, filename):
+def plot_ci(rows, *, title, filename, xlabel="k (битовая плоскость)"):
     import matplotlib.pyplot as plt # pip install matplotlib
 
     # Группируем данные по базе
@@ -709,7 +709,7 @@ def plot_ci(rows, title, filename):
             label=base
         )
 
-    plt.xlabel("k (битовая плоскость)")
+    plt.xlabel(xlabel)
     plt.ylabel("PSNR (дБ)")
     plt.title(title)
     plt.grid(True)

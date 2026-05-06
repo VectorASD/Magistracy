@@ -1,9 +1,10 @@
 import numpy as np  # pip install numpy
 
 from bitmap_driver import read_bmp, load_bmp, save_bmp
-from gui import ImageGridGUI
+from gui import ImageGridGUI, plot_ci
 from solve_1 import bmp_sampler_from_zip
 from solve_2 import save_it, save_binary
+from utils import confidence_interval
 
 import zipfile
 import os
@@ -738,7 +739,10 @@ class MainGUI:
             data = file.read()
 
         MAX_I = 255.0
+        alpha = 0.05
+
         psnrs = []
+        results = []
         for base in ("BOSSbase", "medical", "portrait"):
             match base:
                 case "BOSSbase": path = "assets/bossbase_containers.zip"
@@ -752,6 +756,7 @@ class MainGUI:
             mses       = []
             capacities = []
             equals     = 0
+            ci_psnrs   = []
             for i, orig in enumerate(pixs):
               # print(f"  {i+1}/100")
                 HS = HistogramShifting(debug=False).load_gray_from_pix(orig).load_data(data, is_data=True)
@@ -768,10 +773,12 @@ class MainGUI:
 
                 diff = orig.astype(np.float32) - stego.astype(np.float32)
                 mse = (diff * diff).mean()
+                ci_psnr = float(10.0 * np.log10((MAX_I * MAX_I) / mse) if mse else "inf")
 
                 mses.append(mse)
                 capacities.append(capacity)
                 equals += (pix_eqials == orig.size)
+                ci_psnrs.append(ci_psnr)
 
             print("capacities:", capacities, "bits.")
             print("capacities_avg:", np.mean(capacities), "bits.")
@@ -780,7 +787,23 @@ class MainGUI:
             mean_mse = np.mean(mses)
             psnr = float(10.0 * np.log10((MAX_I * MAX_I) / mean_mse) if mean_mse else "inf")
             psnrs.append(psnr)
+
+            arr = np.array(ci_psnrs)
+            avg = float(arr.mean())
+            std = float(arr.std(ddof=1))
+            low, high = confidence_interval(avg, std, len(arr), alpha)
+            results.append((base, np.mean(capacities), std, low, avg, high))
+
         print("PSNRs:", psnrs)  # [51.52054214477539, 54.005733489990234, 51.46250915527344]
+
+        import csv
+        with open("solve_3_psnr_ci_table.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(("base", "avg_capacity", "std", "low", "avg", "high"))
+            writer.writerows(results)
+        print("CSV сохранён: solve_3_psnr_ci_table.csv")
+
+        plot_ci(results, title="Доверительные интервалы PSNR для гистограмных смещений (HS)", filename="solve_3_psnr_ci_graph.png", xlabel="Ёмкость в битах")
 
     def __init__(self):
         self.original        = None
