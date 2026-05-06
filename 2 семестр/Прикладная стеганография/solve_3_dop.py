@@ -60,134 +60,116 @@ def build_differences(subs, S_ref, k_ref):
     для всех k != k_ref.
     Возвращаем список D_k в том же порядке, что и subs.
     """
-    diffs = []
-    for idx, Sk in enumerate(subs, start=1):
-        if idx == k_ref:
-            diffs.append(None)  # для reference разности нет
-        else:
-            diffs.append(S_ref - Sk)
+    diffs = [None if idx == k_ref else S_ref - Sk # для reference разности нет
+             for idx, Sk in enumerate(subs, start=1)]
     return diffs
 
 def shift_histograms(subs, diffs, S_ref, k_ref, L):
-    """
-    Освобождаем диапазона [-L, L] в разностях.
-    Меняем только destination subimages (subs[k]), reference не трогаем.
-    Возвращаем:
-        new_subs  — модифицированные S_des
-        new_diffs — новые разности D'
-    """
     new_subs = subs.copy()
     new_diffs = diffs.copy()
-
     shift = L + 1
-
+ 
     for idx, (Sk, Dk) in enumerate(zip(subs, diffs), start=1):
-        if idx == k_ref:
-            continue  # reference не трогаем
-
-        if Dk is None:
+        if idx == k_ref or Dk is None:
             continue
-
-        # маски
-        mask_pos = Dk >= shift      # H >= L+1
-        mask_neg = Dk <= -shift     # H <= -L-1
-
-        # создаём копию Sk
+ 
         Sk_new = Sk.copy()
-
-        # модифицируем только destination subimage
-        Sk_new[mask_pos] -= shift
-        Sk_new[mask_neg] += shift
-
-        # сохраняем
-        new_subs[idx - 1] = Sk_new
+        Sk_new[Dk >= shift]  -= shift
+        Sk_new[Dk <= -shift] += shift
+ 
+        new_subs[idx - 1]  = Sk_new
         new_diffs[idx - 1] = S_ref - Sk_new
-
+ 
     return new_subs, new_diffs
-
+ 
 def embed_bits(subs, diffs, S_ref, k_ref, data_bits, L):
     """
-    subs, diffs — после шага 4 (shift_histograms)
-    data_bits — массив 0/1
-    L — максимальный embedding level
+    Схема встраивания на уровне level (level идёт от L до 0):
+        D == +level, bit=0  →  Sk -= level      →  новый D =  0
+        D == +level, bit=1  →  Sk -= (level+1)  →  новый D = -(level+1)
+        D == -level, bit=0  →  Sk += level      →  новый D =  0
+        D == -level, bit=1  →  Sk += (level+1)  →  новый D = +(level+1)
     """
-
-    subs_new = subs.copy()
+    subs_new  = subs.copy()
     diffs_new = diffs.copy()
-
-    bit_pos = 0
+ 
+    bit_pos    = 0
     total_bits = len(data_bits)
-
+ 
     for level in range(L, -1, -1):
-
-        shift_big = level + 1
-        shift_small = level
-
         for idx, (Sk, Dk) in enumerate(zip(subs_new, diffs_new), start=1):
             if idx == k_ref or Dk is None:
                 continue
-
-            # маски для разностей = ±level
-            mask_pos = (Dk == level)
-            mask_neg = (Dk == -level)
-
-            # объединяем координаты
-            coords = np.argwhere(mask_pos | mask_neg)
+ 
+            coords = np.argwhere((Dk == level) | (Dk == -level))
             if coords.size == 0:
                 continue
-
-            # сколько можем встроить
+ 
             need = min(coords.shape[0], total_bits - bit_pos)
             if need <= 0:
-                return subs_new, diffs_new, bit_pos
-
+                return subs_new, bit_pos
+ 
             coords = coords[:need]
-            bits = data_bits[bit_pos:bit_pos + need]
+            bits   = data_bits[bit_pos : bit_pos + need]
             Sk_new = Sk.copy()
-
-            # разности для выбранных координат
+ 
             D_vals = Dk[coords[:, 0], coords[:, 1]]
-
-            # маски внутри выбранных координат
             is_pos = (D_vals == level)
             is_neg = ~is_pos
-
-            bit1 = (bits == 1)
-            bit0 = ~bit1
-
-            # +level
-            # bit=1 → -(level+1)
-            # bit=0 → -level
+            bit1   = (bits == 1)
+            bit0   = ~bit1
+ 
             pos_idx = coords[is_pos]
             if pos_idx.size > 0:
-                # bit=1
-                idx1 = pos_idx[bit1[is_pos]]
-                Sk_new[idx1[:, 0], idx1[:, 1]] -= shift_big
-                # bit=0
-                idx0 = pos_idx[bit0[is_pos]]
-                Sk_new[idx0[:, 0], idx0[:, 1]] -= shift_small
-
-            # -level
-            # bit=1 → +(level+1)
-            # bit=0 → +level
+                Sk_new[pos_idx[bit1[is_pos]][:, 0], pos_idx[bit1[is_pos]][:, 1]] -= (level + 1)
+                Sk_new[pos_idx[bit0[is_pos]][:, 0], pos_idx[bit0[is_pos]][:, 1]] -= level
+ 
             neg_idx = coords[is_neg]
             if neg_idx.size > 0:
-                # bit=1
-                idx1 = neg_idx[bit1[is_neg]]
-                Sk_new[idx1[:, 0], idx1[:, 1]] += shift_big
-                # bit=0
-                idx0 = neg_idx[bit0[is_neg]]
-                Sk_new[idx0[:, 0], idx0[:, 1]] += shift_small
-
-            # обновляем
-            subs_new[idx - 1] = Sk_new
+                Sk_new[neg_idx[bit1[is_neg]][:, 0], neg_idx[bit1[is_neg]][:, 1]] += (level + 1)
+                Sk_new[neg_idx[bit0[is_neg]][:, 0], neg_idx[bit0[is_neg]][:, 1]] += level
+ 
+            subs_new[idx - 1]  = Sk_new
             diffs_new[idx - 1] = S_ref - Sk_new
-
+ 
             bit_pos += need
             if bit_pos >= total_bits:
-                return subs_new, diffs_new, bit_pos
+                return subs_new, bit_pos
+ 
+    return subs_new, bit_pos
 
-    return subs_new, diffs_new, bit_pos
+def extract_bits(diffs, k_ref, L, max_bits: int):
+    bits_list = []
+    collected = 0
+    for level in range(L, -1, -1):
+        sentinel = level + 1          # D = ±sentinel кодирует бит 1
+        for idx, Dk in enumerate(diffs, start=1):
+            if idx == k_ref or Dk is None:
+                continue
+
+            # Маски для пикселей, несущих данные на этом уровне
+            mask0 = (Dk == 0)                              # бит 0
+            mask1 = (Dk == sentinel) | (Dk == -sentinel)   # бит 1
+            valid = mask0 | mask1
+            if not np.any(valid):
+                continue
+
+            # Извлекаем биты в row-major порядке (как это делал np.argwhere)
+            # mask0[valid] даёт True для битов 0 и False для битов 1
+            bits = np.where(mask0[valid], 0, 1).astype(np.uint8)
+
+            bits_list.append(bits)
+            collected += bits.size
+            if collected >= max_bits:
+                # Склеиваем и обрезаем до нужной длины
+                all_bits = np.concatenate(bits_list)
+                return all_bits[:max_bits]
+
+    # Если прошли все уровни, но набрали меньше max_bits
+    if bits_list:
+        all_bits = np.concatenate(bits_list)
+        return all_bits[:max_bits]
+    return np.array([], dtype=np.uint8)
 
 def reconstruct_image(subs, du, dv):
     """
@@ -215,7 +197,13 @@ def reconstruct_image(subs, du, dv):
 
     return Iw
 
+
+
 def embed_data(I: np.ndarray, data: bytes, du: int, dv: int, L: int):
+    I[I == 255] = 254
+    I[I == 0]   = 1
+    I = I.astype(np.int16)  # без этого сломаются разности
+
     data_bits = np.unpackbits(np.frombuffer(data, dtype=np.uint8)).astype(np.uint8)
 
     #   Step.1: субдискретизация
@@ -231,12 +219,35 @@ def embed_data(I: np.ndarray, data: bytes, du: int, dv: int, L: int):
     subs_shifted, diffs_shifted = shift_histograms(subs, diffs, S_ref, k_ref, L)
 
     #   Step.5: встраивание битов
-    subs_emb, diffs_emb, used_bits = embed_bits(subs_shifted, diffs_shifted, S_ref, k_ref, data_bits, L)
+    subs_emb, used_bits = embed_bits(subs_shifted, diffs_shifted, S_ref, k_ref, data_bits, L)
 
     #   Step.6: обратный Step.1
     Iw = reconstruct_image(subs_emb, du, dv)
 
-    return Iw, diffs_emb, used_bits
+    Iw = np.clip(Iw, 0, 255).astype(np.uint8)
+    return Iw, used_bits
+
+def extract_data(Iw: np.ndarray, du: int, dv: int, L: int, used_bits: int):
+    Iw = Iw.astype(np.int16)  # без этого сломаются разности
+
+    #   Step.1: скопировать сигнатуру для этой функции из embed_data :)
+    # Вместо I и data, очевидно, будет Iw. Авторы du, dv и L назвали ключём
+    # На деле, ключём ещё считается функция choose_reference_index, т.к. она решает, какой тайл будет ведущим
+
+    #   Step.2: и так очевидный шаг: сделать плитку
+    subs = subsample_all(Iw, du, dv)
+
+    #   Step.3: снова очевидный шаг: тот же самый эталонный тайл
+    S_ref, k_ref = choose_reference(subs, du, dv)
+
+    #   Step.4: менее очевидный шаг из-за наличия встроенных данных, но допустим
+    diffs = build_differences(subs, S_ref, k_ref)
+
+    #   Step.5: извлечение битов
+    target = used_bits // 8 * 8
+    bits = extract_bits(diffs, k_ref, L, max_bits=target)
+
+    return np.packbits(bits).tobytes()
 
 
 
@@ -248,22 +259,18 @@ def main():
     with open(data_path, "rb") as file:
         data = file.read()
 
-    stego, diffs_emb, used_bits = embed_data(pix, data, 2, 2, 0)
-    print("used bits:", used_bits)
-    for item in diffs_emb:
-        print("d:", item.shape if item is not None else None)
-    """
-d: None
-d: (256, 256)
-d: (256, 256)
-d: (256, 256)
-Слишком огромный ключ для извлечения исходного контейнера
-Значит не применимо для реальных условий
-Да и задание не требует извлечения оригинального контейнера
-    """
+    du, dv, L = 2, 2, 0
+
+    stego, used_bits = embed_data(pix, data, du, dv, L)
 
     stego_path = os.path.join("assets", "original_Kim.bmp")
     save_bmp(stego_path, stego, mode="gray")
+
+    unstego = extract_data(stego, du, dv, L, used_bits)
+
+    print(unstego.decode("windows-1251", errors="replace"))
+    print("\nused bits:", used_bits)
+    print("MATCH:", unstego == data[:len(unstego)])
 
 
 
