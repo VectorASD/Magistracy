@@ -84,88 +84,134 @@ def shift_histograms(subs, diffs, S_ref, k_ref, L):
  
 def embed_bits(subs, diffs, S_ref, k_ref, data_bits, L):
     """
-    Схема встраивания на уровне level (level идёт от L до 0):
-        D == +level, bit=0  →  Sk -= level      →  новый D =  0
-        D == +level, bit=1  →  Sk -= (level+1)  →  новый D = -(level+1)
-        D == -level, bit=0  →  Sk += level      →  новый D =  0
-        D == -level, bit=1  →  Sk += (level+1)  →  новый D = +(level+1)
+    Многоуровневое встраивание (L >= 0) без пересечения диапазонов.
+    level > 0:
+        D = +level, bit 0 → D' = +level      (без изменений)
+        D = +level, bit 1 → D' = +(level+L+1) (Sk -= L+1)
+        D = -level, bit 0 → D' = -level
+        D = -level, bit 1 → D' = -(level+L+1) (Sk += L+1)
+    level = 0:
+        D = 0, bit 0 → D' = 0
+        D = 0, bit 1 → D' = -(L+1)            (Sk += L+1)
+    При L=0 поведение совпадает с исходным.
     """
-    subs_new  = subs.copy()
-    diffs_new = diffs.copy()
- 
-    bit_pos    = 0
+    subs_new = list(subs)
+    diffs_new = list(diffs)
+    bit_pos = 0
     total_bits = len(data_bits)
- 
+    Lp1 = L + 1
+
     for level in range(L, -1, -1):
         for idx, (Sk, Dk) in enumerate(zip(subs_new, diffs_new), start=1):
             if idx == k_ref or Dk is None:
                 continue
- 
-            coords = np.argwhere((Dk == level) | (Dk == -level))
+
+            # Маска контейнеров текущего уровня
+            if level > 0:
+                mask_target = (Dk == level) | (Dk == -level)
+            else:
+                mask_target = (Dk == 0)
+
+            if not np.any(mask_target):
+                continue
+
+            coords = np.argwhere(mask_target)  # row‑major, как исходный обход
             if coords.size == 0:
                 continue
- 
+
+            # Фильтруем пиксели, которые могут безопасно принять бит 1
+            D_vals = Dk[coords[:, 0], coords[:, 1]]
+            valid = np.ones(coords.shape[0], dtype=bool)
+            if level > 0:
+                pos_mask = D_vals == level
+                neg_mask = D_vals == -level
+                # Для положительного D: нужно Sk >= L+1 (чтобы не уйти в минус)
+                valid[pos_mask] = Sk[coords[pos_mask, 0], coords[pos_mask, 1]] >= Lp1
+                # Для отрицательного D: нужно Sk <= 255 - (L+1)
+                valid[neg_mask] = Sk[coords[neg_mask, 0], coords[neg_mask, 1]] <= 255 - Lp1
+            else:  # level == 0, бит 1 даёт Sk += L+1 (D' отрицательное)
+                valid[:] = Sk[coords[:, 0], coords[:, 1]] <= 255 - Lp1
+
+            coords = coords[valid]
+            if coords.size == 0:
+                continue
+
             need = min(coords.shape[0], total_bits - bit_pos)
             if need <= 0:
                 return subs_new, bit_pos
- 
+
             coords = coords[:need]
-            bits   = data_bits[bit_pos : bit_pos + need]
+            bits = data_bits[bit_pos:bit_pos + need]
             Sk_new = Sk.copy()
- 
             D_vals = Dk[coords[:, 0], coords[:, 1]]
-            is_pos = (D_vals == level)
-            is_neg = ~is_pos
-            bit1   = (bits == 1)
-            bit0   = ~bit1
- 
-            pos_idx = coords[is_pos]
-            if pos_idx.size > 0:
-                Sk_new[pos_idx[bit1[is_pos]][:, 0], pos_idx[bit1[is_pos]][:, 1]] -= (level + 1)
-                Sk_new[pos_idx[bit0[is_pos]][:, 0], pos_idx[bit0[is_pos]][:, 1]] -= level
- 
-            neg_idx = coords[is_neg]
-            if neg_idx.size > 0:
-                Sk_new[neg_idx[bit1[is_neg]][:, 0], neg_idx[bit1[is_neg]][:, 1]] += (level + 1)
-                Sk_new[neg_idx[bit0[is_neg]][:, 0], neg_idx[bit0[is_neg]][:, 1]] += level
- 
-            subs_new[idx - 1]  = Sk_new
+
+            if level > 0:
+                is_pos = D_vals == level
+                is_neg = ~is_pos
+                bit1 = (bits == 1)
+
+                pos_idx = coords[is_pos]
+                if pos_idx.size > 0:
+                    pos_bit1 = bit1[is_pos]
+                    if np.any(pos_bit1):
+                        Sk_new[pos_idx[pos_bit1, 0], pos_idx[pos_bit1, 1]] -= Lp1
+
+                neg_idx = coords[is_neg]
+                if neg_idx.size > 0:
+                    neg_bit1 = bit1[is_neg]
+                    if np.any(neg_bit1):
+                        Sk_new[neg_idx[neg_bit1, 0], neg_idx[neg_bit1, 1]] += Lp1
+            else:  # level == 0
+                bit1 = (bits == 1)
+                if np.any(bit1):
+                    Sk_new[coords[bit1, 0], coords[bit1, 1]] += Lp1
+
+            subs_new[idx - 1] = Sk_new
             diffs_new[idx - 1] = S_ref - Sk_new
- 
             bit_pos += need
             if bit_pos >= total_bits:
                 return subs_new, bit_pos
- 
+
     return subs_new, bit_pos
 
 def extract_bits(diffs, k_ref, L, max_bits: int):
+    """
+    Извлечение, зеркальное к embed_bits.
+    level > 0:
+        бит 0: D == ±level
+        бит 1: D == ±(level + L + 1)
+    level = 0:
+        бит 0: D == 0
+        бит 1: D == -(L+1)
+    """
     bits_list = []
     collected = 0
+    Lp1 = L + 1
+
     for level in range(L, -1, -1):
-        sentinel = level + 1          # D = ±sentinel кодирует бит 1
         for idx, Dk in enumerate(diffs, start=1):
             if idx == k_ref or Dk is None:
                 continue
 
-            # Маски для пикселей, несущих данные на этом уровне
-            mask0 = (Dk == 0)                              # бит 0
-            mask1 = (Dk == sentinel) | (Dk == -sentinel)   # бит 1
+            if level > 0:
+                mask0 = (Dk == level) | (Dk == -level)
+                mask1 = (Dk == level + Lp1) | (Dk == -(level + Lp1))
+            else:
+                mask0 = (Dk == 0)
+                mask1 = (Dk == -Lp1)
+
             valid = mask0 | mask1
             if not np.any(valid):
                 continue
 
-            # Извлекаем биты в row-major порядке (как это делал np.argwhere)
-            # mask0[valid] даёт True для битов 0 и False для битов 1
+            # mask0[valid] → True для битов 0, False для битов 1
             bits = np.where(mask0[valid], 0, 1).astype(np.uint8)
-
             bits_list.append(bits)
             collected += bits.size
             if collected >= max_bits:
-                # Склеиваем и обрезаем до нужной длины
                 all_bits = np.concatenate(bits_list)
                 return all_bits[:max_bits]
 
-    # Если прошли все уровни, но набрали меньше max_bits
     if bits_list:
         all_bits = np.concatenate(bits_list)
         return all_bits[:max_bits]
@@ -199,9 +245,16 @@ def reconstruct_image(subs, du, dv):
 
 
 
+def preprocess_for_embed(I, L):
+    I = I.astype(np.int16)
+    low = L + 1
+    high = 255 - (L + 1)
+    I[I < low] = low
+    I[I > high] = high
+    return I
+
 def embed_data(I: np.ndarray, data: bytes, du: int, dv: int, L: int):
-    I[I == 255] = 254
-    I[I == 0]   = 1
+    I = preprocess_for_embed(I, L)
     I = I.astype(np.int16)  # без этого сломаются разности
 
     data_bits = np.unpackbits(np.frombuffer(data, dtype=np.uint8)).astype(np.uint8)
