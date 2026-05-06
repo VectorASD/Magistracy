@@ -97,6 +97,37 @@ def stable_argmin(arr, rng):
 
 
 
+def visualize_histogram_grid(hist, peak, zero, use_peak_d=True):
+    hist = np.asarray(hist)
+    assert hist.size == 256
+
+    delta = -1 if zero < peak else +1
+    peak_d = peak + delta if use_peak_d else None
+
+    width = len(str(hist.max()))
+
+    shift_mask = range(peak, zero+delta, delta)
+
+    for row in range(16):
+        line = []
+        for col in range(16):
+            idx = row * 16 + col
+            val = hist[idx]
+
+            cell = f"{val:{width}d}"
+            if idx == peak or idx == peak_d:
+                cell = f"\33[91m{cell}\33[0m" # Красный
+            elif idx in shift_mask:
+                cell = f"\33[92m{cell}\33[0m" # Зелёный
+
+            line.append(cell)
+
+        print(" ".join(line))
+
+HIST_DEBUG = False
+
+
+
 class HistogramShifting:
     def clear(self):
         self.pix = None
@@ -214,6 +245,8 @@ class HistogramShifting:
           # print(capacity, pairs)
 
         capacity, pairs = max(pairs_arr)
+      # if HIST_DEBUG:
+      #     pairs = pairs[1:] только 2-ая и 3-яя группа
         if self.debug:
             for pick, zero in pairs:
                 print(f"(p={pick}, b={zero})")
@@ -248,6 +281,10 @@ class HistogramShifting:
         h, w = work.shape
         total = payload_bits.size
 
+        if HIST_DEBUG:
+            print("~~~")
+            visualize_histogram_grid(np.bincount(work.flatten(), minlength=256), peak, zero, False)
+
         # 1. SHIFT interval
         if zero < peak:
             mask = (work > zero) & (work < peak)
@@ -258,6 +295,10 @@ class HistogramShifting:
             work[mask] += 1
             delta = +1
 
+        if HIST_DEBUG:
+            print("SHIFT:", peak, zero, delta)
+            visualize_histogram_grid(np.bincount(work.flatten(), minlength=256), peak, zero)
+
         # 2. EMBED bits
         flat = work.ravel()  # shape 2D -> 1D
         is_peak = (flat == peak)
@@ -267,8 +308,13 @@ class HistogramShifting:
         if used > 0:
             sel = peak_idx[:used]
             bits = payload_bits[:used]
+            if HIST_DEBUG:
+                print("EMBED:", (bits == 0).sum(), "'0',", (bits == 1).sum(), "'1'", peak, "->", peak+delta)
             # меняем только там, где бит = 1
-            flat[sel[bits == 1]] += delta
+            assert peak+delta in range(256)
+            flat[sel[bits == 1]] = peak+delta
+            if HIST_DEBUG:
+                visualize_histogram_grid(np.bincount(work.flatten(), minlength=256), peak, zero)
 
         return work, used
 
@@ -290,16 +336,26 @@ class HistogramShifting:
             sel = candidates[:count]
             extracted[:count] = (flat[sel] == peak + delta).astype(np.uint8)
 
+        if HIST_DEBUG:
+            print("~~~")
+            visualize_histogram_grid(np.bincount(work.flatten(), minlength=256), peak, zero)
+
         # 2. UNDO embed
         flat[flat == peak + delta] = peak
+        if HIST_DEBUG:
+            print("UNDO EMBED:", peak + delta, "->", peak)
+            visualize_histogram_grid(np.bincount(work.flatten(), minlength=256), peak, zero)
 
         # 3. UNDO shift
         if zero < peak:
-            mask = (work > zero) & (work < peak)
+            mask = (work >= zero) & (work < peak)
             work[mask] += 1
         else:
-            mask = (work < zero) & (work > peak)
+            mask = (work <= zero) & (work > peak)
             work[mask] -= 1
+        if HIST_DEBUG:
+            print("UNDO SHIFT:", peak, zero)
+            visualize_histogram_grid(np.bincount(work.flatten(), minlength=256), peak, zero, False)
 
         return extracted, work
 
@@ -312,7 +368,7 @@ class HistogramShifting:
         payload_bits = np.unpackbits(np.frombuffer(payload, dtype=np.uint8)).astype(np.uint8)
         assert payload_bits.shape == (capacity_bytes * 8,)
 
-        work = pix.astype(np.int16, copy=True)
+        work = pix.copy()
 
         bit_pos = 0
         total_bits = payload_bits.size
@@ -320,6 +376,7 @@ class HistogramShifting:
 
         for peak, zero in pairs:
             if bit_pos >= total_bits:
+                bits_per_pair.append(0)
                 break
 
             chunk = payload_bits[bit_pos:]
@@ -328,25 +385,26 @@ class HistogramShifting:
             bits_per_pair.append(used)
             bit_pos += used
 
-        return work.astype(np.uint8), bits_per_pair
+        return work, bits_per_pair
 
     @staticmethod
     def _extractor(pairs, stego, bits_per_pair):
         total_bits = sum(bits_per_pair)
 
         extracted_bits = np.empty(total_bits, dtype=np.uint8)
-        work = stego.astype(np.int16, copy=True)
+        work = stego.copy()
 
         bit_pos = total_bits
 
         for (peak, zero), n_bits in zip(reversed(pairs), reversed(bits_per_pair)):
-            start = bit_pos - n_bits
-            bits, work = HistogramShifting.extract_one_pair(peak, zero, work, n_bits)
-            extracted_bits[start:bit_pos] = bits
-            bit_pos -= n_bits
+            if n_bits:
+                start = bit_pos - n_bits
+                bits, work = HistogramShifting.extract_one_pair(peak, zero, work, n_bits)
+                extracted_bits[start:bit_pos] = bits
+                bit_pos -= n_bits
 
         data = np.packbits(extracted_bits).tobytes()
-        return data, work.astype(np.uint8)
+        return data, work
 
     def embedder(self, *, seed=0, probs=64):
         if self.stego is not None:
@@ -745,14 +803,26 @@ class MainGUI:
 
 
 def main():
+    global HIST_DEBUG
+    HIST_DEBUG = True
+    first = False
+
     zip_path = os.path.join("assets", "bossbase_containers.zip")
     data_path = os.path.join("assets", "Harry Potter and the Philosopher's Stone.txt")
-    HS = HistogramShifting().load_gray_from_zip(zip_path, "205.bmp").load_data(data_path)
+    if first:
+        HS = HistogramShifting().load_gray_from_zip(zip_path, "205.bmp").load_data(data_path)
+    else:
+        HS = HistogramShifting().load_gray_from_file("205_HS.bmp").load_data(data_path)
+
   # HS.Ni_et_al_2004()
   # HS.Ni_et_al_2006()
   # HS.get_capacity()
   # HS.embedder()
-    data, restored = HS.save_stego("205_HS.bmp").extractor()
+    if first:
+        data, restored = HS.save_stego("205_HS.bmp").extractor()
+    else:
+        HS.embedder(seed=31213, probs=1)
+        data, restored = HS.extractor(seed=31213, probs=1)
     print(data.decode("windows-1251"))
     print((restored == HS.pix).sum(), "/", HS.pix.size)
 
