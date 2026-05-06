@@ -450,6 +450,127 @@ def is_reversible(hist, pairs):
 
 
 
+def simulate_full(hist, pairs):
+    """
+    Полная симуляция embed->extract поверх гистограммы.
+    Возвращает (True, "OK") или (False, "причина").
+    """
+
+    # 1. Разворачиваем гистограмму в массив пикселей
+    values = []
+    ids = []
+    for v in range(256):
+        count = hist[v]
+        if count > 0:
+            values.extend([v] * count)
+            ids.extend([f"{v}_{i}" for i in range(count)])
+
+    values = np.array(values, dtype=np.int16)
+    ids = np.array(ids, dtype=object)
+
+    # 2. Создаём payload, который гарантированно содержит и 0, и 1
+    # Делаем payload длиной в 2 * количество пикселей
+    payload_bits = np.tile([0, 1], len(values))
+
+    # 3. EMBED
+    bit_pos = 0
+    for peak, zero in pairs:
+        if bit_pos >= len(payload_bits):
+            break
+
+        values, ids, used = embed_one_pair_sim(values, ids, peak, zero, payload_bits[bit_pos:])
+        bit_pos += used
+
+    stego_values = values.copy()
+    stego_ids = ids.copy()
+
+    # 4. EXTRACT (в обратном порядке)
+    for peak, zero in reversed(pairs):
+        stego_values, stego_ids = extract_one_pair_sim(stego_values, stego_ids, peak, zero)
+
+    # 5. Проверяем восстановление
+    if np.array_equal(ids, stego_ids):
+        return True, "OK"
+    else:
+        return False, "IDs mismatch"
+
+def embed_one_pair_sim(values, ids, peak, zero, payload_bits):
+    """
+    Полная симуляция embed_one_pair с учётом ID.
+    """
+
+    total = len(payload_bits)
+
+    # SHIFT
+    if zero < peak:
+        mask = (values > zero) & (values < peak)
+        delta = -1
+    else:
+        mask = (values < zero) & (values > peak)
+        delta = +1
+
+    values[mask] += delta
+
+    # EMBED
+    is_peak = (values == peak)
+    peak_idx = np.nonzero(is_peak)[0]
+
+    used = min(total, peak_idx.size)
+    if used > 0:
+        sel = peak_idx[:used]
+        bits = payload_bits[:used]
+
+        # меняем только там, где бит = 1
+        values[sel[bits == 1]] += delta
+
+    return values, ids, used
+
+def extract_one_pair_sim(values, ids, peak, zero):
+    """
+    Полная симуляция extract_one_pair с учётом ID.
+    """
+
+    # Определяем delta
+    if zero < peak:
+        delta = -1
+    else:
+        delta = +1
+
+    # EMBED-UNDO:
+    # пиксели, которые равны zero, могли быть:
+    #   - исходный zero
+    #   - peak + delta (бит 1)
+    # но extractor НЕ знает, кто есть кто → он ВСЕ zero считает битом 1
+    # и ВСЕ peak — битом 0
+    #
+    # Поэтому:
+    #   - все zero -> peak (если delta < 0)
+    #   - все zero -> peak (если delta > 0)
+    #
+    # То есть zero всегда превращается обратно в peak.
+    #
+    # Это и есть причина необратимости, если в zero были чужие пиксели.
+
+    if delta == -1:
+        # zero = peak - 1
+        values[values == zero] = peak
+    else:
+        # zero = peak + 1
+        values[values == zero] = peak
+
+    # SHIFT-UNDO
+    if delta == -1:
+        # shift was values > zero & < peak
+        mask = (values > zero) & (values < peak)
+        values[mask] += 1
+    else:
+        mask = (values < zero) & (values > peak)
+        values[mask] -= 1
+
+    return values, ids
+
+
+
 class MainGUI:
     def FDDSCS(self):
         # Гибкая декларативная система конфигурации источников данных :)
@@ -570,7 +691,8 @@ class MainGUI:
                 pairs      = HS.pairs[(0, 64)]
                 hist       = HS.get_hist()
                 print(pix_eqials, "/", orig.size, pix_eqials == orig.size, pairs, HS.bits_per_pair, len(unstego_text), filenames[i])
-                print("   ", is_reversible(hist, pairs))
+              # print("   ", is_reversible(hist, pairs))
+                print("   ", simulate_full(hist, pairs))
 
                 diff = orig.astype(np.float32) - stego.astype(np.float32)
                 mse = (diff * diff).mean()
