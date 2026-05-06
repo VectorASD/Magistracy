@@ -243,7 +243,8 @@ class HistogramShifting:
         pairs = self.Ni_et_al_2006(seed=seed, probs=probs)
         return int(sum(hist[peak] for peak, zero in pairs))
 
-    def embed_one_pair(self, work, peak, zero, payload_bits):
+    @staticmethod
+    def embed_one_pair(work, peak, zero, payload_bits):
         h, w = work.shape
         total = payload_bits.size
 
@@ -271,7 +272,8 @@ class HistogramShifting:
 
         return work, used
 
-    def extract_one_pair(self, peak, zero, work, total_bits):
+    @staticmethod
+    def extract_one_pair(peak, zero, work, total_bits):
         h, w = work.shape
         flat = work.ravel()
         delta = -1 if zero < peak else +1
@@ -301,6 +303,51 @@ class HistogramShifting:
 
         return extracted, work
 
+    @staticmethod
+    def _embedder(pix, data, pairs, capacity_bytes):
+        if len(data) < capacity_bytes:
+            payload = data + b'\0' * (capacity_bytes - len(data))
+        else:
+            payload = data[:capacity_bytes]
+        payload_bits = np.unpackbits(np.frombuffer(payload, dtype=np.uint8)).astype(np.uint8)
+        assert payload_bits.shape == (capacity_bytes * 8,)
+
+        work = pix.astype(np.int16, copy=True)
+
+        bit_pos = 0
+        total_bits = payload_bits.size
+        bits_per_pair = []
+
+        for peak, zero in pairs:
+            if bit_pos >= total_bits:
+                break
+
+            chunk = payload_bits[bit_pos:]
+            work, used = HistogramShifting.embed_one_pair(work, peak, zero, chunk)
+
+            bits_per_pair.append(used)
+            bit_pos += used
+
+        return work.astype(np.uint8), bits_per_pair
+
+    @staticmethod
+    def _extractor(pairs, stego, bits_per_pair):
+        total_bits = sum(bits_per_pair)
+
+        extracted_bits = np.empty(total_bits, dtype=np.uint8)
+        work = stego.astype(np.int16, copy=True)
+
+        bit_pos = total_bits
+
+        for (peak, zero), n_bits in zip(reversed(pairs), reversed(bits_per_pair)):
+            start = bit_pos - n_bits
+            bits, work = HistogramShifting.extract_one_pair(peak, zero, work, n_bits)
+            extracted_bits[start:bit_pos] = bits
+            bit_pos -= n_bits
+
+        data = np.packbits(extracted_bits).tobytes()
+        return data, work.astype(np.uint8)
+
     def embedder(self, *, seed=0, probs=64):
         if self.stego is not None:
             return self.stego
@@ -310,58 +357,25 @@ class HistogramShifting:
         if self.data is None:
             raise RuntimeError("Сначала загрузите данные")
 
+        pairs = self.Ni_et_al_2006(seed=seed, probs=probs)
         capacity_bits = self.get_capacity(seed=seed, probs=probs)
         capacity_bytes = capacity_bits // 8
 
-        if len(self.data) < capacity_bytes:
-            raise RuntimeError("Недостаточно данных")
-
-        payload = self.data[:capacity_bytes]
-        payload_bits = np.unpackbits(np.frombuffer(payload, dtype=np.uint8)).astype(np.uint8)
-
-        work = self.pix.astype(np.int16, copy=True)
-
-        bit_pos = 0
-        total_bits = payload_bits.size
-        self.bits_per_pair = bits_per_pair = []
-
-        for peak, zero in self.Ni_et_al_2006(seed=seed, probs=probs):
-            if bit_pos >= total_bits:
-                break
-
-            chunk = payload_bits[bit_pos:]
-            work, used = self.embed_one_pair(work, peak, zero, chunk)
-
-            bits_per_pair.append(used)
-            bit_pos += used
-
-        self.stego = work.astype(np.uint8)
+        self.stego, self.bits_per_pair = self._embedder(self.pix, self.data, pairs, capacity_bytes)
         return self.stego
-
-    def save_stego(self, path):
-        stego = self.embedder()
-        save_bmp(path, stego, mode="gray")
-        return self
 
     def extractor(self, *, seed=0, probs=64):
         if self.stego is None or self.bits_per_pair is None:
             raise RuntimeError("Сначала выполните embedder или load_gray_from_*(..., stego=...) с указанием HS.bits_per_pair = ...")
 
-        total_bits = sum(self.bits_per_pair)
+        pairs = self.Ni_et_al_2006(seed=seed, probs=probs)
+        data, unstego = self._extractor(pairs, self.stego, self.bits_per_pair)
+        return data, unstego
 
-        extracted_bits = np.empty(total_bits, dtype=np.uint8)
-        work = self.stego.astype(np.int16, copy=True)
-
-        bit_pos = total_bits
-
-        for (peak, zero), n_bits in zip(reversed(self.Ni_et_al_2006(seed=seed, probs=probs)), reversed(self.bits_per_pair)):
-            start = bit_pos - n_bits
-            bits, work = self.extract_one_pair(peak, zero, work, n_bits)
-            extracted_bits[start:bit_pos] = bits
-            bit_pos -= n_bits
-
-        data = np.packbits(extracted_bits).tobytes()
-        return data, work.astype(np.uint8)
+    def save_stego(self, path):
+        stego = self.embedder()
+        save_bmp(path, stego, mode="gray")
+        return self
 
 
 
@@ -692,7 +706,7 @@ class MainGUI:
                 hist       = HS.get_hist()
                 print(pix_eqials, "/", orig.size, pix_eqials == orig.size, pairs, HS.bits_per_pair, len(unstego_text), filenames[i])
               # print("   ", is_reversible(hist, pairs))
-                print("   ", simulate_full(hist, pairs))
+              # print("   ", simulate_full(hist, pairs))
 
                 diff = orig.astype(np.float32) - stego.astype(np.float32)
                 mse = (diff * diff).mean()
