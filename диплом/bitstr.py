@@ -122,6 +122,10 @@ class BitStr:
     def set_format_size(self, size: int) -> None:
         self._format_size = size
 
+    @property
+    def format_size(self) -> int:
+        return self._format_size
+
     def __format__(self, format_spec: str) -> str:
         """
         Возвращает строку, дополненную ведущими нулями до длины format_spec.
