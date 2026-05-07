@@ -327,5 +327,70 @@ def main():
 
 
 
+from solve_1 import bmp_sampler_from_zip
+from utils import confidence_interval
+from gui import plot_ci
+
+def PSNR():
+    """
+    сразу же 15 графиков располагать в одной картинке ну такое себе
+    по этому будет 3 картинки по 5 графиков (различные варианты du, dv)
+    по оси X: L
+    по оси Y: PSNR и ДИ
+    """
+
+    data_path = os.path.join("assets", "Harry Potter and the Philosopher's Stone.txt")
+    with open(data_path, "rb") as file:
+        data = file.read()
+
+    MAX_I = 255.0
+    alpha = 0.05
+
+    for base in ("BOSSbase", "medical", "portrait"):
+        match base:
+            case "BOSSbase": base_name = "bossbase_containers.zip"
+            case "medical":  base_name = "medical_containers.zip"
+            case "portrait": base_name = "portrait_containers.zip"
+        path = os.path.join("assets", base_name)
+
+        print(f"Анализирую {base}...")
+        pixs, filenames = bmp_sampler_from_zip(path, filter=False)
+        assert len(pixs) == 100
+
+        results = []
+        for du, dv in ((2, 2), (3, 3), (4, 4), (2, 3), (3, 2)):
+            for L in range(10):
+                psnrs = []
+                capacities = []
+                for i, orig in enumerate(pixs):
+                  # print(f"  {i+1}/100")
+
+                    stego, used_bits = embed_data(orig, data, du, dv, L)
+
+                    diff = orig.astype(np.float32)[:stego.shape[0], :stego.shape[1]] - stego.astype(np.float32)
+                    mse = (diff * diff).mean()
+                    psnr = float(10.0 * np.log10((MAX_I * MAX_I) / mse) if mse else "inf")
+                    psnrs.append(psnr)
+                    capacities.append(used_bits)
+
+                arr = np.array(psnrs)
+                avg = float(arr.mean())
+                std = float(arr.std(ddof=1))
+                low, high = confidence_interval(avg, std, len(arr), alpha)
+                results.append(((du, dv), L, std, low, avg, high, np.mean(capacities)))
+                print("key:", du, dv, L, "| avg capacity:", np.mean(capacities), "bits.")
+
+        import csv
+        with open(f"solve_3_Kim_{base}_psnr_ci_table.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(("(du, dv)", "L", "std", "low", "avg", "high", "avg_capacity"))
+            writer.writerows(results)
+        print(f"CSV сохранён: solve_3_Kim_{base}_psnr_ci_table.csv")
+
+        plot_ci(results, title=f"Доверительные интервалы PSNR для гистограмм Кима ({base})", filename=f"solve_3_Kim_{base}_psnr_ci_graph.png", xlabel="L")
+
+
+
 if __name__ == "__main__":
-    main()
+  # main()
+    PSNR()

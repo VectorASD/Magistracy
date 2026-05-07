@@ -745,9 +745,10 @@ class MainGUI:
         results = []
         for base in ("BOSSbase", "medical", "portrait"):
             match base:
-                case "BOSSbase": path = "assets/bossbase_containers.zip"
-                case "medical":  path = "assets/medical_containers.zip"
-                case "portrait": path = "assets/portrait_containers.zip"
+                case "BOSSbase": base_name = "bossbase_containers.zip"
+                case "medical":  base_name = "medical_containers.zip"
+                case "portrait": base_name = "portrait_containers.zip"
+            path = os.path.join("assets", base_name)
 
             print(f"Анализирую {base}...")
             pixs, filenames = bmp_sampler_from_zip(path, filter=False)

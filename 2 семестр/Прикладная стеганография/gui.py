@@ -690,7 +690,7 @@ def plot_ci(rows, *, title, filename, xlabel="k (битовая плоскост
 
     # Группируем данные по базе
     bases = defaultdict(list)
-    for base, k, std, low, avg, high in rows:
+    for base, k, std, low, avg, high, *_ in rows:
         bases[base].append((k, avg, low, high))
 
     plt.figure(figsize=(10, 6), dpi=640)
