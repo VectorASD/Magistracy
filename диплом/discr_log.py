@@ -1,4 +1,3 @@
-# discr_log.py
 class DiscrLog:
     """Дискретный логарифм в поле GF(2)[x]/(P)."""
     def __init__(self, p: int, y: int) -> None:

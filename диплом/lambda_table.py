@@ -1,6 +1,5 @@
 from __future__ import annotations
 from bitstr import BitStr
-from discr_log import DiscrLog
 
 
 
@@ -51,14 +50,11 @@ class Lambda:
         return b % self.prime_polynom
 
     def get_d_by_code(self, a: BitStr) -> BitStr:
-        """
-        Дискретный логарифм: по элементу поля возвращает x^{log}.
-        Для a == 0 возвращает 0.
-        """
+        """Дискретный логарифм: возвращает x^{log(a)} как "1" + '0'*log (или "0" для нуля)."""
         power = self._discrete_log(a)
         if power == -1:
             return BitStr("0")
-        return self.code[power + 1]
+        return BitStr(bin(1 << power)[2:])
 
     def _discrete_log(self, a: BitStr) -> int:
         """Возвращает степень x, дающую a, или -1 для a == 0."""
