@@ -15,24 +15,24 @@ class BitStr:
     # ------------------------------------------------------------------
     # Конструкторы
     # ------------------------------------------------------------------
-    def __init__(self, s: str = "") -> None:
+    def __init__(self, s: str | int = 0) -> None:
+        # Пустая строка или 0 — представляем как "0"
         if not s:
             self._bits = 0
             self._size = 1
             return
+
+        if isinstance(s, int):
+            self._bits = s
+            self._size = max(s.bit_length(), 1)  # для 0 оставили 1, для остальных — реальная длина
+            return
+
+        # Строковый путь
         stripped, _ = self._align(s)
         if not stripped:
             stripped = "0"
         self._bits = int(stripped, 2)
         self._size = len(stripped)
-
-    @classmethod
-    def _from_int(cls, value: int, size: int) -> BitStr:
-        """Внутренний конструктор"""
-        obj = cls.__new__(cls)
-        obj._bits = value
-        obj._size = size
-        return obj
 
     # ------------------------------------------------------------------
     # Приватные утилиты
@@ -58,7 +58,7 @@ class BitStr:
         return bin(self._bits)[2:] if self._size > 0 else "0"
 
     def __repr__(self) -> str:
-        return f"BitStr('{self}')"
+        return f"{type(self).__name__}('{self}')"
 
     def __getitem__(self, i: int) -> int:
         if 0 <= i < self._size:
@@ -82,7 +82,7 @@ class BitStr:
         Старшие биты более длинного операнда копируются без изменений.
         """
         result_val = self._bits ^ other._bits
-        return BitStr(bin(result_val)[2:])
+        return BitStr(result_val)
 
     def __mod__(self, other: BitStr) -> BitStr:
         """
@@ -95,7 +95,7 @@ class BitStr:
         while dd.bit_length() >= other._size:
             shift = dd.bit_length() - other._size
             dd ^= (ds << shift)
-        return BitStr(bin(dd)[2:])
+        return BitStr(dd)
 
     # ------------------------------------------------------------------
     # Публичные методы
@@ -108,12 +108,16 @@ class BitStr:
         """Возвращает длину битовой строки в битах."""
         return self._size
 
-    def get_formated_string(self, m: int) -> str:
+    def __format__(self, format_spec: str) -> str:
         """
-        Возвращает строку длиной ровно m, дополненную ведущими нулями.
-        Если исходная строка длиннее m, возвращается как есть.
+        Возвращает строку, дополненную ведущими нулями до длины format_spec.
+        Если исходная строка длиннее, возвращается без изменений.
         """
         s = str(self)
-        if len(s) >= m:
+        if not format_spec:
             return s
-        return "0" * (m - len(s)) + s
+        try:
+            length = int(format_spec)
+        except ValueError:
+            raise ValueError(f"Invalid format specifier for {type(self).__name__}: {format_spec!r}")
+        return s.zfill(length)

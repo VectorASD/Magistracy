@@ -25,19 +25,19 @@ class StegoContainer:
     def read_from_container(self, st_cont: str) -> str:
         d = BitStr(st_cont)
         s = self._lambda.f_lambda(d)
-        return s.get_formated_string(self.capacity)
+        return f"{s:{self.capacity}}"  # format(s, str(self.capacity))
 
-    def write_to_container(self, sm: str) -> str:
-        if len(sm) != self.capacity:
-            raise ValueError("Message length must match capacity")
+    def write_to_container(self, sm: str | int) -> str:
         s = BitStr(sm)
+        if len(s) > self.capacity:
+            raise ValueError(f"Message length ({len(s)}) exceeds container capacity ({self.capacity})")
         em = BitStr(self.empty_message)
-        prime = BitStr(self._lambda.dec2bin(PRIMES[self.capacity]))
+        prime = BitStr(PRIMES[self.capacity])
         u = em % prime
         v = u + s
         d = self._lambda.get_d_by_code(v)
         w = em + d
-        return w.get_formated_string(self.len)
+        return f"{w:{self.len}}"  # format(w, str(self.len))
 
     def info(self) -> None:
         self._lambda.show()

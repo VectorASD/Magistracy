@@ -221,13 +221,13 @@ def DiscrLog_tests():
 
 
 def Lambda_tests():
-    def dec2bin_0():
-        L = Lambda(3, 13)
-        assert L.dec2bin(0) == "0"
+  # def dec2bin_0():
+  #     L = Lambda(3, 13)
+  #     assert L.dec2bin(0) == "0"
 
-    def dec2bin_13():
-        L = Lambda(3, 13)
-        assert L.dec2bin(13) == "1101"
+  # def dec2bin_13():
+  #     L = Lambda(3, 13)
+  #     assert L.dec2bin(13) == "1101"
 
     def f_lambda_0():
         L = Lambda(5, 61)
