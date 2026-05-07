@@ -1,5 +1,6 @@
 from bitstr import BitStr
 from discr_log import DiscrLog
+from lambda_table import Lambda
 
 
 
@@ -218,5 +219,37 @@ def DiscrLog_tests():
 
 
 
+def Lambda_tests():
+    def dec2bin_0():
+        L = Lambda(3, 13)
+        assert L.dec2bin(0) == "0"
+
+    def dec2bin_13():
+        L = Lambda(3, 13)
+        assert L.dec2bin(13) == "1101"
+
+    def f_lambda_0():
+        L = Lambda(5, 61)
+        a = BitStr("0")
+        b = L.f_lambda(a)
+        assert b == BitStr("0")
+
+    def f_lambda_8():
+        L = Lambda(5, 61)
+        tmp = BitStr("10000000")
+        b = L.f_lambda(tmp)
+        assert b == BitStr("1110")
+
+    def f_lambda_29():
+        L = Lambda(5, 61)
+        tmp = BitStr("1" + "0" * 28)
+        b = L.f_lambda(tmp)
+        assert b == BitStr("11001")
+
+    checker(locals())
+
+
+
 BitStr_tests()
 DiscrLog_tests()
+Lambda_tests()
