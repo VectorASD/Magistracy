@@ -1,5 +1,5 @@
 from bitstr import BitStr
-from discrlog import DiscrLog
+from discr_log import DiscrLog
 
 
 
@@ -20,6 +20,8 @@ def assert_throw(f, error):
         f()
     except error:
         pass
+    except Exception as e:
+        raise AssertionError(f"Expected {error.__name__}, but received: {e}")
     else:
         raise AssertionError(f"Expected {error.__name__}")
 
