@@ -233,7 +233,7 @@ def bmp_sampler_from_zip(path, count=None, filter=True):
             with zip.open(name, "r") as file:
                 pix = read_bmp(file, debug=False, to_gray=True)
             pixs.append(pix)
-    return pixs
+    return pixs, sample
 
 class MainGUI:
     def analyze_sample(self):
@@ -305,7 +305,7 @@ class MainGUI:
                 case "portrait": path = "assets/portrait_containers.zip"
 
             print(f"Анализирую {base}...")
-            pixs = bmp_sampler_from_zip(path, filter=False)
+            pixs, _ = bmp_sampler_from_zip(path, filter=False)
             assert len(pixs) == 100
 
             for k in range(1, 9):
@@ -405,7 +405,8 @@ class MainGUI:
             case "medical":  path = "assets/medical_containers.zip"
             case "portrait": path = "assets/portrait_containers.zip"
         self.base = name
-        self.pixs = pixs = bmp_sampler_from_zip(path, 8)
+        pixs, _ = bmp_sampler_from_zip(path, 8)
+        self.pixs = pixs
 
         self.app.show_original_previews(pixs)
         self.app.on_click_original(0)

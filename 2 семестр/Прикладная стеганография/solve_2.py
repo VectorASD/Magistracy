@@ -74,7 +74,7 @@ def get_logo_size_with_fit(target_shape: tuple[int, int], layers=1):
 
 def check_resizer():
     logo_path = "my_logo.png"
-    pixs = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)
+    pixs, _ = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)
     target = pixs[0]
     logo, watermark = load_logo_with_fit(logo_path, target.shape)
     os.makedirs("result", exist_ok=True)
@@ -233,7 +233,7 @@ def compare_logos(logo_path: str, stego: np.ndarray, extracted: np.ndarray):
     print("psnr:", psnr) # inf
 
 def check_embedder():
-    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    pix, _ = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
     stego, _ = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png")
     save_bmp("watermarked.bmp", stego, mode="gray")
 
@@ -263,7 +263,7 @@ def overlay_gradient(pix, grad):
     return (pix.astype(np.float32) * mask).clip(0, 255).astype(np.uint8)
 
 def check_gradient():
-    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    pix, _ = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
     preset = [pix]
     overlays = [None]
     for kernel_name in GRADIENT_KERNELS:
@@ -272,13 +272,13 @@ def check_gradient():
         preset.append(grad * 255)
         overlays.append(overlay_gradient(pix, grad))
 
-    gui = ImageGridGUI(2, len(preset), preset + overlays)
+    gui = ImageGridGUI(2, len(preset), preset = preset + overlays)
     for i, kernel_name in enumerate(GRADIENT_KERNELS):
         gui.set_text((1, 1+i), kernel_name)
     gui.mainloop()
 
 def check_adaptive_embedder():
-    pix = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
+    pix, _ = bmp_sampler_from_zip("assets/bossbase_containers.zip", count=1)[0]
     stego, _ = embed_logo_lsb_with_key(pix, "meowl", "my_logo.png", kernel_name="sobel7")
     save_bmp("watermarked2.bmp",      stego, mode="gray")
     save_bmp("watermarked2_orig.bmp", pix,   mode="gray")
@@ -292,7 +292,7 @@ def check_adaptive_extractor():
 
 
 
-def save_it(pix, error, title):
+def save_it(pix: np.ndarray, error: str, title: str):
     if pix is None:
         messagebox.showerror("Ошибка источника", error)
         return
@@ -309,6 +309,30 @@ def save_it(pix, error, title):
         except Exception as e:
             messagebox.showerror("Ошибка сохранения", e)
     # иначе, пользователь отменил asksaveasfilename
+
+def save_binary(data: bytes, error: str, title: str):
+    if data is None:
+        messagebox.showerror("Ошибка источника", error)
+        return
+
+    path = filedialog.asksaveasfilename(
+        title=title,
+        defaultextension=".txt",
+        filetypes=[
+            ("Text", "*.txt"),
+            ("Binary", "*.bin"),
+            ("All files", "*.*"),
+        ]
+    )
+
+    if not path:
+        return  # пользователь отменил
+
+    try:
+        with open(path, "wb") as f:
+            f.write(data)
+    except Exception as e:
+        messagebox.showerror("Ошибка сохранения", str(e))
 
 
 
@@ -409,7 +433,7 @@ class MainGUI:
                 case "portrait": path = "assets/portrait_containers.zip"
 
             print(f"Анализирую {base}...")
-            pixs = bmp_sampler_from_zip(path, filter=False)
+            pixs, _ = bmp_sampler_from_zip(path, filter=False)
             assert len(pixs) == 100
 
             for kernel_name in (None, *MainGUI.kernel_names):

@@ -158,21 +158,94 @@ class ScrollableFrame(ttk.Frame):
         else:                # Windows / macOS
             scroll_fn(-1 * (event.delta // 120), "units")
 
+class ResizableTextFrame(ttk.Frame):
+    def __init__(self, master, min_w=150, min_h=80, **kw):
+        super().__init__(master, **kw)
+
+        # Фиксированный контейнер
+        self.grid_propagate(False)
+        self.pack_propagate(False)
+
+        # Text через place
+        self.text = tk.Text(self, wrap="word")
+        self.text.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Scrollbar
+        self.scroll = ttk.Scrollbar(self, orient="vertical", command=self.text.yview)
+        self.scroll.place(relx=1.0, y=0, relheight=1.0, anchor="ne")
+        self.text.configure(yscrollcommand=self.scroll.set)
+
+        # Sizegrip
+        self.grip = ttk.Sizegrip(self)
+        self.grip.place(relx=1.0, rely=1.0, anchor="se")
+
+        self.grip.bind("<ButtonPress-1>", self._start)
+        self.grip.bind("<B1-Motion>", self._resize)
+        self.grip.bind("<ButtonRelease-1>", self._stop)
+
+        self.config(width=min_w, height=min_h)
+
+    def _start(self, e):
+        self._sx = self.winfo_pointerx()
+        self._sy = self.winfo_pointery()
+        self._sw = self.winfo_width()
+        self._sh = self.winfo_height()
+
+        root = self.winfo_toplevel()
+      # root.resizable(False, False) ПОЛНОЕ ПЕРЕСОЗДАНИЕ ОКНА с визуальным эффектом?!?!?! разве так сложно это было сделать через maxsize и minsize?!?!?!
+
+        self._old_minsize = root.minsize()
+        self._old_maxsize = root.maxsize()
+        w, h = root.winfo_width(), root.winfo_height()
+        root.minsize(w, h)
+        root.maxsize(w, h)
+
+    def _resize(self, e):
+        dx = self.winfo_pointerx() - self._sx
+        dy = self.winfo_pointery() - self._sy
+
+        w = max(48, self._sw + dx)
+        h = max(32, self._sh + dy)
+
+        # Меняем размер ТОЛЬКО контейнера
+        self.config(width=w, height=h)
+
+    def _stop(self, e):
+        root = self.winfo_toplevel()
+      # root.resizable(True, True) ПОЛНОЕ ПЕРЕСОЗДАНИЕ ОКНА с визуальным эффектом?!?!?! разве так сложно это было сделать через maxsize и minsize?!?!?!
+
+        geometry = f"{root.winfo_width()}x{root.winfo_height()}+{root.winfo_x()}+{root.winfo_y()}"
+        # def release():
+        root.geometry(geometry)  # выглядит, как бессмысленный код, на практике это ЛУЧШИЙ способ сбросить requested size
+        root.minsize(*self._old_minsize)
+        root.maxsize(*self._old_maxsize)
+        # root.after_idle(release)
+
+
+
 class ControlPanel(ttk.Frame):
     def __init__(self, master, opts):
         super().__init__(master)
         self.combos = []
+        self.texts  = []
+        self.inputs = []
         self.is_combo = tk.BooleanVar()
 
+        current_row = ttk.Frame(self)
+        current_row.pack(anchor="w")
+        self.rows = [current_row]
+
         for entry in opts:
+            if not isinstance(entry, (tuple, list)):
+                entry = entry,
             names     = tuple(item for item in entry if isinstance(item, (str, bool, int, float, complex)))
             callbacks = tuple(item for item in entry if callable(item))
             metas     = tuple(item for item in entry if isinstance(item, dict))
 
             assert names, "Нужны имена"
-            assert len(callbacks) == 1, "Должен быть ровно один callback"
+            assert len(callbacks) <= 1, "Должен быть ровно один callback"
 
-            callback = callbacks[0]
+            callback = callbacks[0] if len(callbacks) == 1 else None
             meta = {k: v for meta in metas for k, v in meta.items()}
             default = meta.get("default", None)
 
@@ -183,19 +256,25 @@ class ControlPanel(ttk.Frame):
                 if name.startswith("input_"):
                     label = name[len("input_"):]
                     var = tk.StringVar()
-                    if default is not None:
-                        var.set(default)
-                        callback(default)
 
-                    def on_text_change(var=var, cb=callback):
-                        cb(var.get())
+                    def on_text_change(e, var=var, cb=callback):
+                        if cb is not None:
+                            cb(var.get())
 
-                    frame = ttk.Frame(self)
+                    frame = ttk.Frame(current_row)
                     ttk.Label(frame, text=label + ":").pack(side="left")
                     entry = ttk.Entry(frame, textvariable=var)
                     entry.pack(side="left")
-                    entry.bind("<KeyRelease>", lambda e: on_text_change())
+                    entry.bind("<KeyRelease>", on_text_change)
+                    entry._var = var
                     frame.pack(side="left", padx=4)
+
+                    if default is not None:
+                        default = str(default)
+                        var.set(default)
+                        if callback is not None:
+                            frame.after_idle(lambda cb=callback, d=default: cb(d))
+                    self.inputs.append(entry)
 
                 # Файловый ввод
                 elif name.startswith("file_"):
@@ -204,22 +283,63 @@ class ControlPanel(ttk.Frame):
 
                     def on_choose_file(var=var, cb=callback):
                         path = filedialog.askopenfilename()
-                        if path:
+                        if path and cb is not None:
                             var.set(path)
                             cb(path)
 
-                    frame = ttk.Frame(self)
+                    frame = ttk.Frame(current_row)
                     ttk.Label(frame, text=label + ":").pack(side="left")
                     btn = ttk.Button(frame, text="Выбрать файл", command=on_choose_file)
                     btn.pack(side="left")
                     frame.pack(side="left", padx=4)
 
+                # Многострочный ввод
+                elif name.startswith("textarea_"):
+                    label = name[len("textarea_"):]
+                    default = meta.get("default", "")
+
+                    outer = ttk.Frame(current_row)
+                    outer.pack(side="left", padx=4, fill="both", expand=True)
+
+                    ttk.Label(outer, text=label + ":").pack(side="left", anchor="n")
+
+                    res = ResizableTextFrame(outer)
+                    res.pack(side="left", fill="both", expand=True)
+
+                    text = res.text
+                    text._entered = False
+                    self.texts.append(text)
+
+                    if default:
+                        text.insert("1.0", default)
+                        if callback is not None:
+                            callback(default)
+
+                    def on_text_change(e, txt=text, cb=callback):
+                        if cb is not None:
+                            cb(txt.get("1.0", "end-1c"))
+
+                    def is_textarea(event, txt=text):
+                        txt._entered = event.type == tk.EventType.Enter
+                        is_any = any(w._entered for w in self.combos) or any(w._entered for w in self.texts)
+                        self.is_combo.set(is_any)
+
+                    text.bind("<Enter>", is_textarea)
+                    text.bind("<Leave>", is_textarea)
+                    text.bind("<KeyRelease>", on_text_change)
+
+                elif name == "newline":
+                    current_row = ttk.Frame(self)
+                    current_row.pack(anchor="w")
+                    self.rows.append(current_row)
+
                 # Кнопка
                 else:
                     assert default is None
                     def on_press(cb=callback):
-                        cb()
-                    btn = ttk.Button(self, text=name, command=on_press)
+                        if cb is not None:
+                            cb()
+                    btn = ttk.Button(current_row, text=name, command=on_press)
                     btn.pack(side="left", padx=4)
 
             # Чекбокс
@@ -229,21 +349,23 @@ class ControlPanel(ttk.Frame):
                 if default is not None:
                     var.set(default)
                 def on_toggle(var=var, cb=callback):
-                    cb(var.get())
-                chk = ttk.Checkbutton(self, text=name, variable=var, command=on_toggle)
+                    if cb is not None:
+                        cb(var.get())
+                chk = ttk.Checkbutton(current_row, text=name, variable=var, command=on_toggle)
                 chk.pack(side="left", padx=4)
 
             # Выпадающий список
             else:
-                combo = ttk.Combobox(self, values=names, state="readonly")
+                combo = ttk.Combobox(current_row, values=names, state="readonly")
                 def on_select(event=None, cb=callback, combo=combo):
-                    cb(combo.get())
+                    if cb is not None:
+                        cb(combo.get())
                 def is_combo(event):
                     # print(event.type) # 7 и 8
                     # >>> tk.EventType.Enter -> <EventType.Enter: '7'>
                     # >>> tk.EventType.Leave -> <EventType.Leave: '8'>
                     event.widget._entered = event.type == tk.EventType.Enter
-                    is_combo = any(combo._entered for combo in self.combos)
+                    is_combo = any(combo._entered for combo in self.combos) or any(w._entered for w in self.texts)
                     self.is_combo.set(is_combo)
                 combo.bind("<<ComboboxSelected>>", on_select)
                 combo.bind("<Enter>", is_combo)
@@ -261,6 +383,15 @@ class ControlPanel(ttk.Frame):
             else:                          idx = 0
             combo.current(idx)
             combo.event_generate("<<ComboboxSelected>>")
+
+    def set_textarea_text(self, idx, new_text):
+        text = self.texts[idx]
+        text.delete("1.0", "end")
+        text.insert("1.0", new_text)
+
+    def set_input_text(self, idx, new_text):
+        entry = self.inputs[idx]
+        entry._var.set(new_text)
 
 
 
@@ -384,12 +515,10 @@ class BitPlaneGUI(tk.Tk):
 
 
 class ImageGridBase:
-    def __init__(self, rows=1, cols=1, preset=(), opts=()):
+    def __init__(self, rows=1, cols=1, *, preset=(), opts=(), texts=(), win_w = 1400, win_h = 800):
         self.update_idletasks()
         screen_w = self.winfo_screenwidth()
         screen_h = self.winfo_screenheight()
-
-        win_w, win_h = 1400, 1000
 
         x = (screen_w - win_w) // 2
         y = (screen_h - win_h) // 2
@@ -406,6 +535,9 @@ class ImageGridBase:
 
         self.grid = ImageGrid(root.inner, rows=rows, cols=cols)
         self.grid.pack(side="top", pady=0)
+
+        for idx, text in enumerate(texts):
+            self.texts[idx] = text
 
         if opts:
             panel = self.panel = ControlPanel(root.inner, opts)
@@ -498,11 +630,11 @@ class ImageGridBase:
 
 
 class ImageGridGUI(tk.Tk, ImageGridBase):
-    def __init__(self, rows=1, cols=1, preset=(), opts=()):
+    def __init__(self, rows=1, cols=1, *, preset=(), opts=(), texts=()):
         tk.Tk.__init__(self)
         self.title("Image-grid Viewer")
 
-        ImageGridBase.__init__(self, rows, cols, preset, opts)
+        ImageGridBase.__init__(self, rows, cols, preset=preset, opts=opts, texts=texts)
 
 
 
@@ -553,12 +685,12 @@ class HistogramGUI(tk.Toplevel, ImageGridBase):
 
 
 
-def plot_ci(rows, title, filename):
+def plot_ci(rows, *, title, filename, xlabel="k (битовая плоскость)"):
     import matplotlib.pyplot as plt # pip install matplotlib
 
     # Группируем данные по базе
     bases = defaultdict(list)
-    for base, k, std, low, avg, high in rows:
+    for base, k, std, low, avg, high, *_ in rows:
         bases[base].append((k, avg, low, high))
 
     plt.figure(figsize=(10, 6), dpi=640)
@@ -577,7 +709,7 @@ def plot_ci(rows, title, filename):
             label=base
         )
 
-    plt.xlabel("k (битовая плоскость)")
+    plt.xlabel(xlabel)
     plt.ylabel("PSNR (дБ)")
     plt.title(title)
     plt.grid(True)
@@ -598,8 +730,10 @@ def plot_ci(rows, title, filename):
 
 
 if __name__ == "__main__":
-    from solve_1 import MainGUI
+    from solve_1 import MainGUI as MainGUI_1
     from solve_2 import check_gradient
+    from solve_3 import MainGUI as MainGUI_3
 
-    # MainGUI().mainloop()
-    check_gradient()
+  # MainGUI_1().mainloop()
+  # check_gradient()
+    MainGUI_3().mainloop()
