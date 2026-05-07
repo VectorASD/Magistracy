@@ -1,6 +1,7 @@
 from bitstr import BitStr
 from discr_log import DiscrLog
 from lambda_table import Lambda
+from stego_container import StegoContainer
 
 
 
@@ -250,6 +251,108 @@ def Lambda_tests():
 
 
 
+def StegoContainer_tests():
+    # ~~~ Read ~~~
+    def read_e111m00():
+        s = StegoContainer("101")
+        assert s.read_from_container("111") == "00"
+
+    def read_e001m01():
+        s = StegoContainer("101")
+        assert s.read_from_container("001") == "01"
+
+    def read_e101m10():
+        s = StegoContainer("101")
+        assert s.read_from_container("101") == "10"
+
+    def read_e100m11():
+        s = StegoContainer("101")
+        assert s.read_from_container("100") == "11"
+
+    # ~~~ Write ~~~
+    def write_s111m00():
+        s = StegoContainer("101")
+        assert s.write_to_container("00") == "111"
+
+    def write_s001m01():
+        s = StegoContainer("101")
+        assert s.write_to_container("01") == "001"
+
+    def write_s101m10():
+        s = StegoContainer("101")
+        assert s.write_to_container("10") == "101"
+
+    def write_s100m11():
+        s = StegoContainer("101")
+        assert s.write_to_container("11") == "100"
+
+    # ~~~ Complex 7 ~~~
+    def write_complex7():
+        s = StegoContainer("1111111")
+        assert s.write_to_container("000") == "1111111"
+        assert s.write_to_container("001") == "1111110"
+        assert s.write_to_container("010") == "1111101"
+        assert s.write_to_container("011") == "1011111"
+        assert s.write_to_container("100") == "1111011"
+        assert s.write_to_container("101") == "1110111"
+        assert s.write_to_container("110") == "0111111"
+        assert s.write_to_container("111") == "1101111"
+
+    def read_complex7():
+        s = StegoContainer("1111111")
+        assert s.read_from_container("1111111") == "000"
+        assert s.read_from_container("1111110") == "001"
+        assert s.read_from_container("1111101") == "010"
+        assert s.read_from_container("1011111") == "011"
+        assert s.read_from_container("1111011") == "100"
+        assert s.read_from_container("1110111") == "101"
+        assert s.read_from_container("0111111") == "110"
+        assert s.read_from_container("1101111") == "111"
+
+    # ~~~ Complex 15 ~~~
+    def write_complex15():
+        s = StegoContainer("111111111111111")
+        assert s.write_to_container("0000") == "111111111111111"
+        assert s.write_to_container("0001") == "111111111111110"
+        assert s.write_to_container("0010") == "111111111111101"
+        assert s.write_to_container("0011") == "111111111101111"
+        assert s.write_to_container("0100") == "111111111111011"
+        assert s.write_to_container("0101") == "111111011111111"
+        assert s.write_to_container("0110") == "111111111011111"
+        assert s.write_to_container("0111") == "111101111111111"
+        assert s.write_to_container("1000") == "111111111110111"
+        assert s.write_to_container("1001") == "011111111111111"
+        assert s.write_to_container("1010") == "111110111111111"
+        assert s.write_to_container("1011") == "111111101111111"
+        assert s.write_to_container("1100") == "111111110111111"
+        assert s.write_to_container("1101") == "101111111111111"
+        assert s.write_to_container("1110") == "111011111111111"
+        assert s.write_to_container("1111") == "110111111111111"
+
+    def read_complex15():
+        s = StegoContainer("111111111111111")
+        assert s.read_from_container("111111111111111") == "0000"
+        assert s.read_from_container("111111111111110") == "0001"
+        assert s.read_from_container("111111111111101") == "0010"
+        assert s.read_from_container("111111111101111") == "0011"
+        assert s.read_from_container("111111111111011") == "0100"
+        assert s.read_from_container("111111011111111") == "0101"
+        assert s.read_from_container("111111111011111") == "0110"
+        assert s.read_from_container("111101111111111") == "0111"
+        assert s.read_from_container("111111111110111") == "1000"
+        assert s.read_from_container("011111111111111") == "1001"
+        assert s.read_from_container("111110111111111") == "1010"
+        assert s.read_from_container("111111101111111") == "1011"
+        assert s.read_from_container("111111110111111") == "1100"
+        assert s.read_from_container("101111111111111") == "1101"
+        assert s.read_from_container("111011111111111") == "1110"
+        assert s.read_from_container("110111111111111") == "1111"
+
+    checker(locals())
+
+
+
 BitStr_tests()
 DiscrLog_tests()
 Lambda_tests()
+StegoContainer_tests()
