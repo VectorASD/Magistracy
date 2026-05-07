@@ -22,10 +22,13 @@ class StegoContainer:
     def get_container_capacity(self) -> int:
         return self.capacity
 
-    def read_from_container(self, st_cont: str) -> str:
+    def read_from_container(self, st_cont: str | int) -> str:
         d = BitStr(st_cont)
         s = self._lambda.f_lambda(d)
-        return f"{s:{self.capacity}}"  # format(s, str(self.capacity))
+
+      # return f"{s:{self.capacity}}"  # format(s, str(self.capacity))
+        s.set_format_size(self.capacity)
+        return s
 
     def write_to_container(self, sm: str | int) -> str:
         s = BitStr(sm)
@@ -37,7 +40,10 @@ class StegoContainer:
         v = u + s
         d = self._lambda.get_d_by_code(v)
         w = em + d
-        return f"{w:{self.len}}"  # format(w, str(self.len))
+
+      # return f"{w:{self.len}}"  # format(w, str(self.len))
+        w.set_format_size(self.len)
+        return w
 
     def info(self) -> None:
         self._lambda.show()
