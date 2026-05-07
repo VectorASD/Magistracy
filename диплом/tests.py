@@ -150,7 +150,7 @@ def BitStr_tests():
     def AsNumber():
         a   = BitStr("1000000")
         num = 0b1000000
-        assert a.as_number() == num
+        assert int(a) == num
 
     checker(locals())
 
