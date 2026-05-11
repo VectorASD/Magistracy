@@ -3,22 +3,29 @@
 
 from sortedcontainers import SortedList  # v2.4.0
 
+from typing import Callable, Any, Tuple
+
+
+
+Callback = Callable[..., None]
+Events = SortedList[Tuple[float, int, Callback, Tuple[Any, ...]]]
+
 
 
 class EventEngine:
-    def __init__(self):
-        self.time = 0.0
-        self.events = SortedList()  # А вот и расписание
-        self.counter = 0   # Для событий с одинаковым временем, чтобы tuple-компаратор не добрался до callback
+    def __init__(self) -> None:
+        self.time: float = 0.0
+        self.events: Events = SortedList()  # А вот и расписание
+        self.counter: int = 0   # Для событий с одинаковым временем, чтобы tuple-компаратор не добрался до callback
 
-    def schedule(self, time, callback, *payload):
+    def schedule(self, time: float, callback: Callback, *payload: Any) -> None:
         self.counter += 1
         self.events.add((time, self.counter, callback, payload))  # Runtime complexity: `O(log(n))` -- approximate.
 
-    def next(self, delta, callback, *payload):
+    def next(self, delta: float, callback: Callback, *payload: Any) -> None:
         self.schedule(self.time + delta, callback, *payload)
 
-    def run(self, until):
+    def run(self, until: float) -> None:
         while self.events:
             time, _, callback, payload = self.events.pop(0)  # Runtime complexity: `O(log(n))` -- approximate.
             if time > until:
