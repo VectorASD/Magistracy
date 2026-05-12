@@ -31,7 +31,7 @@ class EventEngine:
             if time > until:
                 break
             self.time = time
-            callback(self, *payload)
+            callback(*payload)
 
 
 
