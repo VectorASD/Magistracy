@@ -1,3 +1,5 @@
+import numpy as np # pip install numpy
+
 import random
 from random import randint
 import itertools
@@ -9,12 +11,12 @@ import itertools
 def generate_tsp_instance(n, max_dist=100, seed=None):
     if seed is not None:
         random.seed(seed)
-    dist = [[0]*n for _ in range(n)]
-    for i in range(n):
-        for j in range(i+1, n):
-            d = randint(1, max_dist)
-            dist[i][j] = d
-            dist[j][i] = d
+        np.random.seed(seed)
+
+    dist = np.random.randint(1, max_dist + 1, size=(n, n), dtype=np.int32)
+    dist = (dist + dist.T) // 2
+    np.fill_diagonal(dist, 0)
+
     return dist
 
 def print_matrix(dist):
@@ -34,9 +36,12 @@ def tsp_bruteforce(dist, start_city=0):
     best_len = float("inf")
     best_path = None
 
+    path = np.empty(n + 1, dtype=np.int32)
+    path[0] = path[-1] = start_city
+
     for perm in itertools.permutations(cities):  # генерирует все возможные перестановки
-        path = (start_city, *perm, start_city)
-        length = sum(dist[path[i]][path[i+1]] for i in range(n))
+        path[1:-1] = perm
+        length = dist[path[:-1], path[1:]].sum()  # векторизовано
         if length < best_len:
             best_len = length
             best_path = path
@@ -47,7 +52,7 @@ def tsp_bruteforce(dist, start_city=0):
 
 def main():
     dist = generate_tsp_instance(8)
-    print_matrix(dist)
+    print(dist)
 
     best_len, best_path = tsp_bruteforce(dist)
     print("best length:", best_len)
