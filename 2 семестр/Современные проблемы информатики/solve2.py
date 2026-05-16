@@ -1,9 +1,10 @@
 import random
 from random import randint
+import itertools
 
 
 
-# TSP - Traveling Salesman Problem - задача коммивояжёра
+# TSP - Traveling Salesman Problem - задача коммивояжёра (задача путешествующего торговца)
 
 def generate_tsp_instance(n, max_dist=100, seed=None):
     if seed is not None:
@@ -26,9 +27,31 @@ def print_matrix(dist):
 
 
 
+def tsp_bruteforce(dist, start_city=0):
+    n = len(dist)
+    cities = list(range(n))
+    cities.remove(start_city)
+    best_len = float("inf")
+    best_path = None
+
+    for perm in itertools.permutations(cities):  # генерирует все возможные перестановки
+        path = (start_city, *perm, start_city)
+        length = sum(dist[path[i]][path[i+1]] for i in range(n))
+        if length < best_len:
+            best_len = length
+            best_path = path
+
+    return best_len, best_path
+
+
+
 def main():
-    dist = generate_tsp_instance(16)
+    dist = generate_tsp_instance(8)
     print_matrix(dist)
+
+    best_len, best_path = tsp_bruteforce(dist)
+    print("best length:", best_len)
+    print("path:", best_path)
 
 
 
