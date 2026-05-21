@@ -1,8 +1,10 @@
 import numpy as np # pip install numpy
+import matplotlib.pyplot as plt  # pip install matplotlib
 
 import random
 from random import randint
 import itertools
+import time
 
 
 
@@ -160,20 +162,102 @@ def tsp_dynamic_programming(dist, start=0):
 
 
 def main():
-    dist = generate_tsp_instance(4)
-    print(dist)
+    for _ in range(100):
+        dist = generate_tsp_instance(4)
+        print(dist)
 
-    best_len, best_path = tsp_bruteforce(dist)
-    print("best length:", best_len)
-    print("path:", best_path)
+        best_len, best_path = tsp_bruteforce(dist)
+        print("best length:", best_len)
+        print("path:", best_path)
 
-    best_len, best_path = tsp_dynamic_programming(dist)
-    print("best length:", best_len)
-    print("path:", best_path)
+        best_len, best_path = tsp_dynamic_programming(dist)
+        print("best length:", best_len)
+        print("path:", best_path)
+
+        print()
+
+def benchmark():
+    ns_brute = tuple(range(4, 11))
+    ns_dp    = tuple(range(4, 17))
+    times_brute = []
+    times_dp = []
+    ratios = []
+
+    for n in ns_dp:
+        dist = generate_tsp_instance(n)
+
+        t0 = time.perf_counter()
+        tsp_dynamic_programming(dist)
+        t1 = time.perf_counter()
+        t_dp = t1 - t0
+        times_dp.append(t_dp)
+
+        if n in ns_brute:
+            t0 = time.perf_counter()
+            tsp_bruteforce(dist)
+            t1 = time.perf_counter()
+            t_brute = t1 - t0
+
+            times_brute.append(t_brute)
+            ratios.append(t_brute / t_dp if t_dp > 0 else 0)
+
+            print(f"n={n:2d} | brute={t_brute:.4f}s | dp={t_dp:.4f}s | ratio={ratios[-1]:.1f}")
+        else:
+            print(f"n={n:2d} | dp={t_dp:.4f}s ")
+
+    plt.figure(figsize=(6*2, 4*2))
+
+    for i in range(2):
+        # График 1-2: время выполнения
+        plt.subplot(2, 2, 1+i)
+        plt.plot(ns_brute, times_brute, 'o-', label='Полный перебор')
+        plt.plot(ns_dp,    times_dp,    's-', label='Дин. программирование')
+        if i:
+            plt.yscale('log')
+        plt.xlabel('Число городов')
+        plt.ylabel('Время, с (лог. шкала)' if i else 'Время, с')
+        plt.title('Время выполнения')
+        plt.legend()
+        plt.grid(True)
+
+    # График 3: отношение времён
+    plt.subplot(2, 2, 3)
+    plt.plot(ns_brute, ratios, 'D-', color='green')
+    plt.xlabel('Число городов')
+    plt.ylabel('T_brute / T_dp')
+    plt.title('Отношение времени')
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.savefig('tsp_benchmark.png', dpi=200)   # сохраняем для отчёта
+    plt.show()
+
+"""
+Маркеры:
+    o — круг, s — квадрат, D — ромб, d — тонкий ромб
+    ^ v < > — треугольники (вверх/вниз/влево/вправо)
+    * — звезда, p — пятиугольник, h — шестиугольник
+    + — плюс, x — крест, X — жирный крест
+    . — точка, , — пиксель (совсем маленькая точка)
+    1 2 3 4 — трезубцы в разные стороны
+Линии:
+    -  — сплошная
+    -- — пунктирная
+    -. — штрих-пунктир
+    :  — точечная
+Цвет (опционально, третьим символом):
+    r g b c m y k w   ('b'=blue уже занят, по тому black='k')
+
+time.perf_counter — высокоточный монотонный счётчик (наносекунды), не привязан
+    к системному времени, не может прыгнуть назад или вперёд из-за NTP/DST.
+    Используется для измерения коротких интервалов выполнения кода.
+time.time — системные часы (секунды с Unix epoch), может скакнуть при синхронизации
+    времени. Используется когда нужна реальная дата/время, а не просто интервал.
+Для бенчмарков — всегда perf_counter.
+"""
 
 
 
 if __name__ == "__main__":
-    for i in range(100):
-        main()
-        print()
+  # main()
+    benchmark()
