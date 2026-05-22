@@ -1,3 +1,4 @@
+# Точка отправления: https://telegra.ph/30-samyh-krupnyh-datasetov-dlya-mashinnogo-obucheniya-v-TensorFlow-11-25
 # Этот датасет на tensorflow: https://www.tensorflow.org/datasets/catalog/celeb_a
 #   Первая зацепка, которую я нашёл, где скачать ВЕСЬ датасет!
 #   Здесь описание всех типов данных (т.е, кроме int64 и bool ничего не применяется, но некоторые данные неоправданно занимают целые 8 байтов)
@@ -5,8 +6,15 @@
 # Домашнаяя страница CelebA:  https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html
 # Ссылка на самое вкусное:    https://drive.google.com/drive/folders/0B7EVK8r0v71pQ3NzdzRhVUhSams?resourcekey=0-Kpdd6Vctf-AdJYfS55VULA&usp=sharing
 
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+#   иначе будет ошибка вида:
+# oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off
+# errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+
 import matplotlib.pyplot as plt  # pip install matplotlib
 from PIL import Image            # pip install Pillow
+import tensorflow as tf          # pip install tensorflow==2.20
 
 from pathlib import Path
 from collections import Counter
@@ -16,7 +24,10 @@ base_path = Path(__file__).resolve().parent
 data_path = base_path / "data_celeba"
 img_path  = base_path / "img_celeba"
 
-url = "https://drive.google.com/drive/folders/0B7EVK8r0v71pQ3NzdzRhVUhSams?resourcekey=0-Kpdd6Vctf-AdJYfS55VULA&usp=sharing"
+url  = "https://drive.google.com/drive/folders/0B7EVK8r0v71pQ3NzdzRhVUhSams?resourcekey=0-Kpdd6Vctf-AdJYfS55VULA&usp=sharing"
+url2 = "https://storage.googleapis.com/tensorflow/keras-applications/mobilenet_v3/weights_mobilenet_v3_large_224_1.0_float.h5"
+
+base_model_path = base_path / "weights_mobilenet_v3_large_224_1.0_float.h5"
 
 BASE_SIZE     = 202_599
 IDENTITY_SIZE =  10_177
@@ -28,7 +39,7 @@ id2pools = tuple([] for i in range(IDENTITY_SIZE))
 
 def check_exists(path):
     if not path.exists():
-        raise FileExistsError(f"Загрузите по пути {path} файл из {url}")
+        raise FileExistsError(f"Загрузите файл сюда '{path}' по ссылке {url}")
 
 
 def identity_reader():
@@ -90,7 +101,33 @@ def read_image(name: str):
     assert image.mode == "RGB" and len(image.size) == 2
     return image
 
-import tensorflow  # pip install tensorflow==2.20
+
+
+def load_mode(name: str = "weights_mobilenet_v3_large_224_1.0_float.h5"):
+    print("applications:", tf.keras.applications.__file__)  # Выяснилось, что ещё есть MobileNetV3Small и MobileNetV3Large, что ЕЩЁ лучше и быстрее обучается!!!
+
+    if not base_model_path.exists():
+        raise FileExistsError(f"Загрузите файл сюда '{base_model_path}' по ссылке {url2}")
+
+    # 1. Создаём архитектуру без весов
+    print("Выделение модели... ", end="", flush=True)
+    model = tf.keras.applications.MobileNetV3Large(
+        weights=None,               # не загружаем предобученные веса сразу
+        input_shape=(224, 224, 3),  # размер входного изображения (ширина, высота, каналы RGB)
+        include_top=True,           # оставить полносвязный классификатор (1000 классов ImageNet)
+        alpha=1.0                   # множитель ширины: 1.0 = полная модель
+    )
+    print("DONE")
+
+    # 2. Загружаем скачанные веса
+    print("Загрузка весов... ", end="", flush=True)
+    model.load_weights(base_model_path)
+    print("DONE")
+
+
+# model = tf.keras.applications.MobileNetV3Large(weights="./mobilenet_v2_weights_tf_dim_ordering_tf_kernels_1.0_224.h5")
+load_mode()
+exit()
 
 
 if __name__ == "__main__":
@@ -99,15 +136,16 @@ if __name__ == "__main__":
 
 
 """
-Оценка времени на RTX 3050.
-Время обучения напрямую зависит от размера модели (количества параметров).
+Оценка времени обучения на RTX 5050 (Blackwell) в сравнении с RTX 3050 (Ampere)
+Основано на FP32 производительности: RTX 3050 ~9.1 TFLOPS, RTX 5050 ~13.1 TFLOPS
+и реальных тестах AI-приложений, где RTX 5050 быстрее RTX 3050 в 1.6–1.8 раза
 
 Вот сравнение популярных вариантов:
 
-Модель          | Размер (параметров) | Время 1 эпохи (оценка)
-MobileNetV2     |               3.5M  |             ~8-10 сек
-EfficientNetB0  |               5.3M  |             15-25 сек
-ResNet-18       |              11.7M  |             20-30 сек
+   Модель       | Размер (параметров) | RTX 3050 (1 эпоха) | RTX 5050 (1 эпоха) | Ускорение
+MobileNetV2     |               3.5M  |         ~8-10 сек  |         ~4- 6 сек  |    ~1.8x
+EfficientNetB0  |               5.3M  |         15-25 сек  |          8-14 сек  |    ~1.8x
+ResNet-18       |              11.7M  |         20-30 сек  |         11-17 сек  |    ~1.8x
 
 MobileNetV2: Чемпион по эффективности.
 
