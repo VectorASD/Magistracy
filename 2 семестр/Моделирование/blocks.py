@@ -1,8 +1,9 @@
 from des import EventEngine
 from rnd import exponential, uniform
 
+
 from collections import defaultdict, deque, Counter
-from typing import Any, Optional
+from typing import Any, Optional, Tuple, Callable, Dict
 import statistics
 
 
@@ -339,6 +340,12 @@ class Builder:
     def run(self, until: int) -> None:
         self.engine.run(until)
         self.stats()
+
+    def run_with_logging(self,
+                         property_names: Tuple[str, ...] = ("queue_length",)
+                        ) -> Tuple[Callable[[float], None], Dict[str, list]]:
+        runner, history = self.engine.run_with_logging(self.buildings, property_names)
+        return runner, history
 
 
 
