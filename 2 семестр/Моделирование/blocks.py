@@ -2,7 +2,7 @@ from des import EventEngine
 from rnd import exponential, uniform
 
 from collections import defaultdict, deque, Counter
-from typing import Any
+from typing import Any, Optional
 import statistics
 
 
@@ -137,15 +137,27 @@ def connect(*chain):
 
 class ServiceDevice:
     # Кружки с сигмами - обслуживающие приборы
-    __slots__ = ("engine", "a", "b", "queue", "busy", "outputs", "accepted", "finished")
+    __slots__ = ("engine", "generator", "Es", "a_b_info", "queue", "busy", "outputs", "accepted", "finished")
 
-    def __init__(self, engine: EventEngine, a: float, b: float) -> None:
+    def __init__(self, engine: EventEngine, a: float, b: Optional[float] = None, *, uniform_mode: bool = True) -> None:
         self.engine = engine
-        self.a = a
-        self.b = b
-        self.queue = []
-        self.busy = False
-        self.outputs = []
+      # self.a = a
+      # self.b = b
+        if uniform_mode:
+            assert b is not None
+            G = {"u": uniform}
+            self.generator = eval(f"lambda: u({a}, {b})", G)
+            self.Es = (a + b) / 2  # среднее обслуживание
+            self.a_b_info  = f"- interval: {a} .. {b}"
+        else:
+            if b is None: b = a
+            self.Es = (a + b) / 2  # среднее обслуживание
+            G = {"e": exponential}
+            self.generator = eval(f"lambda: e({1 / self.Es})", G)
+            self.a_b_info  = f"- interval: exp(1 / {self.Es})"
+        self.queue    = []
+        self.busy     = False
+        self.outputs  = []
         self.accepted = self.finished = 0
 
     def accept(self, job):
@@ -162,7 +174,7 @@ class ServiceDevice:
 
         self.busy = True
         job = self.queue.pop(0)
-        dt = uniform(self.a, self.b)
+        dt = self.generator()
         self.engine.next(dt, self.finish, job)
 
     def finish(self, job):
@@ -172,12 +184,12 @@ class ServiceDevice:
         self.start_service()
 
     def stats(self):
-        print(f"- interval: {self.a} .. {self.b}")
+        print(self.a_b_info)
         print(f"- accepted: {self.accepted}   finished: {self.finished}")
-        print(f"- busy? {("no", "yes")[self.busy]}")
+        print(f"- busy? {('no', 'yes')[self.busy]}")
         print(f"- |queue|: {len(self.queue)}")
 
-        Es = (self.a + self.b) / 2
+        Es = self.Es
         mu = 1 / Es
         lmbd = self.accepted / self.engine.time
         print(f"- 𝐸[𝑆]: {Es:.5f} s.   (среднее обслуживание)")
@@ -185,7 +197,12 @@ class ServiceDevice:
         print(f"- 𝜆:    {lmbd:.5f}      (поток на входе)")
         print(f"- ρ = 𝜆/𝜇: {lmbd/mu:.5f}   (загруженность)")
 
-        assert self.accepted == len(self.queue) + self.busy + self.finished, "invalid params"
+        assert self.accepted == self.queue_length + self.finished, "invalid params"
+
+    @property
+    def queue_length(self):
+        """Текущее число требований в системе (очередь + на обслуживании)."""
+        return len(self.queue) + self.busy
 
 
 class TupleCombiner:
