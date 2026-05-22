@@ -39,108 +39,167 @@
 import matplotlib.pyplot as plt  # pip install matplotlib
 
 import random
-from random import randint
+from random import choice, sample
 
 
+
+class FileState:
+    __slots__ = ("written",)
+
+    def __init__(self):
+        self.written = 0
 
 class Process:
     """Базовый класс процесса."""
+
+    __slots__ = ("pid", "priority")
+
     def __init__(self, pid, priority):
         self.pid      = pid      # идентификатор
         self.priority = priority # приоритет (целое число > 0)
 
-    def action(self, file_state):
+    def action(self, file_state: FileState):
         """Действие процесса. Возвращает True, если действие выполнено."""
         raise NotImplementedError
 
+    def __repr__(self):
+        return f"<proc: {self.pid}:{self.priority}>"
+
 class Writer(Process):
     """Процесс записи: увеличивает счётчик символов в файле."""
-    def action(self, file_state):
-        file_state['written'] += 1
+
+    __slots__ = ()
+
+    def action(self, file_state: FileState):
+        file_state.written += 1
         return True
 
 class Reader(Process):
     """Процесс чтения: читает один символ, если есть что читать."""
+
+    __slots__ = ("read_count",)
+
     def __init__(self, pid, priority):
         super().__init__(pid, priority)
-        self.read_count = 0   # сколько символов прочитано этим процессом
+        self.read_count = 0  # сколько символов прочитано этим процессом
 
-    def action(self, file_state):
-        if file_state['written'] > 0:
+    def action(self, file_state: FileState):
+        if file_state.written > self.read_count:
             self.read_count += 1
             return True
         return False  # нечего читать – теряет квант времени
 
 
 
-def simulate(num_readers, writer_priority, reader_priority=1,
-             steps=10000, seed=None):
-    """
-    Запустить симуляцию на заданное число шагов.
-    Возвращает список прочитанных символов каждым читателем.
-    """
+class Weights:
+    __slots__ = ("total_w", "pool", "counts")
+
+    def __init__(self, weights):
+        for w in weights:
+            assert isinstance(w, int) and w > 0
+
+        self.total_w = sum(weights)
+        self.pool = []
+        for idx, p in enumerate(weights):
+            self.pool += [idx] * p
+        self.counts = list(weights)
+
+    def choose_one(self) -> int:
+        return choice(self.pool)
+    
+    def choose_k_without_replacement(self, k: int) -> list[int]:
+        # выбираем k уникальных индексов
+        if k <= 0:
+            return []
+      # return sample(self.pool, k=k)  # оказывается есть ещё аргумент counts, что, в точности, соответствует weights
+        n = len(self.counts)
+        return sample(range(n), k=min(k, n), counts=self.counts)
+
+    def __repr__(self):
+        return f"<W: {self.pool}>"
+
+
+
+def simulate(writer_priority, reader_priorities,
+             steps=10000, num_cores=1, seed=None):
     if seed is not None:
         random.seed(seed)
 
-    processes = []
-    for i in range(num_readers):
-        processes.append(Reader(pid=f'R{i}', priority=reader_priority))
-    writer = Writer(pid='W', priority=writer_priority)
-    processes.append(writer)
+    num_readers = len(reader_priorities)
+    processes = (
+        *(
+            Reader(pid=f'R{i}', priority=reader_priorities[i])
+            for i in range(num_readers)
+        ),
+        Writer(pid='W', priority=writer_priority),
+    )
+    print("processes:", processes)
 
-    total_priority = sum(p.priority for p in processes)
-    file_state = {'written': 0}
+    writer_index = tuple(idx for idx, proc in enumerate(processes) if isinstance(proc, Writer))
+    assert len(writer_index) == 1
+    writer_index = writer_index[0]
+    writer       = processes[writer_index]
 
+    weights = Weights([p.priority for p in processes])
+    print("weights:", weights)
+    file_state = FileState()
+
+    k = min(num_cores, len(processes))
     for _ in range(steps):
-        # Случайный выбор процесса с учётом приоритетов
-        r = randint(1, total_priority)
-        acc = 0
-        chosen = None
-        for p in processes:
-            acc += p.priority
-            if r <= acc:
-                chosen = p
-                break
-        # Выполняем действие
-        chosen.action(file_state)
+        chosen = weights.choose_k_without_replacement(k)
+        if writer_index in chosen:
+            writer.action(file_state)
+        else:
+            for idx in chosen:
+                processes[idx].action(file_state)
 
-    # Собираем статистику чтения
-    read_counts = [p.read_count for p in processes if isinstance(p, Reader)]
-    return read_counts
+    return [p.read_count for p in processes if isinstance(p, Reader)]
 
 
 
 def main():
-    NUM_READERS = 3          # число процессов чтения
-    READER_PRIORITY = 1      # одинаковый приоритет читателей
-    STEPS = 10000            # сколько квантов симулируется
-    RUNS_PER_POINT = 5       # количество повторов для усреднения
+    READER_PRIORITIES = (1, 1, 1) # приоритеты читателей
+    STEPS = 10000                 # сколько квантов симулируется
+    RUNS_PER_POINT = 5            # количество повторов для усреднения
+    CORES_W = 3
+    CORES_H = 2
 
-    writer_priorities = list(range(1, 16))  # от 1 до 15
-    avg_reads = {i: [] for i in range(NUM_READERS)}
+    writer_priorities = tuple(range(1, 16))  # от 1 до 15
 
-    for wp in writer_priorities:
-        # Несколько запусков для сглаживания
-        all_runs = []
-        for _ in range(RUNS_PER_POINT):
-            counts = simulate(NUM_READERS, wp, READER_PRIORITY, STEPS)
-            all_runs.append(counts)
-        # Усредняем по каждому читателю
-        for i in range(NUM_READERS):
-            avg = sum(run[i] for run in all_runs) / RUNS_PER_POINT
-            avg_reads[i].append(avg)
-        print(f"Приоритет писателя {wp:2d}: средние чтения {[f'{avg_reads[i][-1]:.1f}' for i in range(NUM_READERS)]}")
+    num_readers = len(READER_PRIORITIES)
+    CORES = range(1, 1+CORES_W*CORES_H)
+  # CORES = (4,)
 
-    plt.figure(figsize=(10, 6))
-    for i in range(NUM_READERS):
-        plt.plot(writer_priorities, avg_reads[i], 'o-', label=f'Читатель {i}')
-    plt.xlabel('Приоритет процесса записи')
-    plt.ylabel('Среднее число считанных символов')
-    plt.title('Зависимость числа считанных символов от приоритета писателя')
-    plt.legend()
-    plt.grid(True)
+    plt.figure(figsize=(6*CORES_W, 4*CORES_H))
+  # plt.title('Зависимость числа считанных символов от приоритета писателя и числа ядер', fontsize=14)
+    for cores in CORES:
+        avg_reads = {i: [] for i in range(num_readers)}
+        for wp in writer_priorities:
+            print()
+            # Несколько запусков для сглаживания
+            all_runs = [
+                simulate(wp, READER_PRIORITIES, steps=STEPS, num_cores=cores)
+                for _ in range(RUNS_PER_POINT)
+            ]
+            # Усредняем по каждому читателю
+            for i in range(num_readers):
+                avg = sum(run[i] for run in all_runs) / RUNS_PER_POINT
+                avg_reads[i].append(avg)
+            print(f"Приоритет писателя {wp:2d}: средние чтения {[f'{avg_reads[i][-1]:.1f}' for i in range(num_readers)]}")
+
+        plt.subplot(CORES_H, CORES_W, cores)
+        for r in range(num_readers):
+            plt.plot(writer_priorities, avg_reads[r], 'o-', label=f'Читатель {r}')
+        a, b = cores // 10 % 10, cores % 10
+        ender = "ро" if a != 1 and b == 1 else "ра" if b > 0 and b < 5 else "ер"
+        plt.title(f'{cores} яд{ender}')
+        plt.xlabel('Приоритет писателя')
+        plt.ylabel('Прочитано символов')
+        plt.legend()
+        plt.grid(True)
+
     plt.tight_layout()
-    plt.savefig('lab3_plot_v1.png', dpi=200)
+    plt.savefig('lab3_plot_v2.png', dpi=200)
     plt.show()
 
 
