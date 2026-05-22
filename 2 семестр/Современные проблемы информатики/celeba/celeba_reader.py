@@ -42,9 +42,14 @@ base_model_path = base_path / "weights_mobilenet_v3_large_224_1.0_float.h5"
 BASE_SIZE     = 202_599
 IDENTITY_SIZE =  10_177
 
+null_data = (None,) * 5
 # 0: name
 # 1: Identity_No (счёт от 0)
-pool = tuple([f"{idx:06d}.jpg", None] for idx in range(1, BASE_SIZE+1))
+# 2: x_1
+# 3: y_1
+# 4: width
+# 5: height
+pool = tuple([f"{idx:06d}.jpg", *null_data] for idx in range(1, BASE_SIZE+1))
 id2pools = tuple([] for i in range(IDENTITY_SIZE))
 
 def check_exists(path):
@@ -52,8 +57,9 @@ def check_exists(path):
         raise FileExistsError(f"Загрузите файл сюда '{path}' по ссылке {url}")
 
 
-def identity_reader():
-    path = data_path / "identity_CelebA.txt"
+def identity_reader(filename: str = "identity_CelebA.txt"):
+    print(f"Loading {filename!r}... ", end="", flush=True)
+    path = data_path / filename
     check_exists(path)
 
     identity_arr = []
@@ -74,6 +80,25 @@ def identity_reader():
         id2pools[identity_no].append(pool[idx])
 
     identity_arr_analyzer(identity_arr)
+    print("DONE")
+
+def list_reader(filename: str = "list_bbox_celeba.txt", record_idxs = slice(2, 6)):
+    print(f"Loading {filename!r}... ", end="", flush=True)
+    path = data_path / filename
+    check_exists(path)
+
+    with path.open() as file:
+        list_size = int(file.readline())
+        assert list_size == BASE_SIZE
+
+        header = file.readline().split()
+        if header[0] == "image_id": header.pop(0)
+        for line, record in zip(file, pool):
+            row = line.split()
+            name = row.pop(0)
+            assert name == record[0]
+            record[record_idxs] = tuple(map(int, row))
+    print("DONE")
 
 
 
@@ -96,13 +121,13 @@ def identity_arr_analyzer(identity_arr):
 
 def show_persone(index: int):
     plt.figure(figsize=(12, 8))
-    for index, pool in enumerate(id2pools[best_ids[index]], start=1):
+    for index, record in enumerate(id2pools[best_ids[index]], start=1):
         plt.subplot(5, 6, index)
-        image = read_image(pool[0])
-        print(pool[0], image.size)
+        image = load_face(record)
+        print(record[0], image.size)
         plt.imshow(image)
         plt.axis('off')
-        plt.title(f'Image {pool[0]}')
+        plt.title(f'Image {record[0]}')
 
     plt.tight_layout()
     plt.show()
@@ -117,9 +142,77 @@ def read_image(name: str):
     assert image.mode == "RGB" and len(image.size) == 2
     return image
 
+def load_face(record, margin=0.2):
+    """
+    Безопасная обрезка лица с расширением bbox и clamp-to-edge при выходе за границы.
+    record: [имя_файла, identity_no, x, y, w, h, ...]
+    margin: относительное расширение (0.2 = +20% к размерам bbox)
+    """
+    img = read_image(record[0])
+    x, y, w, h = record[2:6]
+
+    # Центр и новые размеры
+    cx = x + w // 2
+    cy = y + h // 2
+    new_w = int(w * (1 + margin))
+    new_h = int(h * (1 + margin))
+    new_w = new_h = max(new_w, new_h)
+
+    # Координаты расширенного bbox относительно исходного изображения
+    left = cx - new_w // 2
+    top = cy - new_h // 2
+    right = left + new_w
+    bottom = top + new_h
+
+    # Шаг 1: что реально можно вырезать из исходника (пересечение с изображением)
+    src_left = max(0, left)
+    src_top = max(0, top)
+    src_right = min(img.width, right)
+    src_bottom = min(img.height, bottom)
+
+    # Шаг 2: вырезаем существующую часть
+    if src_left < src_right and src_top < src_bottom:
+        face = img.crop((src_left, src_top, src_right, src_bottom))
+    else:
+        raise RuntimeError("Полностью за пределами")
+      # return Image.new('RGB', (new_w, new_h), (0, 0, 0))
+
+    # Шаг 3: если выходит за границы, создаём холст нужного размера и копируем крайние пиксели
+    if left < 0 or top < 0 or right > img.width or bottom > img.height:
+        canvas = Image.new('RGB', (new_w, new_h))
+        # Позиция вставки вырезанного куска на холсте
+        paste_x = -left if left < 0 else 0
+        paste_y = -top if top < 0 else 0
+        canvas.paste(face, (paste_x, paste_y))
+
+        # Заполняем пустые области крайними пикселями (clamp to edge)
+        if left < 0:   # левая граница
+            left_strip = canvas.crop((paste_x, 0, paste_x + 1, new_h))
+            for i in range(paste_x):
+                canvas.paste(left_strip, (i, 0))
+        if top < 0:    # верхняя граница
+            top_strip = canvas.crop((0, paste_y, new_w, paste_y + 1))
+            for i in range(paste_y):
+                canvas.paste(top_strip, (0, i))
+        if right > img.width:  # правая граница
+            right_edge = paste_x + face.width - 1
+            right_strip = canvas.crop((right_edge, 0, right_edge + 1, new_h))
+            for i in range(right_edge + 1, new_w):
+                canvas.paste(right_strip, (i, 0))
+        if bottom > img.height:  # нижняя граница
+            bottom_edge = paste_y + face.height - 1
+            bottom_strip = canvas.crop((0, bottom_edge, new_w, bottom_edge + 1))
+            for i in range(bottom_edge + 1, new_h):
+                canvas.paste(bottom_strip, (0, i))
+        face = canvas
+    else:
+        pass
+
+    return face
 
 
-def load_mode():
+
+def load_model():
     tf = load_TF()  # lazy loader
     print("applications:", tf.keras.applications.__file__)  # Выяснилось, что ещё есть MobileNetV3Small и MobileNetV3Large, что ЕЩЁ лучше и быстрее обучается!!!
 
@@ -145,8 +238,9 @@ def load_mode():
 
 if __name__ == "__main__":
     identity_reader()
-    show_persone(3)
-    load_mode()
+    list_reader()
+    show_persone(0)
+  # load_model()
 
 
 
