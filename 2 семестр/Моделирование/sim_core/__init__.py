@@ -7,5 +7,6 @@ if path not in sys.path:
 from . import des
 from . import rnd
 from . import blocks
+from . import schemes
 
 del sys, Path, path

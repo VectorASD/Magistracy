@@ -5,6 +5,7 @@ from rnd import exponential, uniform
 from collections import defaultdict, deque, Counter
 from typing import Any, Optional, Tuple, Callable, Dict
 import statistics
+from random import randint
 
 
 
@@ -149,13 +150,13 @@ class ServiceDevice:
             G = {"u": uniform}
             self.generator = eval(f"lambda: u({a}, {b})", G)
             self.Es = (a + b) / 2  # среднее обслуживание
-            self.a_b_info  = f"- interval: {a} .. {b}"
+            self.a_b_info  = f"- interval: {a:.5f} .. {b:.5f}"
         else:
             if b is None: b = a
             self.Es = (a + b) / 2  # среднее обслуживание
             G = {"e": exponential}
             self.generator = eval(f"lambda: e({1 / self.Es})", G)
-            self.a_b_info  = f"- interval: exp(1 / {self.Es})"
+            self.a_b_info  = f"- interval: exp(1 / {self.Es:.5f})"
         self.queue    = []
         self.busy     = False
         self.outputs  = []
@@ -210,13 +211,20 @@ class TupleCombiner:
     # Что-то, что требует "детали" нескольких типов
     __slots__ = ("buffers", "need_buffers", "inputs", "outputs", "accepted", "combined")
 
-    def __init__(self, count: int) -> None:
-        self.buffers = tuple(deque() for i in range(count))
+    def __init__(self) -> None:
+        self.buffers      = ()
+        self.need_buffers = 0
+        self.inputs       = 0
+        self.outputs      = []
+        self.accepted     = []
+        self.combined     = 0
+
+    def after_connect(self):
+        """Только после сборки схемы известно, сколько входов/выходов."""
+        count = self.inputs
+        self.buffers      = tuple(deque() for i in range(count))
         self.need_buffers = count
-        self.inputs = 0
-        self.outputs = []
-        self.accepted = [0] * count
-        self.combined = 0
+        self.accepted     = [0] * count
 
     def accept_from(self, input_id, job):
       # print("accepted_from:", input_id, job)
@@ -244,6 +252,27 @@ class TupleCombiner:
         print(f"- void buffers: {self.need_buffers}")
 
         assert self.combined == min(self.accepted), "invalid params"
+
+
+class RandomOutput:
+    """Случайно направляет только что пришедший Job в любой из выходов."""
+    def __init__(self) -> None:
+        self.accepted = 0
+        self.sended = []
+        self.outputs = []
+
+    def after_connect(self):
+        """Только после сборки схемы известно, сколько входов/выходов."""
+        self.sended = [0] * len(self.outputs)
+
+    def accept(self, job):
+        output = randint(0, len(self.outputs)-1)
+        self.accepted += 1
+        self.sended[output] += 1
+        self.outputs[output](job)
+
+    def stats(self):
+        print(f"- accepted: {self.accepted}   sended: {self.sended}")
 
 
 class Sink:
@@ -307,27 +336,33 @@ class Sink:
 
 
 class Builder:
-    __slots__ = ("engine", "buildings", "names")
+    __slots__ = ("engine", "buildings", "buildings_d", "names", "ready")
 
     def __init__(self) -> None:
         self.engine = EventEngine()
         self.buildings = []
+        self.buildings_d = {}
         self.names = defaultdict(int)
+        self.ready = False
 
     def _add(self, name, building):
         self.names[name] += 1
         name = f"{name}{self.names[name]}"
         self.buildings.append((name, building))
+        self.buildings_d[name] = building
         return building
 
     def Sensor(self, tau: float, group: Any=None) -> Sensor:
         return self._add("s", Sensor(self.engine, tau, group))
 
-    def ServiceDevice(self, a: float, b: float) -> ServiceDevice:
-        return self._add("sd", ServiceDevice(self.engine, a, b))
+    def ServiceDevice(self, a: float, b: Optional[float] = None, *, uniform_mode: bool = True) -> ServiceDevice:
+        return self._add("sd", ServiceDevice(self.engine, a, b, uniform_mode=uniform_mode))
 
-    def TupleCombiner(self, count: int) -> TupleCombiner:
-        return self._add("tc", TupleCombiner(count))
+    def TupleCombiner(self) -> TupleCombiner:
+        return self._add("tc", TupleCombiner())
+
+    def RandomOutput(self) -> RandomOutput:
+        return self._add("ro", RandomOutput())
 
     def Sink(self) -> Sink:
         return self._add("si", Sink(self.engine))
@@ -337,15 +372,37 @@ class Builder:
             print(f"~~~ {name} ~~~")
             building.stats()
 
+    def _after_connects(self):
+        if not self.ready:
+            for _, building in self.buildings:
+                if hasattr(building, "after_connect"):
+                    building.after_connect()
+            self.ready = True
+
     def run(self, until: int) -> None:
+        self._after_connects()
         self.engine.run(until)
         self.stats()
 
     def run_with_logging(self,
                          property_names: Tuple[str, ...] = ("queue_length",)
                         ) -> Tuple[Callable[[float], None], Dict[str, list]]:
+        self._after_connects()
         runner, history = self.engine.run_with_logging(self.buildings, property_names)
         return runner, history
+
+    def __getattr__(self, name: str) -> Any:
+        return self.buildings_d[name]
+
+    def __getitem__(self, name: str) -> Any:
+        return self.buildings_d[name]
+
+    # alias для разумной лени:
+    # можно теперь импортировать только один Builder для построения ЛЮБОЙ схемы, без импортирования других вещей, как "connect"
+    # это делает импорты чище, а функции, что строят схемы, более привязанные к контексту: один builder - одна схема
+    @staticmethod
+    def connect(*chain):
+        connect(*chain)
 
 
 
@@ -364,6 +421,7 @@ def test_scheme():
   # connect(t1, si1)
     connect(s1, sd1, t1)
     connect(s2, sd2, t1, si1)
+    t1.after_connect()
 
     engine.run(100)
 
@@ -374,7 +432,7 @@ def test_scheme_v2():
     s2 = b.Sensor(0.8)
     sd1 = b.ServiceDevice(0.5, 1.4)
     sd2 = b.ServiceDevice(0.7, 1.4)
-    tc1 = b.TupleCombiner(2)
+    tc1 = b.TupleCombiner()
     si1 = b.Sink()
 
     connect(s1, sd1, tc1)

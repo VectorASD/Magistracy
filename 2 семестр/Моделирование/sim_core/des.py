@@ -50,11 +50,11 @@ class EventEngine:
         en = 0
         for attr in property_names:
             for i, (_, block) in enumerate(buildings):
-                history[block][attr] = arr = []
                 if hasattr(block, attr):
-                   code.append(f"  a{en}(b{i}.{attr})")
-                   extends[f"a{en}"] = arr.append
-                   en += 1
+                    history[block][attr] = arr = []
+                    code.append(f"  a{en}(b{i}.{attr})")
+                    extends[f"a{en}"] = arr.append
+                    en += 1
         G = {
             **{f"b{i}": block for i, (_, block) in enumerate(buildings)},
             **extends,
