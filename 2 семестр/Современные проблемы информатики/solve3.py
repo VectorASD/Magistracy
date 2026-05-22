@@ -159,13 +159,15 @@ def simulate(writer_priority, reader_priorities,
 
 
 def main():
-    READER_PRIORITIES = (1, 1, 1) # приоритеты читателей
+    READER_PRIORITIES = (1, 3, 2) # приоритеты читателей
     STEPS = 10000                 # сколько квантов симулируется
     RUNS_PER_POINT = 5            # количество повторов для усреднения
     CORES_W = 3
     CORES_H = 2
+    WRITER_PRIORITY_SCALE = 2
 
     writer_priorities = tuple(range(1, 16))  # от 1 до 15
+    writer_priorities = tuple(p * WRITER_PRIORITY_SCALE for p in writer_priorities)  # от 2 до 30 без нечётных при скаляре в 2
 
     num_readers = len(READER_PRIORITIES)
     CORES = range(1, 1+CORES_W*CORES_H)
@@ -200,7 +202,7 @@ def main():
         plt.grid(True)
 
     plt.tight_layout()
-    plt.savefig('lab3_plot_v3.png', dpi=200)
+    plt.savefig('lab3_plot_v3_p132.png', dpi=200)
     plt.show()
 
 
