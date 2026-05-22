@@ -29,6 +29,7 @@ class EventEngine:
             time, _, callback, payload = e = self.events.pop(0)  # Runtime complexity: `O(log(n))` -- approximate.
             if time > until:
                 self.events.add(e)  # возврат для переиспользования run
+                self.time = until  # багофикс: сломанное расписание, если последнее событие меньше шага съёма логов
                 break
             self.time = time
             callback(*payload)
