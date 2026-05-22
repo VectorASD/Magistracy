@@ -140,16 +140,17 @@ def simulate(writer_priority, reader_priorities,
     writer_index = writer_index[0]
     writer       = processes[writer_index]
 
-    weights = Weights([p.priority for p in processes])
-    print("weights:", weights)
+    all_weights    = Weights([p.priority for p in processes])
+    reader_weights = Weights([p.priority for p in processes if isinstance(p, Reader)])
+    print("weights:", all_weights)
     file_state = FileState()
 
-    k = min(num_cores, len(processes))
+    k = min(num_cores, num_readers)
     for _ in range(steps):
-        chosen = weights.choose_k_without_replacement(k)
-        if writer_index in chosen:
+        if all_weights.choose_one() == writer_index:
             writer.action(file_state)
         else:
+            chosen = reader_weights.choose_k_without_replacement(k)
             for idx in chosen:
                 processes[idx].action(file_state)
 
@@ -199,7 +200,7 @@ def main():
         plt.grid(True)
 
     plt.tight_layout()
-    plt.savefig('lab3_plot_v2.png', dpi=200)
+    plt.savefig('lab3_plot_v3.png', dpi=200)
     plt.show()
 
 
