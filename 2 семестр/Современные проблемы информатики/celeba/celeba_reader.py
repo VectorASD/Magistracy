@@ -6,18 +6,28 @@
 # Домашнаяя страница CelebA:  https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html
 # Ссылка на самое вкусное:    https://drive.google.com/drive/folders/0B7EVK8r0v71pQ3NzdzRhVUhSams?resourcekey=0-Kpdd6Vctf-AdJYfS55VULA&usp=sharing
 
-import os
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-#   иначе будет ошибка вида:
-# oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off
-# errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+
 
 import matplotlib.pyplot as plt  # pip install matplotlib
 from PIL import Image            # pip install Pillow
-import tensorflow as tf          # pip install tensorflow==2.20
 
 from pathlib import Path
 from collections import Counter
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
+def load_TF():
+    import os
+    os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+    #   иначе будет ошибка вида:
+    # oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off
+    # errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+
+    print("Загрузка TF... ", end="", flush=True)
+    import tensorflow as tf          # pip install tensorflow==2.20
+    print("DONE")
+    return tf
+
 
 
 base_path = Path(__file__).resolve().parent
@@ -65,7 +75,12 @@ def identity_reader():
 
     identity_arr_analyzer(identity_arr)
 
+
+
+best_ids = None
+
 def identity_arr_analyzer(identity_arr):
+    global best_ids
     counter = Counter(identity_arr)
     count_counter = Counter(counter.values())
   # print(dict(sorted(count_counter.items())))
@@ -79,14 +94,15 @@ def identity_arr_analyzer(identity_arr):
     best_ids = sorted(id_no for id_no, count in counter.items() if count == count_per_id)
     assert len(best_ids) == id_count
 
+def show_persone(index: int):
     plt.figure(figsize=(12, 8))
-    for index, pool in enumerate(id2pools[best_ids[3]], start=1):
+    for index, pool in enumerate(id2pools[best_ids[index]], start=1):
         plt.subplot(5, 6, index)
         image = read_image(pool[0])
         print(pool[0], image.size)
         plt.imshow(image)
         plt.axis('off')
-        plt.title(f'Person {index}')
+        plt.title(f'Image {pool[0]}')
 
     plt.tight_layout()
     plt.show()
@@ -103,7 +119,8 @@ def read_image(name: str):
 
 
 
-def load_mode(name: str = "weights_mobilenet_v3_large_224_1.0_float.h5"):
+def load_mode():
+    tf = load_TF()  # lazy loader
     print("applications:", tf.keras.applications.__file__)  # Выяснилось, что ещё есть MobileNetV3Small и MobileNetV3Large, что ЕЩЁ лучше и быстрее обучается!!!
 
     if not base_model_path.exists():
@@ -125,13 +142,11 @@ def load_mode(name: str = "weights_mobilenet_v3_large_224_1.0_float.h5"):
     print("DONE")
 
 
-# model = tf.keras.applications.MobileNetV3Large(weights="./mobilenet_v2_weights_tf_dim_ordering_tf_kernels_1.0_224.h5")
-load_mode()
-exit()
-
 
 if __name__ == "__main__":
     identity_reader()
+    show_persone(3)
+    load_mode()
 
 
 
