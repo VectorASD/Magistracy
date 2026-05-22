@@ -36,6 +36,8 @@
 
 
 
+import matplotlib.pyplot as plt  # pip install matplotlib
+
 import random
 from random import randint
 
@@ -128,6 +130,18 @@ def main():
             avg = sum(run[i] for run in all_runs) / RUNS_PER_POINT
             avg_reads[i].append(avg)
         print(f"Приоритет писателя {wp:2d}: средние чтения {[f'{avg_reads[i][-1]:.1f}' for i in range(NUM_READERS)]}")
+
+    plt.figure(figsize=(10, 6))
+    for i in range(NUM_READERS):
+        plt.plot(writer_priorities, avg_reads[i], 'o-', label=f'Читатель {i}')
+    plt.xlabel('Приоритет процесса записи')
+    plt.ylabel('Среднее число считанных символов')
+    plt.title('Зависимость числа считанных символов от приоритета писателя')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig('lab3_plot_v1.png', dpi=200)
+    plt.show()
 
 
 
