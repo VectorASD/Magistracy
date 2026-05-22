@@ -10,6 +10,7 @@
 
 import matplotlib.pyplot as plt  # pip install matplotlib
 from PIL import Image            # pip install Pillow
+import numpy as np               # pip install numpy
 
 from pathlib import Path
 from collections import Counter
@@ -42,13 +43,15 @@ base_model_path = base_path / "weights_mobilenet_v3_large_224_1.0_float.h5"
 BASE_SIZE     = 202_599
 IDENTITY_SIZE =  10_177
 
-null_data = (None,) * 5
+null_data = (None,) * 25
 # 0: name
 # 1: Identity_No (счёт от 0)
 # 2: x_1
 # 3: y_1
 # 4: width
 # 5: height
+#  6-15: lefteye_x lefteye_y righteye_x righteye_y nose_x nose_y leftmouth_x leftmouth_y rightmouth_x rightmouth_y
+# 16-25: тоже самое, но в align
 pool = tuple([f"{idx:06d}.jpg", *null_data] for idx in range(1, BASE_SIZE+1))
 id2pools = tuple([] for i in range(IDENTITY_SIZE))
 
@@ -134,6 +137,88 @@ def show_persone(index: int):
 
 
 
+# https://pillow.readthedocs.io/en/stable/reference/ImageTransform.html#module-PIL.ImageTransform
+# x' = a*x + b*y + c
+# y' = d*x + e*y + f
+
+def compute_affine_matrix(src_points, dst_points):
+    """
+    Вычисляет 6 коэффициентов (a,b,c,d,e,f) аффинного преобразования
+    для использования в Pillow (Image.AFFINE).
+    src_points – список из трёх точек [(x1,y1), (x2,y2), (x3,y3)] на ЦЕЛЕВОМ изображении.
+    dst_points – список из трёх соответствующих точек на ИСХОДНОМ изображении.
+    Возвращает кортеж (a,b,c,d,e,f), который можно передать в img.transform().
+    """
+    A = np.zeros((6, 6), dtype=np.float64)
+    B = np.zeros(6, dtype=np.float64)
+
+    for i in range(3):
+        x, y = src_points[i]
+        xp, yp = dst_points[i]
+
+        A[2*i, 0] = x
+        A[2*i, 1] = y
+        A[2*i, 2] = 1.0
+        B[2*i] = xp
+
+        A[2*i+1, 3] = x
+        A[2*i+1, 4] = y
+        A[2*i+1, 5] = 1.0
+        B[2*i+1] = yp
+
+    # Решаем систему A * coeffs = B
+    coeffs, _, _, _ = np.linalg.lstsq(A, B, rcond=None)
+    return tuple(coeffs)
+
+def validate_template(num_samples=500):
+    """
+    Проверяет, что аффинное преобразование по трём точкам (глаза + нос)
+    переводит ВСЕ 5 исходных точек в их align-координаты с точностью до пикселя.
+    """
+    all_errors = []
+    max_err = 0.0
+    idx_max = -1
+
+    indices = np.random.choice(len(pool), num_samples, replace=False)
+    for idx in indices:
+        rec = pool[idx]
+        # Исходные точки (все 5)
+        src_all = [tuple(rec[6:8]), tuple(rec[8:10]), tuple(rec[10:12]),
+                   tuple(rec[12:14]), tuple(rec[14:16])]
+        # Целевые точки (align)
+        dst_all = [tuple(rec[16:18]), tuple(rec[18:20]), tuple(rec[20:22]),
+                   tuple(rec[22:24]), tuple(rec[24:26])]
+        # Матрица по трём первым
+        M = compute_affine_matrix(src_all[:3], dst_all[:3])
+
+        # Применяем ко всем 5 исходным точкам
+        def apply_affine(pt, M):
+            x = M[0]*pt[0] + M[1]*pt[1] + M[2]
+            y = M[3]*pt[0] + M[4]*pt[1] + M[5]
+            return (x, y)
+
+        errors_this = []
+        for i in range(5):
+            pred = apply_affine(src_all[i], M)
+            actual = dst_all[i]
+            err = np.sqrt((pred[0]-actual[0])**2 + (pred[1]-actual[1])**2)
+            errors_this.append(err)
+        mean_err = np.mean(errors_this)
+        all_errors.append(mean_err)
+        if mean_err > max_err:
+            max_err = mean_err
+            idx_max = idx
+
+    print({
+        'num_samples': num_samples,
+        'mean_error': np.mean(all_errors),
+        'median_error': np.median(all_errors),
+        'max_error': max_err,
+        'idx_max_error': idx_max
+    })
+
+
+
 def read_image(name: str):
     path = img_path / name
     check_exists(path)
@@ -142,73 +227,92 @@ def read_image(name: str):
     assert image.mode == "RGB" and len(image.size) == 2
     return image
 
-def load_face(record, margin=0.2):
+def compute_face_bbox(M, output_size, img_width, img_height):
+    w, h = output_size
+    corners = [(0, 0), (w, 0), (w, h), (0, h)]
+    def map_point(pt):
+        x = M[0]*pt[0] + M[1]*pt[1] + M[2]
+        y = M[3]*pt[0] + M[4]*pt[1] + M[5]
+        return (x, y)
+    mapped = [map_point(c) for c in corners]
+    xs = [p[0] for p in mapped]
+    ys = [p[1] for p in mapped]
+    # берём с запасом на интерполяцию, без ограничений
+    left = int(min(xs)) - 1
+    top = int(min(ys)) - 1
+    right = int(max(xs)) + 2
+    bottom = int(max(ys)) + 2
+    return left, top, right, bottom
+
+def safe_crop_with_clamp(img, left, top, right, bottom):
     """
-    Безопасная обрезка лица с расширением bbox и clamp-to-edge при выходе за границы.
-    record: [имя_файла, identity_no, x, y, w, h, ...]
-    margin: относительное расширение (0.2 = +20% к размерам bbox)
+    Эмулятор "clamp to edge" режима OpenGL.
+    Вырезает регион (left, top, right, bottom) из img.
+    Если регион выходит за границы, заполняет крайние пиксели (clamp-to-edge).
+    Возвращает вырезанное изображение размером (right-left, bottom-top).
     """
-    img = read_image(record[0])
-    x, y, w, h = record[2:6]
-
-    # Центр и новые размеры
-    cx = x + w // 2
-    cy = y + h // 2
-    new_w = int(w * (1 + margin))
-    new_h = int(h * (1 + margin))
-    new_w = new_h = max(new_w, new_h)
-
-    # Координаты расширенного bbox относительно исходного изображения
-    left = cx - new_w // 2
-    top = cy - new_h // 2
-    right = left + new_w
-    bottom = top + new_h
-
-    # Шаг 1: что реально можно вырезать из исходника (пересечение с изображением)
+    w, h = right - left, bottom - top
+    canvas = Image.new('RGB', (w, h))
+    # Часть, которая реально есть в исходном изображении
     src_left = max(0, left)
     src_top = max(0, top)
     src_right = min(img.width, right)
     src_bottom = min(img.height, bottom)
 
-    # Шаг 2: вырезаем существующую часть
-    if src_left < src_right and src_top < src_bottom:
-        face = img.crop((src_left, src_top, src_right, src_bottom))
-    else:
-        raise RuntimeError("Полностью за пределами")
-      # return Image.new('RGB', (new_w, new_h), (0, 0, 0))
+    if src_left >= src_right or src_top >= src_bottom:
+        # Полностью за пределами — чёрный квадрат (редкий случай)
+        return canvas
 
-    # Шаг 3: если выходит за границы, создаём холст нужного размера и копируем крайние пиксели
-    if left < 0 or top < 0 or right > img.width or bottom > img.height:
-        canvas = Image.new('RGB', (new_w, new_h))
-        # Позиция вставки вырезанного куска на холсте
-        paste_x = -left if left < 0 else 0
-        paste_y = -top if top < 0 else 0
-        canvas.paste(face, (paste_x, paste_y))
+    # Вырезаем существующую часть
+    part = img.crop((src_left, src_top, src_right, src_bottom))
+    # Позиция вставки на холсте
+    paste_x = src_left - left
+    paste_y = src_top - top
+    canvas.paste(part, (paste_x, paste_y))
 
-        # Заполняем пустые области крайними пикселями (clamp to edge)
-        if left < 0:   # левая граница
-            left_strip = canvas.crop((paste_x, 0, paste_x + 1, new_h))
-            for i in range(paste_x):
-                canvas.paste(left_strip, (i, 0))
-        if top < 0:    # верхняя граница
-            top_strip = canvas.crop((0, paste_y, new_w, paste_y + 1))
-            for i in range(paste_y):
-                canvas.paste(top_strip, (0, i))
-        if right > img.width:  # правая граница
-            right_edge = paste_x + face.width - 1
-            right_strip = canvas.crop((right_edge, 0, right_edge + 1, new_h))
-            for i in range(right_edge + 1, new_w):
-                canvas.paste(right_strip, (i, 0))
-        if bottom > img.height:  # нижняя граница
-            bottom_edge = paste_y + face.height - 1
-            bottom_strip = canvas.crop((0, bottom_edge, new_w, bottom_edge + 1))
-            for i in range(bottom_edge + 1, new_h):
-                canvas.paste(bottom_strip, (0, i))
-        face = canvas
-    else:
-        pass
+    # Заполняем пустые области крайними пикселями (clamp to edge)
+    # Левая полоса
+    if paste_x > 0:
+        strip = canvas.crop((paste_x, 0, paste_x+1, h))
+        for x in range(paste_x):
+            canvas.paste(strip, (x, 0))
+    # Правая полоса
+    if paste_x + part.width < w:
+        edge = paste_x + part.width - 1
+        strip = canvas.crop((edge, 0, edge+1, h))
+        for x in range(edge+1, w):
+            canvas.paste(strip, (x, 0))
+    # Верхняя полоса
+    if paste_y > 0:
+        strip = canvas.crop((0, paste_y, w, paste_y+1))
+        for y in range(paste_y):
+            canvas.paste(strip, (0, y))
+    # Нижняя полоса
+    if paste_y + part.height < h:
+        edge = paste_y + part.height - 1
+        strip = canvas.crop((0, edge, w, edge+1))
+        for y in range(edge+1, h):
+            canvas.paste(strip, (0, y))
+    return canvas
 
-    return face
+def load_face(record, output_size=(178, 218)):
+    """
+    Выравнивает одно лицо с предварительным вычислением безопасной области обрезки,
+    чтобы полностью избежать чёрных треугольников после аффинного преобразования.
+    """
+    img = read_image(record[0])
+    src_pts = [tuple(record[6:8]), tuple(record[8:10]), tuple(record[10:12])]
+    dst_pts = [tuple(record[16:18]), tuple(record[18:20]), tuple(record[20:22])]
+
+    M = compute_affine_matrix(dst_pts, src_pts)   # (x_dst, y_dst) -> (x_src, y_src)
+    left, top, right, bottom = compute_face_bbox(M, output_size, img.width, img.height)
+    cropped = safe_crop_with_clamp(img, left, top, right, bottom)
+    M_shifted = (
+        M[0], M[1], M[2] - left,
+        M[3], M[4], M[5] - top
+    )
+    aligned = cropped.transform(output_size, Image.AFFINE, M_shifted, resample=Image.BICUBIC)
+    return aligned
 
 
 
@@ -238,7 +342,10 @@ def load_model():
 
 if __name__ == "__main__":
     identity_reader()
-    list_reader()
+    list_reader("list_bbox_celeba.txt", slice(2, 6))
+    list_reader("list_landmarks_celeba.txt", slice(6, 16))
+    list_reader("list_landmarks_align_celeba.txt", slice(16, 26))
+    validate_template(num_samples=500)
     show_persone(0)
   # load_model()
 
