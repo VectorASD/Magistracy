@@ -1,0 +1,42 @@
+git checkout modern-problems-of-computer-science
+git read-tree --prefix="2 семестр/Современные проблемы информатики/sim_core/" "simulation:2 семестр/Моделирование/sim_core"
+git status
+#   файлы в индексе, но не в worktree, так что у них сразу оба состояния: 'new file' + 'deleted'. Это нормально!
+
+git update-ref HEAD $(git commit-tree $(git write-tree) -p $(git rev-parse HEAD) -p $(git rev-parse simulation) -m "Скопировал директорию sim_core из дисциплины 'Моделирование' прямо сюда")
+git reset --hard HEAD
+git push
+#   Enumerating objects: 20, done.
+#   Counting objects: 100% (20/20), done.
+#   Delta compression using up to 12 threads
+#   Compressing objects: 100% (15/15), done.
+#   Writing objects: 100% (15/15), 32.78 KiB | 1.06 MiB/s, done.
+#   Total 15 (delta 2), reused 0 (delta 0), pack-reused 0 (from 0)
+#   remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+#   To github.com:VectorASD/Magistracy.git
+#      aedc629..15bd39a  modern-problems-of-computer-science -> modern-problems-of-computer-science
+
+git diff "simulation:2 семестр/Моделирование/sim_core" "HEAD:2 семестр/Современные проблемы информатики/sim_core"
+#   Ничего не вывело
+
+git ls-tree -r simulation -- '../Моделирование/sim_core'       
+#   100644 blob 5ba9b3c3e160632c037ea8a83080b9bc1b1a0c42    ../Моделирование/sim_core/__init__.py
+#   100644 blob f20401d564e0f2474cef701c769e7c5ca1a5c5d6    ../Моделирование/sim_core/blocks.py
+#   100644 blob e8fc0ec02e12fad73e0a7798f7b4979437f64e55    ../Моделирование/sim_core/des.py
+#   100644 blob d857c4b6a2dc22a90e8a8de96838fa27d473ca34    ../Моделирование/sim_core/rnd.py
+#   100644 blob 9535668362cdf7309ae96bc8bc1adcf1fbc144ab    ../Моделирование/sim_core/schemes.py
+#   100644 blob a141dd1de149ff114b2627b91696ccdf6533a8b7    ../Моделирование/sim_core/sortedcontainers/__init__.py
+#   100644 blob 910f2608821ca499c8c5d8f3568b0a58de67d21d    ../Моделирование/sim_core/sortedcontainers/sorteddict.py
+#   100644 blob e3b58eb92d4f3429c4ccad7f906171652f68a410    ../Моделирование/sim_core/sortedcontainers/sortedlist.py
+#   100644 blob be2b8999c5997beaa37cb2ebc04645d24f75bd82    ../Моделирование/sim_core/sortedcontainers/sortedset.py
+
+git ls-tree -r HEAD -- sim_core                         
+#   100644 blob 5ba9b3c3e160632c037ea8a83080b9bc1b1a0c42    sim_core/__init__.py
+#   100644 blob f20401d564e0f2474cef701c769e7c5ca1a5c5d6    sim_core/blocks.py
+#   100644 blob e8fc0ec02e12fad73e0a7798f7b4979437f64e55    sim_core/des.py
+#   100644 blob d857c4b6a2dc22a90e8a8de96838fa27d473ca34    sim_core/rnd.py
+#   100644 blob 9535668362cdf7309ae96bc8bc1adcf1fbc144ab    sim_core/schemes.py
+#   100644 blob a141dd1de149ff114b2627b91696ccdf6533a8b7    sim_core/sortedcontainers/__init__.py
+#   100644 blob 910f2608821ca499c8c5d8f3568b0a58de67d21d    sim_core/sortedcontainers/sorteddict.py
+#   100644 blob e3b58eb92d4f3429c4ccad7f906171652f68a410    sim_core/sortedcontainers/sortedlist.py
+#   100644 blob be2b8999c5997beaa37cb2ebc04645d24f75bd82    sim_core/sortedcontainers/sortedset.py
