@@ -1,5 +1,6 @@
---	Удаление таблиц учебной базы данных
+--	Удаление таблиц учебной БД (PostgreSQL)
 
- DROP TABLE ord;
- DROP TABLE cust;
- DROP TABLE sal;
+DROP TABLE IF EXISTS ord, cust, sal;
+
+-- Важно: порядок здесь исходит из освобождения FK!
+-- Хотя, в случае postgres, это не важно...

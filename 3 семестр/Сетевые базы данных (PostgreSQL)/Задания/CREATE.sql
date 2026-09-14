@@ -1,50 +1,33 @@
---	Построение таблиц для учебной базы данных
---
---
---
---	создание таблицы продавцов - SAL
---
-create table SAL
-  (SNUM number(4),
-   SNAME varchar2(10) NOT NULL,
-   CITY  varchar2(10) NOT NULL,
-   COMM  number(7,2) NOT NULL);
---
---	создание таблицы заказчиков - CUST
---
-create table CUST
-  (CNUM number(4),
-   CNAME varchar2(10) NOT NULL,
-   CITY  varchar2(10) NOT NULL,
-   RATING number(3) NOT NULL,
-   SNUM number(4));
---
---	создание таблицы заказов - ORD
---
-create table ORD
-  (ONUM number(4),
-   AMT  number(7,2) NOT NULL,
-   ODATE date NOT NULL,
-   CNUM number(4),
-   SNUM number(4));
---
---	определение первичного ключа таблицы sal
---
-ALTER TABLE sal
-   ADD (CONSTRAINT sal_pk_snum PRIMARY KEY (snum));
---
---	определение первичного и внешнего ключей таблицы cust
---
-ALTER TABLE cust
-   ADD (CONSTRAINT cust_pk_cnum PRIMARY KEY (cnum),
-        CONSTRAINT cust_fk_snum FOREIGN KEY (snum)
-        REFERENCES sal(snum));
---
---	определение первичного и внешних ключей таблицы ord
---
-ALTER TABLE ord
-   ADD (CONSTRAINT ord_pk_onum PRIMARY KEY (onum),
-        CONSTRAINT ord_fk_cnum FOREIGN KEY (cnum)
+--  Построение таблиц для учебной базы данных (PostgreSQL)
+
+CREATE TABLE sal (
+    snum  INTEGER      NOT NULL,
+    sname VARCHAR(10)  NOT NULL,
+    city  VARCHAR(10)  NOT NULL,
+    comm  NUMERIC(7,2) NOT NULL,
+    CONSTRAINT sal_pk_snum PRIMARY KEY (snum)
+);
+
+CREATE TABLE cust (
+    cnum   INTEGER     NOT NULL,
+    cname  VARCHAR(10) NOT NULL,
+    city   VARCHAR(10) NOT NULL,
+    rating INTEGER     NOT NULL,
+    snum   INTEGER,
+    CONSTRAINT cust_pk_cnum PRIMARY KEY (cnum),
+    CONSTRAINT cust_fk_snum FOREIGN KEY (snum)
+        REFERENCES sal(snum)
+);
+
+CREATE TABLE ord (
+    onum  INTEGER      NOT NULL,
+    amt   NUMERIC(7,2) NOT NULL,
+    odate DATE         NOT NULL,
+    cnum  INTEGER,
+    snum  INTEGER,
+    CONSTRAINT ord_pk_onum PRIMARY KEY (onum),
+    CONSTRAINT ord_fk_cnum FOREIGN KEY (cnum)
         REFERENCES cust(cnum),
-        CONSTRAINT ord_fk_snum FOREIGN KEY (snum)
-        REFERENCES sal(snum));
+    CONSTRAINT ord_fk_snum FOREIGN KEY (snum)
+        REFERENCES sal(snum)
+);
