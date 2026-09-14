@@ -1,7 +1,8 @@
 CREATE DATABASE lab1_part1;
 \c lab1_part1
 
-    Часть 1:
+
+--  Часть 1:
 
 CREATE TABLE players (
     player_id SERIAL PRIMARY KEY,
@@ -25,7 +26,8 @@ CREATE TABLE characters (
 \d+ characters
 \d+ players
 
-    Часть2:
+
+--  Часть2:
 
 ALTER TABLE players
   ADD COLUMN max_slots INT NOT NULL DEFAULT 4 CHECK (max_slots > 0),
