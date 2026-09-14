@@ -1,7 +1,7 @@
---	Заполнение таблиц учебной БД
+--	Р—Р°РїРѕР»РЅРµРЅРёРµ С‚Р°Р±Р»РёС† СѓС‡РµР±РЅРѕР№ Р‘Р”
 --
 --
---	заполнение таблицы sal
+--	Р·Р°РїРѕР»РЅРµРЅРёРµ С‚Р°Р±Р»РёС†С‹ sal
 --
 INSERT INTO sal
   VALUES (1001, 'Peel', 'London', .12);
@@ -14,7 +14,7 @@ INSERT INTO sal
 INSERT INTO sal
   VALUES (1003, 'Axelrod', 'New York', .10);
 --
---	заполнение таблицы cust
+--	Р·Р°РїРѕР»РЅРµРЅРёРµ С‚Р°Р±Р»РёС†С‹ cust
 --
 INSERT INTO cust
   VALUES (2001, 'Hoffman', 'London', 100, 1001);
@@ -31,7 +31,7 @@ INSERT INTO cust
 INSERT INTO cust
   VALUES (2007, 'Pereira', 'Rome', 100, 1004);
 --
---	заполнение таблицы ord
+--	Р·Р°РїРѕР»РЅРµРЅРёРµ С‚Р°Р±Р»РёС†С‹ ord
 --
 INSERT INTO ord
   VALUES (3001, 18.69,   to_date('03.01.2006','dd.mm.yyyy'), 2008, 1007);

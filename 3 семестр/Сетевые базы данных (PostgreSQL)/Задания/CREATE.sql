@@ -1,8 +1,8 @@
---	Построение таблиц для учебной базы данных
+--	РџРѕСЃС‚СЂРѕРµРЅРёРµ С‚Р°Р±Р»РёС† РґР»СЏ СѓС‡РµР±РЅРѕР№ Р±Р°Р·С‹ РґР°РЅРЅС‹С…
 --
 --
 --
---	создание таблицы продавцов - SAL
+--	СЃРѕР·РґР°РЅРёРµ С‚Р°Р±Р»РёС†С‹ РїСЂРѕРґР°РІС†РѕРІ - SAL
 --
 create table SAL
   (SNUM number(4),
@@ -10,7 +10,7 @@ create table SAL
    CITY  varchar2(10) NOT NULL,
    COMM  number(7,2) NOT NULL);
 --
---	создание таблицы заказчиков - CUST
+--	СЃРѕР·РґР°РЅРёРµ С‚Р°Р±Р»РёС†С‹ Р·Р°РєР°Р·С‡РёРєРѕРІ - CUST
 --
 create table CUST
   (CNUM number(4),
@@ -19,7 +19,7 @@ create table CUST
    RATING number(3) NOT NULL,
    SNUM number(4));
 --
---	создание таблицы заказов - ORD
+--	СЃРѕР·РґР°РЅРёРµ С‚Р°Р±Р»РёС†С‹ Р·Р°РєР°Р·РѕРІ - ORD
 --
 create table ORD
   (ONUM number(4),
@@ -28,19 +28,19 @@ create table ORD
    CNUM number(4),
    SNUM number(4));
 --
---	определение первичного ключа таблицы sal
+--	РѕРїСЂРµРґРµР»РµРЅРёРµ РїРµСЂРІРёС‡РЅРѕРіРѕ РєР»СЋС‡Р° С‚Р°Р±Р»РёС†С‹ sal
 --
 ALTER TABLE sal
    ADD (CONSTRAINT sal_pk_snum PRIMARY KEY (snum));
 --
---	определение первичного и внешнего ключей таблицы cust
+--	РѕРїСЂРµРґРµР»РµРЅРёРµ РїРµСЂРІРёС‡РЅРѕРіРѕ Рё РІРЅРµС€РЅРµРіРѕ РєР»СЋС‡РµР№ С‚Р°Р±Р»РёС†С‹ cust
 --
 ALTER TABLE cust
    ADD (CONSTRAINT cust_pk_cnum PRIMARY KEY (cnum),
         CONSTRAINT cust_fk_snum FOREIGN KEY (snum)
         REFERENCES sal(snum));
 --
---	определение первичного и внешних ключей таблицы ord
+--	РѕРїСЂРµРґРµР»РµРЅРёРµ РїРµСЂРІРёС‡РЅРѕРіРѕ Рё РІРЅРµС€РЅРёС… РєР»СЋС‡РµР№ С‚Р°Р±Р»РёС†С‹ ord
 --
 ALTER TABLE ord
    ADD (CONSTRAINT ord_pk_onum PRIMARY KEY (onum),
