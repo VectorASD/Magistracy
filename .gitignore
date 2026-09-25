@@ -1,6 +1,7 @@
 __pycache__
 *.lnk
 ~$*
+*.tmp
 
 *.cache
 *.dump
