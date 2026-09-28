@@ -350,6 +350,123 @@ def is_probable_prime(n: int, certainty: int, rnd: Optional[Random] = None) -> b
     return prime_to_certainty(w, certainty, rnd)
 
 
+def modpow_naive(base: int, exp: int, mod: int) -> int:
+    """Бинарное возведение в степень. Деление (%) в hot loop."""
+    result = 1
+    base %= mod
+    while exp:
+        if exp & 1:
+            result = result * base % mod
+        exp >>= 1
+        if exp:
+            base = base * base % mod
+    return result
+
+
+from functools import cache
+
+@cache
+def _mont_params(mod: int) -> tuple[int, int, int, int, int]:
+    """
+    Montgomery-параметры для нечётного mod. Кэшируется @cache.
+
+    Возвращает (k, mask, mp, r2, r1):
+        k    — bit_length(mod)
+        mask — R - 1, где R = 2^k
+        mp   — -mod⁻¹ mod R
+        r2   — R² mod mod (для входа в Montgomery-форму)
+        r1   — R mod mod (представление 1)
+    """
+    assert mod & 1, "mod must be odd"
+    k = mod.bit_length()
+    R = 1 << k
+    mask = R - 1
+
+    inv = 1
+    i = 1
+    while i < k:
+        inv = (inv * (2 - mod * inv)) & mask
+        i <<= 1
+    mp = (-inv) & mask
+
+    return k, mask, mp, (R * R) % mod, R % mod
+
+def _mont_table(a_m: int, mp: int, m: int, K: int, MASK: int,
+                r1: int) -> list[int]:
+    """
+    Таблица a^0, a^1, ..., a^15 в Montgomery-форме.
+    a_m — base в Montgomery-форме, r1 = 1 в Montgomery-форме.
+    """
+    table = [0] * 16
+    table[0] = r1
+    table[1] = a_m
+
+    for i in range(2, 16):
+        t = table[i - 1] * a_m
+        u = (t * mp) & MASK
+        v = (t + u * m) >> K
+        if v >= m:
+            v -= m
+        table[i] = v
+    return table
+
+def modpow_mont(base: int, exp: int, mod: int) -> int:
+    """Montgomery + окно 4 + инлайн redc. mod — нечётный."""
+    k, mask, mp, r2, r1 = _mont_params(mod)
+    m, MASK, K = mod, mask, k
+
+    # Вход в Montgomery-форму: redc(base · R²), без % mod
+    t = base * r2
+    u = (t * mp) & MASK
+    a_m = (t + u * m) >> K
+    if a_m >= m:
+        a_m -= m
+
+    # Таблица a^0..a^15
+    table = _mont_table(a_m, mp, m, K, MASK, r1)
+
+    # Экспонента MSB → LSB, окно 4
+    r_m = r1
+    nbits = exp.bit_length()
+    i = nbits - 1
+
+    # Первое окно (может быть неполным)
+    w_first = min(4, nbits)
+    wval = (exp >> (nbits - w_first)) & ((1 << w_first) - 1)
+    if wval:
+        r_m = table[wval]
+    i -= w_first
+
+    while i >= 0:
+        w = min(4, i + 1)
+        # w квадратов
+        for _ in range(w):
+            t = r_m * r_m
+            u = (t * mp) & MASK
+            r_m = (t + u * m) >> K
+            if r_m >= m:
+                r_m -= m
+        wval = (exp >> (i - w + 1)) & ((1 << w) - 1)
+        if wval:
+            t = r_m * table[wval]
+            u = (t * mp) & MASK
+            r_m = (t + u * m) >> K
+            if r_m >= m:
+                r_m -= m
+        i -= w
+
+    # Выход из Montgomery-формы
+    t = r_m
+    u = (t * mp) & MASK
+    r = (t + u * m) >> K
+    if r >= m:
+        r -= m
+    return r
+
+# pow = modpow_naive  # 9.246 -> 12.085
+# pow = modpow_mont   # 9.246 -> 15.647
+
+
 def test_bit_sieve():
     """
     BitSieve — приватный класс OpenJDK, прямых тестов на него нет.
@@ -399,6 +516,33 @@ def test_bit_sieve():
 
 if __name__ == "__main__":
     rnd = Random(42)
-    result = [i for i in range(3, 100002, 2) if prime_to_certainty(i, DEFAULT_PRIME_CERTAINTY, rnd)]
-    print(result)
-    test_bit_sieve()
+    # result = [i for i in range(3, 100002, 2) if prime_to_certainty(i, DEFAULT_PRIME_CERTAINTY, rnd)]
+    # print(result)
+    # test_bit_sieve()
+
+    print(probable_prime(4096, rnd))
+
+
+# profiling: python -m cProfile -s cumulative primes.py
+#
+#    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+#         1    0.000    0.000    9.605    9.605 primes.py:1(<module>)
+# решето:
+#         2    0.004    0.002    0.016    0.008 primes.py:30(__init__)
+#      3358    0.008    0.000    0.008    0.000 primes.py:93(sieve_single)
+#      3359    0.003    0.000    0.003    0.000 primes.py:84(sieve_search)
+#         1    0.000    0.000    9.586    9.586 primes.py:98(retrieve)
+# основная проверка:
+#        58    0.000    0.000    9.586    0.165 primes.py:229(prime_to_certainty)
+#        58    0.001    0.000    9.246    0.159 primes.py:114(_passes_miller_rabin)
+#         1    0.000    0.000    0.340    0.340 primes.py:216(_passes_lucas_lehmer)
+#       116    9.245    0.080    9.245    0.080 {built-in method builtins.pow}
+#
+# Как мы видим, загрузка решета тратит всего 0.016+0.008+0.003 = 0.027 (cumtime) на инициализацию
+# и 0.000 (tottime) на работу retrieve, всё остальное поглащается prime_to_certainty.
+# _passes_lucas_lehmer тратит 0.340 (cumtime), но не трогает pow
+# _passes_miller_rabin тритат 9.246 (cumtime), но по 9.245 (tottime) pow видно, кто виновник
+#
+# 9.246 / 9.605 = 96.2%  (pow)
+# 0.340 / 9.605 =  3.5% (_passes_lucas_lehmer)
+# 0.027 / 9.605  = 0.3% (решето)
