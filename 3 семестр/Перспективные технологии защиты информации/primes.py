@@ -116,7 +116,7 @@ def _passes_miller_rabin(n: int, iterations: int, rnd: Random) -> bool:
     Тест Миллера-Рабина (NIST FIPS 186-2).
     n — положительное нечётное > 2; iterations <= 50.
     """
-    assert n > 2 and n & 1 and iterations <= 50
+    assert n > 2 and n & 1 and iterations <= 50, f"n = {n}, iterations = {iterations}"
     # Это приватный метод BigInteger.
     # Сам её факт уже заложен в функции, что используют этот метод
 
@@ -320,11 +320,13 @@ def large_prime(bit_length: int, certainty: int, rnd: Random) -> int:
     return candidate
 
 
+# Два основных метода: создать простое и проверить простое
+
 SMALL_PRIME_THRESHOLD = 95
 DEFAULT_PRIME_CERTAINTY = 100
 
 def probable_prime(bit_length: int, rnd: Optional[Random] = None) -> int:
-    """Случайное простое заданной битовой длины (аналог probablePrime)."""
+    """Аналог BigInteger.probablePrime: создаёт случайное простое заданной битовой длины."""
     if bit_length < 2:
         raise ArithmeticError("bitLength < 2")
 
@@ -334,6 +336,21 @@ def probable_prime(bit_length: int, rnd: Optional[Random] = None) -> int:
     if bit_length < SMALL_PRIME_THRESHOLD:
         return small_prime(bit_length, DEFAULT_PRIME_CERTAINTY, rnd)
     return large_prime(bit_length, DEFAULT_PRIME_CERTAINTY, rnd)
+
+def is_probable_prime(n: int, certainty: int, rnd: Optional[Random] = None) -> bool:
+    """Аналог BigInteger.isProbablePrime: фильтрует 1, 2 и чётные."""
+    if certainty <= 0:
+        return True
+    w = abs(n)
+    if w == 2:
+        return True
+    if not (w & 1) or w == 1:
+        return False
+    if w.bit_length() > PRIME_SEARCH_BIT_LENGTH_LIMIT + 1:
+        raise ArithmeticError("Primality test implementation restriction on bitLength")
+    if rnd is None:
+        rnd = SystemRandom()
+    return prime_to_certainty(w, certainty, rnd)
 
 
 def test_bit_sieve():
