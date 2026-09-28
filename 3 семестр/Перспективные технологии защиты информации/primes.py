@@ -23,6 +23,7 @@ class BitSieve:
 
     source: https://github.com/openjdk/jdk/blob/15e1475a73444a9110537e3d171d44f71e226cb8/src/java.base/share/classes/java/math/BitSieve.java
     """
+    # profiling: python -m cProfile -s cumulative test_primes.py 42
 
     small_sieve: Optional[BitSieve] = None
 
@@ -83,22 +84,21 @@ class BitSieve:
     def sieve_search(self, limit: int, start: int) -> int:
         if start >= limit:
             return -1
-        index = start
-        while index < limit - 1:
-            if not self.get(index):
-                return index
-            index += 1
+        b = self.bits
+        for i in range(start, limit - 1):
+            if not (b[i >> 6] & (1 << (i & 63))):
+                return i
         return -1
 
     def sieve_single(self, limit: int, start: int, step: int):
-        while start < limit:
-            self.set(start)
-            start += step
+        b = self.bits
+        for i in range(start, limit, step):
+            b[i >> 6] |= 1 << (i & 63)
 
     def retrieve(self, init_value: int, certainty: int, random: Random) -> Optional[int]:
         offset = 1
-        for i in range(len(self.bits)):
-            next_long = (~self.bits[i]) & 0xFFFFFFFFFFFFFFFF
+        for b in self.bits:
+            next_long = 0xFFFFFFFFFFFFFFFF - b  # (~b) & 0xFFFFFFFFFFFFFFFF
             for _ in range(64):
                 if next_long & 1:
                     candidate = init_value + offset
@@ -128,10 +128,7 @@ def _passes_miller_rabin(n: int, iterations: int, rnd: Random) -> bool:
     bit_len = n.bit_length()
     for _ in range(iterations):
         # случайное b в (1, n)
-        while True:
-            b = rnd.getrandbits(bit_len)
-            if 1 < b < n:
-                break
+        b = rnd.randrange(2, n)
 
         j = 0
         z = pow(b, m, n)
