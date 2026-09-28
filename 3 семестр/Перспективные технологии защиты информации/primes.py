@@ -463,8 +463,14 @@ def modpow_mont(base: int, exp: int, mod: int) -> int:
         r -= m
     return r
 
-# pow = modpow_naive  # 9.246 -> 12.085
-# pow = modpow_mont   # 9.246 -> 15.647
+# pow = modpow_naive    # 9.246 -> 12.085
+# pow = modpow_mont     # 9.246 -> 15.647
+try:
+    import gmpy2
+    pow = gmpy2.powmod  # 9.246 -> 0.883
+except ImportError:
+    print("Советую использовать:")
+    print("    pip install -r requirements.txt")
 
 
 def test_bit_sieve():
@@ -520,7 +526,9 @@ if __name__ == "__main__":
     # print(result)
     # test_bit_sieve()
 
-    print(probable_prime(4096, rnd))
+    result = probable_prime(4096, rnd)
+    print("result:", result)
+    print("ok:", int(str(result)[:64]) == 8608717241103186576904464565704677713537310014280151622151739693)
 
 
 # profiling: python -m cProfile -s cumulative primes.py
