@@ -1,7 +1,8 @@
 from random import Random, SystemRandom
 import re
+import time
 
-from primes import probable_prime, is_probable_prime
+from primes import probable_prime, is_probable_prime, pow
 
 
 def gen_safe_prime(bits_p: int, rnd) -> tuple[int, int]:
@@ -45,7 +46,6 @@ def gen_safe_prime(bits_p: int, rnd) -> tuple[int, int]:
 #    даёт пошаговой утечки, а подгруппа порядка 2 либо тривиальна,
 #    либо отсекается проверкой.
 
-
 def find_generator(p: int, rnd: Random) -> int:
     """
     Генератор ℤₚ* для safe prime p = 2q + 1.
@@ -56,6 +56,38 @@ def find_generator(p: int, rnd: Random) -> int:
         g = rnd.randrange(2, p - 1)   # [2, p-2]
         if pow(g, 2, p) != 1 and pow(g, q, p) != 1:
             return g
+
+def gen_safe_params(bits_p: int, rnd: Random) -> tuple[int, int, int]:
+    """p = 2q+1 (safe prime) + генератор g группы ℤₚ*."""
+    p, q = gen_safe_prime(bits_p, rnd)
+    g = find_generator(p, rnd)
+    return p, q, g
+
+
+def gen_subgroup_params(bits_p: int, bits_q: int, rnd: Random) -> tuple[int, int, int]:
+    """
+    p = t·q + 1, где p и q — простые.
+    g = r^t mod p — генератор подгруппы порядка q.
+    """
+    bits_t = bits_p - bits_q
+    q = probable_prime(bits_q, rnd)
+
+    while True:
+      # t = rnd.getrandbits(bits_t) | 1  баг: t должно быть всегда чётным
+        t = (rnd.getrandbits(bits_t) | (1 << (bits_t - 1))) & ~1
+        if t.bit_length() < bits_t:
+            continue
+        p = t * q + 1
+        if p.bit_length() != bits_p:
+            continue
+        if is_probable_prime(p, 100, rnd):
+            break
+
+    while True:
+        r = rnd.randrange(2, p - 1)
+        g = pow(r, t, p)
+        if g != 1:
+            return p, q, g
 
 
 # escape почти такой же, как в jpeg, чтобы 0 в данных не путать с терминатором:
@@ -84,22 +116,33 @@ def int_to_message(n: int) -> str:
 # АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя
 
 
-def dh_demo():
+def dh_demo(*, group_mode: bool):
+    print('~' * 100)
     rnd = SystemRandom()
 
     print("Генерация параметров...")
-    p, q = gen_safe_prime(256, rnd)
-    g = find_generator(p, rnd)
+
+    t0 = time.perf_counter()
+    if group_mode:
+        p, q, g = gen_subgroup_params(1024, 256, rnd)
+        ord_g = q  # 256 битов, не 1024
+    else:
+        p, q, g = gen_safe_params(256, rnd)
+        ord_g = p - 1  # 255 битов
+    elapsed0 = time.perf_counter() - t0
+
     print(f"p = {p} ({p.bit_length()} бит)")
     print(f"q = {q} ({q.bit_length()} бит)")
     print(f"g = {g}")
+    # ord_g - порядок генератора
 
     # A
-    x = rnd.randrange(2, p - 1)
+    t1 = time.perf_counter()
+    x = rnd.randrange(2, ord_g)
     X = pow(g, x, p)
 
     # B
-    y = rnd.randrange(2, p - 1)
+    y = rnd.randrange(2, ord_g)
     Y = pow(g, y, p)
 
     # Обмен X, Y (в реальности по сети)
@@ -131,7 +174,12 @@ def dh_demo():
     msg2 = int_to_message(m2)
     print(f"Расшифровано: {msg2!r}")
     assert msg == msg2
+    elapsed1 = time.perf_counter() - t1
+
+    print(f"Генерация p, q, g:  {elapsed0:.3f}s")
+    print(f"Передача сообщений: {elapsed1:.3f}s")
 
 
 if __name__ == "__main__":
-    dh_demo()
+    dh_demo(group_mode=False)
+    dh_demo(group_mode=True)
