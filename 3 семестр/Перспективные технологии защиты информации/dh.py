@@ -1,6 +1,7 @@
 from random import Random, SystemRandom
 import re
 import time
+import hashlib
 
 from primes import probable_prime, is_probable_prime, pow
 
@@ -215,19 +216,21 @@ def mqv_demo(*, group_mode: bool):
 
     t1 = time.perf_counter()
 
-    # Долговременные ключи (в реальности — из справочника)
+    #   Долговременные ключи (private: a, b;  public: A, B
+    # в реальности — один раз создаём, потом берём A и B из справочника
     a = rnd.randrange(2, q)
     A = pow(g, a, p)
     b = rnd.randrange(2, q)
     B = pow(g, b, p)
 
-    # Сеансовые ключи A и B
+    #   Сеансовые ключи (private: x, y;  public: X, Y)
+    # в реальности — создаются каждый сеанс и передаются по каналу связи
     x = rnd.randrange(2, q)
     X = pow(g, x, p)
     y = rnd.randrange(2, q)
     Y = pow(g, y, p)
 
-    # Обмен X, Y
+    # Обмен X, Y с друг-другом
 
     # Коэффициенты d и e из X, Y
     d = base + (X & mask)
@@ -240,8 +243,11 @@ def mqv_demo(*, group_mode: bool):
     S_B = pow(X * pow(A, d, p) % p, (y + e * b) % q, p)
 
     assert S_A == S_B
-    K = S_A
-    print(f"K = {K}")
+    S = S_A
+    print(f"S = {S}")
+    K = hashlib.sha256(S.to_bytes(cdiv(S.bit_length(), 8), 'big')).digest()
+    print(f"K = {K.hex()}")
+    # Примечание: в DH мы ещё могли считать K = S_A, здесь же K - уже прям настоящий хеш
 
     # Сообщение
     msg = "Привет, мир! От \x00 до я..."
@@ -251,12 +257,12 @@ def mqv_demo(*, group_mode: bool):
 
     assert m < p, "Сообщение слишком длинное для p"
 
-    # Шифрование: c = m * K mod p
-    c = (m * K) % p
+    # Шифрование: c = m * S mod p
+    c = (m * S) % p
     print(f"c = {c}")
 
-    # Расшифровка
-    K_inv = pow(K, -1, p)
+    # Расшифровка: m = c * S^-1 mod p
+    K_inv = pow(S, -1, p)
     m2 = (c * K_inv) % p
 
     msg2 = int_to_message(m2)
