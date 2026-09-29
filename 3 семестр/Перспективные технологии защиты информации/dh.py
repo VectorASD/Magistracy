@@ -5,6 +5,8 @@ import time
 from primes import probable_prime, is_probable_prime, pow
 
 
+LINE_SEPARATOR = f"\n{'~' * 100}\n"
+
 def gen_safe_prime(bits_p: int, rnd) -> tuple[int, int]:
     """
     Генерирует safe prime p = 2q + 1, где p и q оба простые.
@@ -90,6 +92,10 @@ def gen_subgroup_params(bits_p: int, bits_q: int, rnd: Random) -> tuple[int, int
             return p, q, g
 
 
+def cdiv(num, div):
+    return (num + div - 1) // div
+
+
 # escape почти такой же, как в jpeg, чтобы 0 в данных не путать с терминатором:
 
 _ESCAPE   = re.compile(rb'[\x00\xff]', re.DOTALL)
@@ -102,7 +108,7 @@ def message_to_int(msg: str) -> int:
     return int.from_bytes(stuffed, 'big')
 
 def int_to_message(n: int) -> str:
-    data = n.to_bytes((n.bit_length() + 7) // 8 or 1, 'big')
+    data = n.to_bytes(cdiv(n.bit_length(), 8) or 1, 'big')
     body = _BODY.match(data).group()
     return _UNESCAPE.sub(lambda m: m.group(1), body).decode('cp1251')
 
@@ -117,7 +123,7 @@ def int_to_message(n: int) -> str:
 
 
 def dh_demo(*, group_mode: bool):
-    print('~' * 100)
+    print(LINE_SEPARATOR)
     rnd = SystemRandom()
 
     print("Генерация параметров...")
@@ -176,10 +182,96 @@ def dh_demo(*, group_mode: bool):
     assert msg == msg2
     elapsed1 = time.perf_counter() - t1
 
-    print(f"Генерация p, q, g:  {elapsed0:.3f}s")
-    print(f"Передача сообщений: {elapsed1:.3f}s")
+    print()
+    print(f"Генерация p, q, g:    {elapsed0:.3f}s")
+    print(f"Протокол + сообщение: {elapsed1:.3f}s")
+
+
+def mqv_demo(*, group_mode: bool):
+    print(LINE_SEPARATOR)
+    rnd = SystemRandom()
+
+    print("Генерация параметров...")
+    t0 = time.perf_counter()
+    if group_mode:
+        p, q, g = gen_subgroup_params(1024, 256, rnd)
+    else:
+        p, q, g = gen_safe_params(256, rnd)
+        # В safe prime g имеет порядок p−1 = 2q, не q.
+        # Формулы MQV выведены для подгруппы порядка q — там показатель корректно берётся mod q.
+        # При порядке 2q выражение g^(x+da mod q) ≠ g^(x+da) mod p, и S_A ≠ S_B с вероятностью ~50%.
+        g = pow(g, 2, p)  # переходим в подгруппу порядка q
+    elapsed0 = time.perf_counter() - t0
+    # q - порядок генератора
+
+    print(f"p = {p} ({p.bit_length()} бит)")
+    print(f"q = {q} ({q.bit_length()} бит)")
+    print(f"g = {g}")
+
+    l = cdiv(q.bit_length(), 2)
+    mask = (1 << l) - 1
+    base = 1 << l
+    print(f"l = {l}")
+
+    t1 = time.perf_counter()
+
+    # Долговременные ключи (в реальности — из справочника)
+    a = rnd.randrange(2, q)
+    A = pow(g, a, p)
+    b = rnd.randrange(2, q)
+    B = pow(g, b, p)
+
+    # Сеансовые ключи A и B
+    x = rnd.randrange(2, q)
+    X = pow(g, x, p)
+    y = rnd.randrange(2, q)
+    Y = pow(g, y, p)
+
+    # Обмен X, Y
+
+    # Коэффициенты d и e из X, Y
+    d = base + (X & mask)
+    e = base + (Y & mask)
+
+    # A: S_A = (Y · B^e)^(x + d·a) mod p
+    S_A = pow(Y * pow(B, e, p) % p, (x + d * a) % q, p)
+
+    # B: S_B = (X · A^d)^(y + e·b) mod p
+    S_B = pow(X * pow(A, d, p) % p, (y + e * b) % q, p)
+
+    assert S_A == S_B
+    K = S_A
+    print(f"K = {K}")
+
+    # Сообщение
+    msg = "Привет, мир! От \x00 до я..."
+    m = message_to_int(msg)
+    print(f"Сообщение: {msg!r}")
+    print(f"m = {m} ({m.bit_length()} бит)")
+
+    assert m < p, "Сообщение слишком длинное для p"
+
+    # Шифрование: c = m * K mod p
+    c = (m * K) % p
+    print(f"c = {c}")
+
+    # Расшифровка
+    K_inv = pow(K, -1, p)
+    m2 = (c * K_inv) % p
+
+    msg2 = int_to_message(m2)
+    print(f"Расшифровано: {msg2!r}")
+    assert msg == msg2
+    elapsed1 = time.perf_counter() - t1
+
+    print()
+    print(f"Генерация p, q, g:    {elapsed0:.3f}s")
+    print(f"Протокол + сообщение: {elapsed1:.3f}s")
 
 
 if __name__ == "__main__":
     dh_demo(group_mode=False)
     dh_demo(group_mode=True)
+    mqv_demo(group_mode=False)
+    mqv_demo(group_mode=True)
+    print(LINE_SEPARATOR)
