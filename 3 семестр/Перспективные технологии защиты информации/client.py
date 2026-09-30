@@ -24,8 +24,9 @@ PORT = 5000
 # ---------- buffered IO (симметрично серверу) ----------
 
 class Client:
-    def __init__(self, host, port):
-        self.sock = socket.create_connection((host, port))
+    def __init__(self, host, port, timeout=0.1):
+        self.sock = sock = socket.create_connection((host, port))
+        sock.settimeout(timeout)
         self.rbuf = BytesIO()
         self.wbuf = BytesIO()
         self.uid = None
@@ -40,7 +41,10 @@ class Client:
     def read(self, n: int) -> bytes:
         while self._end() - self.rbuf.tell() < n:
             pos = self.rbuf.tell()
-            data = self.sock.recv(4096)
+            try:
+                data = self.sock.recv(4096)
+            except socket.timeout:  # дать python обработать Ctrl+C
+                continue
             if not data:
                 raise EOFError("connection closed")
             self.rbuf.seek(0, 2)
@@ -53,10 +57,20 @@ class Client:
 
     def flush(self) -> None:
         data = self.wbuf.getvalue()
-        if data:
-            self.sock.sendall(data)
-            self.wbuf.truncate(0)
-            self.wbuf.seek(0)
+        if not data:
+            return
+        mv = memoryview(data)
+        sent = 0
+        while sent < len(mv):
+            try:
+                n = self.sock.send(mv[sent:])
+            except socket.timeout:  # дать python обработать Ctrl+C
+                continue
+            if n == 0:
+                raise EOFError("connection closed")
+            sent += n
+        self.wbuf.truncate(0)
+        self.wbuf.seek(0)
 
     def reset_input(self) -> None:
         if self.rbuf.tell() == self._end():
@@ -291,8 +305,9 @@ def main():
         print(f"Твой UID: {client.uid}")
 
         room_id = choose_room(client)
-        print(f"Готов. Ты в комнате {room_id!r} под UID {client.uid!r}.")
         room_session(client)
+    except KeyboardInterrupt:
+        print("Exited with Ctrl+C")
     finally:
         client.close()
 

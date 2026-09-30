@@ -28,9 +28,9 @@ PRIVATE_ROOM_MAX = 2  # с паролем — личный чат
 
 
 class Client:
-    def __init__(self, uid, conn, addr):
+    def __init__(self, uid, conn, addr, timeout=0.5):
         self.uid = uid
-        self.conn = conn
+        self.conn = conn;  conn.settimeout(timeout)
         self.addr = addr
         self.room = None
         self.pending_room = None
@@ -54,7 +54,10 @@ class Client:
         """Прочитать ровно n байт. Блокируется, пока в буфере меньше n."""
         while self._end() - self.rbuf.tell() < n:
             pos = self.rbuf.tell()
-            data = self.conn.recv(4096)
+            try:
+                data = self.conn.recv(4096)
+            except socket.timeout:  # дать python обработать Ctrl+C
+                continue
             if not data:
                 raise EOFError("connection closed")
             self.rbuf.seek(0, 2)
@@ -169,10 +172,14 @@ class Server:
             srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             srv.bind((self.host, self.port))
             srv.listen(16)
+            srv.settimeout(0.5)
             print(f"listening on {self.host}:{self.port}", flush=True)
             try:
                 while True:
-                    conn, addr = srv.accept()
+                    try:
+                        conn, addr = srv.accept()
+                    except socket.timeout:  # дать python обработать Ctrl+C
+                        continue
                     print(f"connected: {addr}", flush=True)
                     threading.Thread(
                         target=self.handle_client,
