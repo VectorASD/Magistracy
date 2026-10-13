@@ -305,10 +305,13 @@ class Server:
                     other.push(10, payload)
                     return
         else:
-            # broadcast: всем, кроме отправителя
+            # broadcast: всем
             for other in members:
-                if other.uid != client.uid:
-                    other.push(10, payload)
+                # if other.uid != client.uid:
+                # В нормальном мессенджере у нас клиент добавляет сообщение,
+                # а сервер лишь заменяет "часы" на "одну галочку".
+                # Но, т.к. это приложение не для web, а локальное, то сильно пинговать просто нечему
+                other.push(10, payload)
 
 
 def main():

@@ -89,6 +89,9 @@ class Client:
             self._loop()
         except KeyboardInterrupt:
             print("\nExited with Ctrl+C")
+        except (EOFError, OSError) as e:
+            if self.running:  # закрытие инициировали не мы
+                print(f"[recv _loop] {type(e).__name__}: {e}", file=sys.stderr)
         finally:
             self.close()
 
@@ -102,6 +105,7 @@ class Client:
                 h(self.read)
             except Exception as e:
                 print(f"[recv {kind}] {type(e).__name__}: {e}", file=sys.stderr)
+                return  # поток десинхронизирован, дальше читать нечего
 
     def register(self, kind: int, cb):
         self.callbacks[kind] = cb
@@ -219,7 +223,7 @@ def input_room_id(prompt: str = "Номер комнаты: ") -> str:
 
 # ---------- приложение ----------
 
-def app():
+def app(gui = None):
     host = sys.argv[1] if len(sys.argv) > 1 else HOST
     port = int(sys.argv[2]) if len(sys.argv) > 2 else PORT
 
@@ -227,27 +231,31 @@ def app():
 
     uid = None
     room_id = None
-    members = []
-    messages = []
+    members: list[str] = []
+    messages: list[dict] = []
 
-    # ---------- REPL ----------
+    # ~~~ REPL ~~~
 
-    def redraw():
+    def _redraw(uid: str, room_id: str, members: list[str], messages: list[dict]):
         sys.stdout.write("\033[2J\033[H")  # clear + cursor home
         # в VSCode сохраняется scrollback,
         # т.е. мы всё ещё видим предыдущие кадры, если покрутим СКМ
         print(f"UID: {uid}")
         print(f"Комната: {room_id}")
         print(f"Участников: {len(members)}")
-        for m_uid in members:
-            mark = " ← ты" if m_uid == uid else ""
-            print(f"  {m_uid}{mark}")
+        for m in members:
+            mark = " ← ты" if m == uid else ""
+            print(f"  {m}{mark}")
         if messages:
             print("─" * 60)
-            for line in messages:
-                print(line)
+            for msg in messages:
+                kind = "личное" if msg["flag"] else "всем"
+                print(f"[{kind}] {msg['sender']}: {msg['text']}")
         print("─" * 60)
         sys.stdout.flush()
+
+    def redraw():
+        _redraw(uid, room_id, members, messages)
 
     # ~~~ событийные мозги приложения ~~~
 
@@ -256,13 +264,13 @@ def app():
         room_id = input_room_id()
         client.join_room(room_id)
 
-    def on_uid(value):
+    def on_uid(value: str):
         nonlocal uid
         uid = value
         print(f"UID: {uid}")
         ask_room()
 
-    def on_join(code):
+    def on_join(code: int):
         if code == 1:
             print(f"Ты в комнате {room_id!r}.")
             return
@@ -293,7 +301,7 @@ def app():
         print(f"[join] неизвестный код {code}")
         ask_room()
 
-    def on_create(code):
+    def on_create(code: int):
         if code == 1:
             print(f"Комната {room_id!r} создана, ты внутри.")
             return
@@ -305,7 +313,7 @@ def app():
             print(f"[create] неизвестный код {code}")
         ask_room()
 
-    def on_password(code):
+    def on_password(code: int):
         if code == 2:
             print(f"Ты в комнате {room_id!r}.")
             return
@@ -319,22 +327,21 @@ def app():
             print(f"[password] неизвестный код {code}")
         ask_room()
 
-    def on_count(n):
+    def on_count(n: int):
         print(f"Участников: {n}")
         client.list_members()  # триггерим on_members
 
-    def on_members(member_list):
+    def on_members(member_list: list[str]):
         nonlocal members
         members = member_list
         redraw()
 
-    def on_message(sender, flag, data):
-        kind = "личное" if flag else "всем"
+    def on_message(sender: str, flag: bool, data: bytes):
         try:
             text = data.decode("utf-8", "replace")
         except Exception:
             text = repr(data)
-        messages.append(f"[{kind}] {sender}: {text}")
+        messages.append({"sender": sender, "flag": flag, "text": text})
         redraw()
 
     client = Client(host, port)
@@ -345,6 +352,10 @@ def app():
     client.register(4, on_count)
     client.register(5, on_members)
     client.register(10, on_message)
+
+    if gui is not None:
+        _redraw = gui.redraw
+        gui.client = client
 
     client.get_uid()
     client.start()
