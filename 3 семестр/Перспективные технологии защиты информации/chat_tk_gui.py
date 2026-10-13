@@ -12,25 +12,47 @@ import queue
 import threading
 import tkinter as tk
 from tkinter import ttk
+from hashlib import sha256
 
 from client import app as run_client
 
 
 # ---------- палитра ----------
 
-BG          = "#1e1e1e"
-HEADER_BG   = "#111b21"
-MY_BUBBLE   = "#005c4b"
-OTHER_BUBBLE = "#2a2a2a"
-TEXT        = "#e9edef"
-NAME        = "#53bdeb"
-INPUT_BG    = "#2a2a2a"
-BTN_BG      = "#00a884"
-BTN_FG      = "#ffffff"
+PEER_COLORS = [
+    "#e15052",  # 7  красный
+    "#e0802b",  # 8  оранжевый
+    "#a05ff3",  # 9  фиолетовый
+    "#27a910",  # 10 зелёный
+    "#27acce",  # 11 бирюзовый
+    "#3391d4",  # 12 синий
+    "#dd4371",  # 13 розовый
+    "#247bed",  # 14 синий
+    "#d67722",  # 15 тёмно-оранжевый
+    "#179e42",  # 16 зелёный
+    "#2894af",  # 17 тёмно-бирюзовый
+    "#0c9ab3",  # 18 бирюзовый
+    "#7757d6",  # 19 фиолетовый
+    "#1585cf",  # 20 голубой
+]
+
+def peer_color(uid: str) -> str:
+    hash = sha256(uid.encode("utf-8")).digest()
+    n = int.from_bytes(hash)
+    return PEER_COLORS[n % len(PEER_COLORS)]
+
+BG           = "#98bd94"   # из текстуры фона
+HEADER_BG    = "#ffffff"   # --background-color
+OTHER_BUBBLE = "#ffffff"   # --background-color
+MY_BUBBLE    = "#eeffde"   # --color-background-own (светло-зелёный Telegram)
+TEXT         = "#000000"   # --color-text
+INPUT_BG     = "#ffffff"   # --color-background
+BTN_BG       = "#3390ec"   # --color-primary (голубой Telegram)
+BTN_FG       = "#ffffff"
 
 FONT_HEADER = ("Segoe UI", 10)
-FONT_NAME   = ("Segoe UI", 9, "bold")
-FONT_TEXT   = ("Segoe UI", 11)
+FONT_NAME   = ("Segoe UI", 11)
+FONT_TEXT   = ("Segoe UI", 12)
 
 
 class ChatGui:
@@ -200,21 +222,20 @@ class ChatGui:
         row.pack(fill="x", padx=12, pady=(12 if first else 2, 0))
 
         bubble_bg = MY_BUBBLE if mine else OTHER_BUBBLE
+        bubble_fg = peer_color(sender)
         bubble = tk.Frame(row, bg=bubble_bg)
         bubble.pack(side="right" if mine else "left")
 
         if first and not mine:
             tk.Label(
-                bubble, text=sender, bg=bubble_bg, fg=NAME,
-                font=FONT_NAME, anchor="w", padx=10,
-                pady=6,
+                bubble, text=sender, bg=bubble_bg, fg=bubble_fg,
+                font=FONT_NAME, anchor="w", padx=10
             ).pack(fill="x")
 
         tk.Label(
             bubble, text=text, bg=bubble_bg, fg=TEXT,
             font=FONT_TEXT, anchor="w", justify="left",
             wraplength=self._wrap, padx=10,
-            pady=4,
         ).pack(fill="x", pady=(0, 6))
 
     # ---------- отправка ----------
