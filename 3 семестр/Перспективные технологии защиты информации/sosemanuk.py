@@ -23,7 +23,7 @@ class SosemanukRunContext:
 from functools import cache
 from hashlib import sha256
 
-SOSEMANUK_VECTOR = True  # Просто debug-режим, должен выводить содержимое TEST_VECTOR_128.txt
+SOSEMANUK_VECTOR = False  # Просто debug-режим, должен выводить содержимое TEST_VECTOR_128.txt
 DTV_digest = sha256()
 @cache
 def _dtv_fp():
@@ -297,7 +297,7 @@ _SKS_CYCLE = (
     (_S4, (4, 5, 6, 7), (1, 4, 0, 3)),  # SKS4
 )
 
-def sosemanuk_schedule(kc, key: bytes):
+def sosemanuk_schedule(kc: SosemanukKeyContext, key: bytes):
     """
     Serpent24 key schedule для Sosemanuk.
     Заполняет kc.sk[0..99].
@@ -369,7 +369,7 @@ def _serpent_lt(x0, x1, x2, x3):
     x2 = _rotl(x2, 22)
     return x0, x1, x2, x3
 
-def sosemanuk_init(rc, kc, iv: bytes):
+def sosemanuk_init(rc: SosemanukRunContext, kc: SosemanukKeyContext, iv: bytes):
     """
     Serpent24 encrypt-mode над IV + построение начального состояния LFSR/FSM.
     iv: 1..16 байт (короткий — добивается нулями до 16).
@@ -618,13 +618,13 @@ MUL_IA_TABLE = (
 	0x9EE2651C, 0x86ED25D1, 0xAEFCE52F, 0xB6F3A5E2,
 )
 
-def _mul_a(x):
+def _mul_a(x: int):
     return ((x << 8) & 0xFFFFFFFF) ^ MUL_A_TABLE[x >> 24]
 
-def _mul_g(x):
+def _mul_g(x: int):
     return (x >> 8) ^ MUL_IA_TABLE[x & 0xFF]
 
-def _step(s, base, r1, r2):
+def _step(s: list[int], base: int, r1: int, r2: int):
     """Один STEP. s — список из 10 LFSR-слов, base — индекс s_t.
     Возвращает (dd, ee, r1, r2); s[base] обновляется in-place."""
     x1 = (base + 1) % 10
@@ -676,7 +676,7 @@ def _step(s, base, r1, r2):
 
     return dd, ee, r1, r2
 
-def _srd(s, base, r1, r2, out_buf, ooff):
+def _srd(s: list[int], base: int, r1: int, r2: int, out_buf: bytearray, ooff: int):
     v = [0, 0, 0, 0]
     u = [0, 0, 0, 0]
     for k in range(4):
@@ -709,7 +709,7 @@ def _srd(s, base, r1, r2, out_buf, ooff):
     return r1, r2
 
 
-def _sosemanuk_internal(rc):
+def _sosemanuk_internal(rc: SosemanukRunContext):
     """Один блок keystream — 80 байт в rc.buf."""
     s = rc.s
     r1, r2 = rc.r1, rc.r2
@@ -720,7 +720,7 @@ def _sosemanuk_internal(rc):
     rc.r2 = r2
 
 
-def sosemanuk_prng(rc, out_len):
+def sosemanuk_prng(rc: SosemanukRunContext, out_len: int):
     out = bytearray(out_len)
     pos = 0
     while pos < out_len:
@@ -733,7 +733,7 @@ def sosemanuk_prng(rc, out_len):
         pos += n
     return bytes(out)
 
-def sosemanuk_encrypt(rc, data: bytes):
+def sosemanuk_encrypt(rc: SosemanukRunContext, data: bytes):
     ks = sosemanuk_prng(rc, len(data))
     return bytes(a ^ b for a, b in zip(data, ks))
 
@@ -765,6 +765,8 @@ if __name__ == "__main__":
         test_sbox_table(i)
     for i in range(8):
         test_sbox_other_bit_positions(i)
+
+    SOSEMANUK_VECTOR = True
     trace_vector(1, "A7C083FEB7", "00112233445566778899AABBCCDDEEFF")
     trace_vector(2, "00112233445566778899AABBCCDDEEFF", "8899AABBCCDDEEFF0011223344556677")
     print("DTV-digest:", DTV_digest.hexdigest())
