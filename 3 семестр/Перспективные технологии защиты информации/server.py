@@ -13,6 +13,9 @@ import socket
 import sys
 import threading
 from io import BytesIO
+from collections import deque
+
+from typing import Optional
 
 from codec import (
     read_byte, write_byte,
@@ -34,12 +37,12 @@ class Client:
         self.uid = uid
         self.conn = conn
         conn.settimeout(timeout)
-        self.room = None
+        self.room: Optional[Room] = None
         self.pending_room = None
         self.rbuf = BytesIO()
         self.wlock = threading.Lock()
 
-    def push(self, kind: int, payload) -> None:
+    def push(self, kind: int, payload):
         buf = BytesIO()
         write_byte(buf.write, kind)
         payload(buf.write)
@@ -48,6 +51,20 @@ class Client:
                 self.conn.sendall(buf.getvalue())
             except OSError as e:
                 print(f"{self.uid}: push failed: {e}", flush=True)
+
+    def push_messages(self, messages: list[tuple[str, int, bytes]]) -> None:
+        """Отправить один kind=10 со списком сообщений (sender, flag, data)."""
+        if not messages:
+            return
+
+        def payload(w):
+            write_uleb128(w, len(messages))
+            for sender, flag, data in messages:
+                write_str(w, sender)
+                write_byte(w, flag)
+                write_str_bin(w, data)
+
+        self.push(10, payload)
 
     # --- buffered input ---
 
@@ -78,6 +95,8 @@ class Client:
             self.rbuf.seek(0)
 
 
+HISTORY_LIMIT = 1000
+
 class Room:
     def __init__(self, room_id, password, max_members):
         self.room_id = room_id
@@ -85,6 +104,7 @@ class Room:
         self.max_members = max_members
         self.members = {}
         self.lock = threading.Lock()
+        self.history = deque(maxlen=HISTORY_LIMIT)  # а, вот как... чтобы вручную не юзать popleft!
 
     def add(self, client) -> bool:
         with self.lock:
@@ -111,6 +131,14 @@ class Room:
         with self.lock:
             return list(self.members.keys())
 
+    def remember(self, sender_uid: str, flag: int, data: bytes):
+        with self.lock:
+            self.history.append((sender_uid, flag, data))
+
+    def snapshot_history(self) -> list[tuple[str, int, bytes]]:
+        with self.lock:
+            return list(self.history)
+
 
 class Server:
     def __init__(self, host=HOST, port=PORT):
@@ -120,7 +148,7 @@ class Server:
         self.uid_lock = threading.Lock()
         self.clients = {}
         self.clients_lock = threading.Lock()
-        self.rooms = {}
+        self.rooms: dict[str, Room] = {}
         self.rooms_lock = threading.Lock()
 
         self.handlers = {
@@ -221,6 +249,7 @@ class Server:
                 client.room = room
                 client.push(1, lambda w: write_byte(w, 1))  # подключён
                 room.push_count()
+                client.push_messages(room.snapshot_history())
             else:
                 client.push(1, lambda w: write_byte(w, 3))  # мест нет
         else:
@@ -284,25 +313,24 @@ class Server:
 
         client.push(5, payload)
 
-    def handle_send_message(self, client):
+    def handle_send_message(self, client: Client):
         target_uid = read_str(client.read)
         data = read_str_bin(client.read)
         room = client.room
         if room is None:
             return
+        flag = 1 if target_uid else 0
+        room.remember(client.uid, flag, data)
+
         with room.lock:
             members = list(room.members.values())
-
-        def payload(w, s=client.uid, p=1 if target_uid else 0, d=data):
-            write_str(w, s)
-            write_byte(w, p)
-            write_str_bin(w, d)
+        messages = [(client.uid, flag, data)]
 
         if target_uid:
             # личное: ровно одному получателю
             for other in members:
                 if other.uid == target_uid:
-                    other.push(10, payload)
+                    other.push_messages(messages)
                     return
         else:
             # broadcast: всем
@@ -311,7 +339,7 @@ class Server:
                 # В нормальном мессенджере у нас клиент добавляет сообщение,
                 # а сервер лишь заменяет "часы" на "одну галочку".
                 # Но, т.к. это приложение не для web, а локальное, то сильно пинговать просто нечему
-                other.push(10, payload)
+                other.push_messages(messages)
 
 
 def main():

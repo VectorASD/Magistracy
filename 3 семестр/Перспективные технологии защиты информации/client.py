@@ -171,12 +171,16 @@ class Client:
             cb(members)
 
     def handle_message(self, read):
-        sender = read_str(read)
-        flag = read_byte(read)
-        data = read_str_bin(read)
+        n = read_uleb128(read)
+        batch = [
+            {"sender": read_str(read),
+             "flag": read_byte(read),
+             "text": read_str_bin(read).decode("utf-8", "replace")}
+            for _ in range(n)
+        ]
         cb = self.callbacks.get(10)
         if cb:
-            cb(sender, flag, data)
+            cb(batch)
 
 
 # ---------- ввод с валидацией ----------
@@ -336,12 +340,8 @@ def app(gui = None):
         members = member_list
         redraw()
 
-    def on_message(sender: str, flag: bool, data: bytes):
-        try:
-            text = data.decode("utf-8", "replace")
-        except Exception:
-            text = repr(data)
-        messages.append({"sender": sender, "flag": flag, "text": text})
+    def on_message(_messages: list[dict[str]]):
+        messages.extend(_messages)
         redraw()
 
     client = Client(host, port)
