@@ -9,11 +9,13 @@ kind=3 (create).
 import socket
 import sys
 from io import BytesIO
+import threading
 
 from codec import (
     read_byte, write_byte,
     read_str, write_str,
-    read_uleb128, write_uleb128,
+    read_uleb128,
+    read_str_bin, write_str_bin,
 )
 
 
@@ -21,17 +23,30 @@ HOST = "127.0.0.1"
 PORT = 5000
 
 
-# ---------- buffered IO (симметрично серверу) ----------
-
 class Client:
     def __init__(self, host, port, timeout=0.1):
-        self.sock = sock = socket.create_connection((host, port))
-        sock.settimeout(timeout)
+        self.sock = socket.create_connection((host, port))
+        self.sock.settimeout(timeout)
         self.rbuf = BytesIO()
-        self.wbuf = BytesIO()
+        self.wlock = threading.Lock()
+        self.running = False
         self.uid = None
 
-    def _end(self) -> int:
+        self.callbacks = {}                 # kind -> cb (приложение)
+
+        self.handlers = {                   # kind -> парсер+эмиттер
+            0: self.handle_uid,
+            1: self.handle_join,
+            2: self.handle_password,
+            3: self.handle_create,
+            4: self.handle_count,
+            5: self.handle_members,
+            10: self.handle_message,
+        }
+
+    # ---------- buffered IO ----------
+
+    def _end(self):
         pos = self.rbuf.tell()
         self.rbuf.seek(0, 2)
         end = self.rbuf.tell()
@@ -43,7 +58,7 @@ class Client:
             pos = self.rbuf.tell()
             try:
                 data = self.sock.recv(4096)
-            except socket.timeout:  # дать python обработать Ctrl+C
+            except socket.timeout:
                 continue
             if not data:
                 raise EOFError("connection closed")
@@ -52,88 +67,113 @@ class Client:
             self.rbuf.seek(pos)
         return self.rbuf.read(n)
 
-    def write(self, data: bytes) -> None:
-        self.wbuf.write(data)
-
-    def flush(self) -> None:
-        data = self.wbuf.getvalue()
-        if not data:
-            return
-        mv = memoryview(data)
-        sent = 0
-        while sent < len(mv):
-            try:
-                n = self.sock.send(mv[sent:])
-            except socket.timeout:  # дать python обработать Ctrl+C
-                continue
-            if n == 0:
-                raise EOFError("connection closed")
-            sent += n
-        self.wbuf.truncate(0)
-        self.wbuf.seek(0)
-
-    def reset_input(self) -> None:
-        if self.rbuf.tell() == self._end():
-            self.rbuf.truncate(0)
-            self.rbuf.seek(0)
+    def send(self, kind: int, payload):
+        buf = BytesIO()
+        write_byte(buf.write, kind)
+        if payload is not None:
+            payload(buf.write)
+        with self.wlock:
+            self.sock.sendall(buf.getvalue())
 
     def close(self):
-        self.sock.close()
+        self.running = False
+        try:
+            self.sock.close()
+        except OSError:
+            pass
 
-    # ---------- RPC ----------
+    # ---------- receiver ----------
 
-    def get_uid(self) -> str:
-        write_byte(self.write, 0)
-        self.flush()
-        uid = read_str(self.read)
-        self.reset_input()
-        return uid
+    def start(self):
+        self.running = True
+        try:
+            self._loop()
+        except KeyboardInterrupt:
+            print("\nExited with Ctrl+C")
+        finally:
+            self.close()
 
-    def join_room(self, room_id: str) -> int:
-        """0 — не создана, 1 — подключён, 2 — запаролена, 3 — мест нет."""
-        write_byte(self.write, 1)
-        write_str(self.write, room_id)
-        self.flush()
-        code = read_byte(self.read)
-        self.reset_input()
-        return code
+    def _loop(self):
+        while self.running:
+            kind = read_byte(self.read)
+            h = self.handlers.get(kind)
+            if h is None:
+                continue
+            try:
+                h(self.read)
+            except Exception as e:
+                print(f"[recv {kind}] {type(e).__name__}: {e}", file=sys.stderr)
 
-    def send_password(self, password: str) -> int:
-        """0 — не было join, 1 — не подошёл, 2 — подошёл, 3 — мест нет."""
-        write_byte(self.write, 2)
-        write_str(self.write, password)
-        self.flush()
-        code = read_byte(self.read)
-        self.reset_input()
-        return code
+    def register(self, kind: int, cb):
+        self.callbacks[kind] = cb
 
-    def create_room(self, room_id: str, password: str) -> int:
-        """0 — уже существует, 1 — создана и ты внутри, 2 — не смог добавить."""
-        write_byte(self.write, 3)
-        write_str(self.write, room_id)
-        write_str(self.write, password)
-        self.flush()
-        code = read_byte(self.read)
-        self.reset_input()
-        return code
+    # ---------- senders: задействуют rpc на сервере ----------
 
-    def wait_room(self) -> int:
-        """Long-poll: блокируется, пока состав комнаты не изменится.
-        Возвращает число участников."""
-        write_byte(self.write, 4)
-        self.flush()
-        count = read_uleb128(self.read)
-        self.reset_input()
-        return count
+    def get_uid(self):
+        self.send(0, None)
 
-    def list_members(self) -> list[str]:
-        """Список UID в текущей комнате."""
-        write_byte(self.write, 5)
-        self.flush()
-        n = read_uleb128(self.read)
-        members = [read_str(self.read) for _ in range(n)]
-        self.reset_input()
-        return members
+    def join_room(self, room_id: str):
+        self.send(1, lambda w: write_str(w, room_id))
+
+    def send_password(self, password: str):
+        self.send(2, lambda w: write_str(w, password))
+
+    def create_room(self, room_id: str, password: str):
+        def payload(w):
+            write_str(w, room_id)
+            write_str(w, password)
+        self.send(3, payload)
+
+    def list_members(self):
+        self.send(5, None)
+
+    def send_message(self, target_uid: str, data: bytes):
+        def payload(w):
+            write_str(w, target_uid)
+            write_str_bin(w, data)
+        self.send(10, payload)
+
+    # ---------- handlers: wire-парсеры ----------
+
+    def handle_uid(self, read):
+        cb = self.callbacks.get(0)
+        if cb:
+            cb(read_str(read))
+
+    def handle_join(self, read):
+        cb = self.callbacks.get(1)
+        if cb:
+            cb(read_byte(read))
+
+    def handle_password(self, read):
+        cb = self.callbacks.get(2)
+        if cb:
+            cb(read_byte(read))
+
+    def handle_create(self, read):
+        cb = self.callbacks.get(3)
+        if cb:
+            cb(read_byte(read))
+
+    def handle_count(self, read):
+        cb = self.callbacks.get(4)
+        if cb:
+            cb(read_uleb128(read))
+
+    def handle_members(self, read):
+        n = read_uleb128(read)
+        members = [read_str(read) for _ in range(n)]
+        cb = self.callbacks.get(5)
+        if cb:
+            cb(members)
+
+    def handle_message(self, read):
+        sender = read_str(read)
+        flag = read_byte(read)
+        data = read_str_bin(read)
+        cb = self.callbacks.get(10)
+        if cb:
+            cb(sender, flag, data)
 
 
 # ---------- ввод с валидацией ----------
@@ -232,13 +272,13 @@ def choose_room(client: Client) -> str:
         raise RuntimeError(f"join_room: неожиданный код {code}")
 
 
-def show_members(members: list[str], me: str) -> None:
+def show_members(members: list[str], me: str):
     print(f"Участники ({len(members)}):")
     for uid in members:
         mark = " ← ты" if uid == me else ""
         print(f"  {uid}{mark}")
 
-def room_session(client: Client) -> None:
+def room_session(client: Client):
     """Основной REPL."""
     while True:
         # 1. Обновляем список с сервера
@@ -284,7 +324,7 @@ def room_session(client: Client) -> None:
         except RuntimeError as e:
             print(f"Ошибка: {e}")
 
-def handle_command(client: Client, cmd: str, members: list[str]) -> None:
+def handle_command(client: Client, cmd: str, members: list[str]):
     """
     Заглушка под будущие команды: отправка сообщений, файлов и т.п.
     Пока любая неизвестная команда — RuntimeError.
@@ -295,22 +335,20 @@ def handle_command(client: Client, cmd: str, members: list[str]) -> None:
     raise RuntimeError(f"команда {cmd!r} не поддерживается")
 
 
-def main():
+def app():
     host = sys.argv[1] if len(sys.argv) > 1 else HOST
     port = int(sys.argv[2]) if len(sys.argv) > 2 else PORT
 
-    client = Client(host, port)
-    try:
-        client.uid = client.get_uid()
-        print(f"Твой UID: {client.uid}")
+    def on_uid(uid: str):
+        client.uid = uid
+        print(f"UID: {uid}")
 
-        room_id = choose_room(client)
-        room_session(client)
-    except KeyboardInterrupt:
-        print("Exited with Ctrl+C")
-    finally:
-        client.close()
+    client = Client(host, port)
+    client.register(0, on_uid)
+
+    client.get_uid()
+    client.start()
 
 
 if __name__ == "__main__":
-    main()
+    app()

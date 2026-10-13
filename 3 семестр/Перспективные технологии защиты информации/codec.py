@@ -47,13 +47,18 @@ def read_sleb128(read, /) -> int:
     u = read_uleb128(read)
     return (u >> 1) ^ -(u & 1)
 
-def read_str(read, bin=False, /) -> str:
+def read_str_bin(read, /) -> bytes:
     size = read_uleb128(read)
     data = read(size)
     if len(data) != size:
         raise EOFError("Unexpected end of stream") from None
     # сервер (utf16_to_utf8) гарантирует корректность кодировки
-    return data if bin else data.decode("utf-8")
+    return data
+
+def read_str(read, /) -> str:
+    data = read_str_bin(read)
+    return data.decode("utf-8")
+
 
 def read_bigint(read, /, signed=False) -> int:
     data = read_str(read, True)

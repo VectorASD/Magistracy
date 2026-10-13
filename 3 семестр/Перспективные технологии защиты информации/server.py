@@ -1,8 +1,9 @@
 """
 TCP-сервер: комнаты + relay зашифрованных сообщений.
 
-Протокол: первый байт — kind команды. Клиент шлёт один запрос, ждёт
-ответ, сервер сбрасывает буфер после обработки.
+Протокол: первый байт — kind команды. Клиент шлёт запрос, сервер
+отвечает kind'ом на push-канал того же клиента (или broadcast'ит
+по комнате).
 
 Сервер не знает ключа K и не расшифровывает трафик между клиентами —
 он только связывает участников комнаты и перекладывает пакеты.
@@ -15,35 +16,42 @@ from io import BytesIO
 
 from codec import (
     read_byte, write_byte,
-    read_str, write_str, write_str_bin,
-    read_uleb128, write_uleb128,
+    read_str, write_str,
+    write_uleb128,
+    read_str_bin, write_str_bin,
 )
 
 
 HOST = "0.0.0.0"
 PORT = 5000
 
-OPEN_ROOM_MAX = 100  # без пароля — комната-беседа
-PRIVATE_ROOM_MAX = 2  # с паролем — личный чат
+OPEN_ROOM_MAX = 100
+PRIVATE_ROOM_MAX = 2
 
 
 class Client:
-    def __init__(self, uid, conn, addr, timeout=0.5):
+    def __init__(self, uid, conn, timeout=0.5):
         self.uid = uid
-        self.conn = conn;  conn.settimeout(timeout)
-        self.addr = addr
+        self.conn = conn
+        conn.settimeout(timeout)
         self.room = None
         self.pending_room = None
-        self.peer_uid = None  # выставляется kind=6
         self.rbuf = BytesIO()
-        self.wbuf = BytesIO()
-        self.inbox = {}  # sender_uid -> list[bytes]
-        self.inbox_lock = threading.Lock()
+        self.wlock = threading.Lock()
 
-    # --- buffered IO ---
+    def push(self, kind: int, payload) -> None:
+        buf = BytesIO()
+        write_byte(buf.write, kind)
+        payload(buf.write)
+        with self.wlock:
+            try:
+                self.conn.sendall(buf.getvalue())
+            except OSError as e:
+                print(f"{self.uid}: push failed: {e}", flush=True)
+
+    # --- buffered input ---
 
     def _end(self) -> int:
-        """Позиция конца буфера, без изменения текущей позиции."""
         pos = self.rbuf.tell()
         self.rbuf.seek(0, 2)
         end = self.rbuf.tell()
@@ -51,12 +59,11 @@ class Client:
         return end
 
     def read(self, n: int) -> bytes:
-        """Прочитать ровно n байт. Блокируется, пока в буфере меньше n."""
         while self._end() - self.rbuf.tell() < n:
             pos = self.rbuf.tell()
             try:
                 data = self.conn.recv(4096)
-            except socket.timeout:  # дать python обработать Ctrl+C
+            except socket.timeout:
                 continue
             if not data:
                 raise EOFError("connection closed")
@@ -65,32 +72,10 @@ class Client:
             self.rbuf.seek(pos)
         return self.rbuf.read(n)
 
-    def write(self, data: bytes) -> None:
-        self.wbuf.write(data)
-
-    def flush(self) -> None:
-        data = self.wbuf.getvalue()
-        if data:
-            self.conn.sendall(data)
-            self.wbuf.truncate(0)
-            self.wbuf.seek(0)
-
     def reset_input(self) -> None:
-        """Сбросить буфер, если из него вычитано всё."""
         if self.rbuf.tell() == self._end():
             self.rbuf.truncate(0)
             self.rbuf.seek(0)
-
-    # --- mailbox ---
-
-    def push_message(self, sender_uid: str, data: bytes) -> None:
-        with self.inbox_lock:
-            self.inbox.setdefault(sender_uid, []).append(data)
-
-    def pop_message(self, sender_uid: str):
-        with self.inbox_lock:
-            q = self.inbox.get(sender_uid)
-            return q.pop(0) if q else None
 
 
 class Room:
@@ -99,9 +84,7 @@ class Room:
         self.password = password
         self.max_members = max_members
         self.members = {}
-        self.version = 0                # растёт при каждом изменении состава
         self.lock = threading.Lock()
-        self.condition = threading.Condition(self.lock)
 
     def add(self, client) -> bool:
         with self.lock:
@@ -110,26 +93,27 @@ class Room:
             if len(self.members) >= self.max_members:
                 return False
             self.members[client.uid] = client
-            self.version += 1
-            self.condition.notify_all()
-            return True
+            members = list(self.members.values())
+        self._push_count(members)
+        return True
 
     def remove(self, client) -> None:
         with self.lock:
-            if client.uid in self.members:
-                del self.members[client.uid]
-                self.version += 1
-                self.condition.notify_all()
+            if client.uid not in self.members:
+                return
+            del self.members[client.uid]
+            members = list(self.members.values())
+        self._push_count(members)
+
+    @staticmethod
+    def _push_count(members) -> None:
+        n = len(members)
+        for m in members:
+            m.push(4, lambda w, c=n: write_uleb128(w, c))
 
     def snapshot_uids(self) -> list[str]:
         with self.lock:
             return list(self.members.keys())
-
-    def wait_change(self, last_version, timeout=None):
-        with self.lock:
-            self.condition.wait_for(
-                lambda: self.version != last_version, timeout=timeout)
-            return self.version, len(self.members)
 
 
 class Server:
@@ -148,11 +132,8 @@ class Server:
             1: self.handle_join,
             2: self.handle_password,
             3: self.handle_create,
-            4: self.handle_wait_room,
             5: self.handle_list_members,
-            6: self.handle_set_peer,
-            7: self.handle_send_msg,
-            8: self.handle_recv_msg,
+            10: self.handle_send_message,
         }
 
     def new_uid(self) -> str:
@@ -178,7 +159,7 @@ class Server:
                 while True:
                     try:
                         conn, addr = srv.accept()
-                    except socket.timeout:  # дать python обработать Ctrl+C
+                    except socket.timeout:
                         continue
                     print(f"connected: {addr}", flush=True)
                     threading.Thread(
@@ -191,7 +172,7 @@ class Server:
 
     def handle_client(self, conn, addr):
         uid = self.new_uid()
-        client = Client(uid, conn, addr)
+        client = Client(uid, conn)
         with self.clients_lock:
             self.clients[uid] = client
         print(f"{addr} -> {uid}", flush=True)
@@ -203,7 +184,6 @@ class Server:
                     print(f"{uid}: unknown kind {kind}", flush=True)
                     break
                 handler(client)
-                client.flush()
                 client.reset_input()
         except EOFError:
             pass
@@ -224,43 +204,42 @@ class Server:
     # --- handlers ---
 
     def handle_uid(self, client):
-        write_str(client.write, client.uid)
+        client.push(0, lambda w: write_str(w, client.uid))
 
     def handle_join(self, client):
         room_id = read_str(client.read)
-
-        # смена комнаты — отписаться от старой
-        if client.room is not None:
-            client.room.remove(client)
+        old = client.room
+        if old is not None:
+            old.remove(client)
             client.room = None
         client.pending_room = None
 
         room = self.get_room(room_id)
         if room is None:
-            write_byte(client.write, 0)          # не создана
+            client.push(1, lambda w: write_byte(w, 0))
         elif room.password is None:
             if room.add(client):
                 client.room = room
-                write_byte(client.write, 1)      # подключён
+                client.push(1, lambda w: write_byte(w, 1))
             else:
-                write_byte(client.write, 3)      # мест нет
+                client.push(1, lambda w: write_byte(w, 3))
         else:
             client.pending_room = room
-            write_byte(client.write, 2)          # запаролена
+            client.push(1, lambda w: write_byte(w, 2))
 
     def handle_password(self, client):
         password = read_str(client.read)
         room = client.pending_room
         if room is None:
-            write_byte(client.write, 0)          # сначала kind=1
+            client.push(2, lambda w: write_byte(w, 0))
         elif password != room.password:
-            write_byte(client.write, 1)          # не подошёл
+            client.push(2, lambda w: write_byte(w, 1))
         elif room.add(client):
             client.room = room
             client.pending_room = None
-            write_byte(client.write, 2)          # подошёл
+            client.push(2, lambda w: write_byte(w, 2))
         else:
-            write_byte(client.write, 3)          # мест нет
+            client.push(2, lambda w: write_byte(w, 3))
 
     def handle_create(self, client):
         room_id = read_str(client.read)
@@ -273,7 +252,7 @@ class Server:
 
         with self.rooms_lock:
             if room_id in self.rooms:
-                write_byte(client.write, 0)      # уже существует
+                client.push(3, lambda w: write_byte(w, 0))
                 return
             room = Room(room_id, password, max_members)
             self.rooms[room_id] = room
@@ -283,67 +262,43 @@ class Server:
             client.room = None
         if room.add(client):
             client.room = room
-            write_byte(client.write, 1)
+            client.push(3, lambda w: write_byte(w, 1))
         else:
-            write_byte(client.write, 2)
-
-    def handle_wait_room(self, client):
-        """Long-poll: ждём изменения состава комнаты."""
-        room = client.room
-        if room is None:
-            write_uleb128(client.write, 0)
-            return
-        with room.lock:
-            last_version = room.version
-        _, count = room.wait_change(last_version)
-        write_uleb128(client.write, count)
+            client.push(3, lambda w: write_byte(w, 2))
 
     def handle_list_members(self, client):
         room = client.room
         if room is None:
-            write_uleb128(client.write, 0)
+            client.push(5, lambda w: write_uleb128(w, 0))
             return
         uids = room.snapshot_uids()
-        write_uleb128(client.write, len(uids))
-        for uid in uids:
-            write_str(client.write, uid)
 
-    def handle_set_peer(self, client):
-        peer_uid = read_str(client.read)
-        if client.room is None or peer_uid == client.uid:
-            write_byte(client.write, 0)
-            return
-        with client.room.lock:
-            peer = client.room.members.get(peer_uid)
-        if peer is None:
-            write_byte(client.write, 0)
-            return
-        client.peer_uid = peer_uid
-        write_byte(client.write, 1)
+        def payload(w):
+            write_uleb128(w, len(uids))
+            for uid in uids:
+                write_str(w, uid)
 
-    def handle_send_msg(self, client):
-        if client.peer_uid is None:
-            write_byte(client.write, 0)
-            return
-        data = read_str(client.read, True)
-        with self.clients_lock:
-            target = self.clients.get(client.peer_uid)
-        if target is None:
-            write_byte(client.write, 0)
-            return
-        target.push_message(client.uid, data)
-        write_byte(client.write, 1)
+        client.push(5, payload)
 
-    def handle_recv_msg(self, client):
-        if client.peer_uid is None:
-            write_byte(client.write, 0)
+    def handle_send_message(self, client):
+        target_uid = read_str(client.read)
+        data = read_str_bin(client.read)
+        room = client.room
+        if room is None:
             return
-        data = client.pop_message(client.peer_uid)
-        if data is None:
-            write_byte(client.write, 0)
-            return
-        write_byte(client.write, 1)
-        write_str_bin(client.write, data)
+        is_private = bool(target_uid)
+        with room.lock:
+            members = list(room.members.values())
+
+        def payload(w, s=client.uid, p=1 if is_private else 0, d=data):
+            write_str(w, s)
+            write_byte(w, p)
+            write_str_bin(w, d)
+
+        for other in members:
+            if target_uid and other.uid != target_uid:
+                continue
+            other.push(10, payload)
 
 
 def main():
