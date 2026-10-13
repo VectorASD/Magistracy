@@ -1,9 +1,9 @@
 """
-Клиент для РГР: подключение к комнате, ввод пароля, конфирмация.
+Клиент: подключение к комнате, ввод пароля, конфирмация.
 
 Сетевые части (MQV, шифрование, отправка сообщений) — отдельно.
-Здесь только регистрация: kind=0 (UID), kind=1 (join), kind=2 (password),
-kind=3 (create).
+Здесь только регистрация: kind=0 (UID), kind=1 (join),
+kind=2 (password), kind=3 (create).
 """
 
 import socket
@@ -28,13 +28,12 @@ class Client:
         self.sock = socket.create_connection((host, port))
         self.sock.settimeout(timeout)
         self.rbuf = BytesIO()
-        self.wlock = threading.Lock()
+        self.wlock = threading.Lock()  # wire-lock
         self.running = False
-        self.uid = None
 
-        self.callbacks = {}                 # kind -> cb (приложение)
+        self.callbacks = {}  # kind -> cb (приложение)
 
-        self.handlers = {                   # kind -> парсер+эмиттер
+        self.handlers = {   # kind -> парсер+эмиттер
             0: self.handle_uid,
             1: self.handle_join,
             2: self.handle_password,
@@ -218,133 +217,134 @@ def input_room_id(prompt: str = "Номер комнаты: ") -> str:
         print("  Пустой ID не подходит.")
 
 
-# ---------- сценарий подключения ----------
-
-def choose_room(client: Client) -> str:
-    """Крутится, пока клиент не окажется в комнате. Возвращает room_id."""
-    while True:
-        room_id = input_room_id()
-        code = client.join_room(room_id)
-
-        if code == 1:
-            print(f"Ты в комнате {room_id!r}.")
-            return room_id
-
-        if code == 0:
-            print(f"Комнаты {room_id!r} нет.")
-            if not input_yes_no("Создать её? (yes/no): "):
-                continue
-            if input_yes_no("С паролем? (yes/no): "):
-                password = input_password()
-            else:
-                password = ""
-            c = client.create_room(room_id, password)
-            if c == 1:
-                print(f"Комната {room_id!r} создана, ты внутри.")
-                return room_id
-            if c == 0:
-                # кто-то создал её прямо сейчас — начнём заново с join
-                print("  Комната уже существует, попробуй ещё раз.")
-                continue
-            raise RuntimeError(f"create_room: неожиданный код {c}")
-
-        if code == 2:
-            print(f"Комната {room_id!r} запаролена.")
-            password = input("Пароль: ")
-            c = client.send_password(password)
-            if c == 2:
-                print(f"Ты в комнате {room_id!r}.")
-                return room_id
-            if c == 1:
-                print("  Пароль не подошёл.")
-                continue
-            if c == 0:
-                raise RuntimeError("send_password: сервер потерял join")
-            if c == 3:
-                print("  Комната заполнена.")
-                continue
-            raise RuntimeError(f"send_password: неожиданный код {c}")
-
-        if code == 3:
-            print(f"Комната {room_id!r} заполнена.")
-            continue
-
-        raise RuntimeError(f"join_room: неожиданный код {code}")
-
-
-def show_members(members: list[str], me: str):
-    print(f"Участники ({len(members)}):")
-    for uid in members:
-        mark = " ← ты" if uid == me else ""
-        print(f"  {uid}{mark}")
-
-def room_session(client: Client):
-    """Основной REPL."""
-    while True:
-        # 1. Обновляем список с сервера
-        try:
-            members = client.list_members()
-        except (EOFError, OSError) as e:
-            print(f"Соединение потеряно: {e}")
-            return
-
-        show_members(members, client.uid)
-
-        # 2. Если один — ждём второго через long-poll
-        if len(members) < 2:
-            print("Ожидание второго участника... (Ctrl+C — выйти)")
-            try:
-                client.wait_room()
-            except (EOFError, OSError):
-                print("Соединение потеряно.")
-                return
-            except KeyboardInterrupt:
-                print()
-                return
-            continue
-
-        # 3. Меню
-        print("пусто — обновить, q/quit/e/exit — выйти")
-        try:
-            cmd = input("> ").strip().lower()
-        except (EOFError, KeyboardInterrupt):
-            print()
-            return
-
-        if cmd in ("q", "quit", "e", "exit"):
-            return
-        if cmd == "":
-            continue
-
-        # 4. Всё остальное — попытка операции с участниками.
-        #    Любая ошибка (disconnected user, гонки в списке) — обновляем
-        #    список и продолжаем, а не падаем.
-        try:
-            handle_command(client, cmd, members)
-        except RuntimeError as e:
-            print(f"Ошибка: {e}")
-
-def handle_command(client: Client, cmd: str, members: list[str]):
-    """
-    Заглушка под будущие команды: отправка сообщений, файлов и т.п.
-    Пока любая неизвестная команда — RuntimeError.
-    """
-    # TODO: handshake MQV, обмен X, Y, A, B
-    # TODO: ожидание второго участника (kind=4)
-    # TODO: обмен шифрованными сообщениями (kind=6..8)
-    raise RuntimeError(f"команда {cmd!r} не поддерживается")
-
+# ---------- приложение ----------
 
 def app():
     host = sys.argv[1] if len(sys.argv) > 1 else HOST
     port = int(sys.argv[2]) if len(sys.argv) > 2 else PORT
 
-    def on_uid(uid: str):
-        client.uid = uid
+    # ~~~ да, это весь контекст клиента ~~~
+
+    uid = None
+    room_id = None
+    members = []
+    messages = []
+
+    # ---------- REPL ----------
+
+    def redraw():
+        sys.stdout.write("\033[2J\033[H")  # clear + cursor home
+        # в VSCode сохраняется scrollback,
+        # т.е. мы всё ещё видим предыдущие кадры, если покрутим СКМ
         print(f"UID: {uid}")
+        print(f"Комната: {room_id}")
+        print(f"Участников: {len(members)}")
+        for m_uid in members:
+            mark = " ← ты" if m_uid == uid else ""
+            print(f"  {m_uid}{mark}")
+        if messages:
+            print("─" * 60)
+            for line in messages:
+                print(line)
+        print("─" * 60)
+        sys.stdout.flush()
+
+    # ~~~ событийные мозги приложения ~~~
+
+    def ask_room():
+        nonlocal room_id
+        room_id = input_room_id()
+        client.join_room(room_id)
+
+    def on_uid(value):
+        nonlocal uid
+        uid = value
+        print(f"UID: {uid}")
+        ask_room()
+
+    def on_join(code):
+        if code == 1:
+            print(f"Ты в комнате {room_id!r}.")
+            return
+
+        if code == 0:
+            print(f"Комнаты {room_id!r} нет.")
+            if not input_yes_no("Создать её? (yes/no): "):
+                ask_room()
+                return
+            if input_yes_no("С паролем? (yes/no): "):
+                password = input_password()
+            else:
+                password = ""
+            client.create_room(room_id, password)
+            return
+
+        if code == 2:
+            print(f"Комната {room_id!r} запаролена.")
+            password = input("Пароль: ")
+            client.send_password(password)
+            return
+
+        if code == 3:
+            print(f"Комната {room_id!r} заполнена.")
+            ask_room()
+            return
+
+        print(f"[join] неизвестный код {code}")
+        ask_room()
+
+    def on_create(code):
+        if code == 1:
+            print(f"Комната {room_id!r} создана, ты внутри.")
+            return
+        if code == 0:
+            print(f"Комната {room_id!r} уже существует.")
+        elif code == 2:
+            print(f"Не удалось войти в {room_id!r}.")
+        else:
+            print(f"[create] неизвестный код {code}")
+        ask_room()
+
+    def on_password(code):
+        if code == 2:
+            print(f"Ты в комнате {room_id!r}.")
+            return
+        if code == 1:
+            print("Пароль не подошёл.")
+        elif code == 0:
+            print("Сервер потерял состояние join.")
+        elif code == 3:
+            print(f"Комната {room_id!r} заполнена.")
+        else:
+            print(f"[password] неизвестный код {code}")
+        ask_room()
+
+    def on_count(n):
+        print(f"Участников: {n}")
+        client.list_members()  # триггерим on_members
+
+    def on_members(member_list):
+        nonlocal members
+        members = member_list
+        redraw()
+
+    def on_message(sender, flag, data):
+        kind = "личное" if flag else "всем"
+        try:
+            text = data.decode("utf-8", "replace")
+        except Exception:
+            text = repr(data)
+        messages.append(f"[{kind}] {sender}: {text}")
+        redraw()
 
     client = Client(host, port)
     client.register(0, on_uid)
+    client.register(1, on_join)
+    client.register(2, on_password)
+    client.register(3, on_create)
+    client.register(4, on_count)
+    client.register(5, on_members)
+    client.register(10, on_message)
 
     client.get_uid()
     client.start()

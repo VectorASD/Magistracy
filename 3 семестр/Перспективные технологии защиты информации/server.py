@@ -93,20 +93,16 @@ class Room:
             if len(self.members) >= self.max_members:
                 return False
             self.members[client.uid] = client
-            members = list(self.members.values())
-        self._push_count(members)
         return True
 
     def remove(self, client) -> None:
         with self.lock:
-            if client.uid not in self.members:
-                return
-            del self.members[client.uid]
-            members = list(self.members.values())
-        self._push_count(members)
+            if client.uid in self.members:
+                del self.members[client.uid]
 
-    @staticmethod
-    def _push_count(members) -> None:
+    def push_count(self) -> None:
+        with self.lock:
+            members = list(self.members.values())
         n = len(members)
         for m in members:
             m.push(4, lambda w, c=n: write_uleb128(w, c))
@@ -197,9 +193,11 @@ class Server:
     def disconnect(self, client):
         with self.clients_lock:
             self.clients.pop(client.uid, None)
-        if client.room is not None:
-            client.room.remove(client)
+        room = client.room
+        if room is not None:
+            room.remove(client)
             client.room = None
+            room.push_count()
 
     # --- handlers ---
 
@@ -212,34 +210,37 @@ class Server:
         if old is not None:
             old.remove(client)
             client.room = None
+            old.push_count()
         client.pending_room = None
 
         room = self.get_room(room_id)
         if room is None:
-            client.push(1, lambda w: write_byte(w, 0))
+            client.push(1, lambda w: write_byte(w, 0))      # не создана
         elif room.password is None:
             if room.add(client):
                 client.room = room
-                client.push(1, lambda w: write_byte(w, 1))
+                client.push(1, lambda w: write_byte(w, 1))  # подключён
+                room.push_count()
             else:
-                client.push(1, lambda w: write_byte(w, 3))
+                client.push(1, lambda w: write_byte(w, 3))  # мест нет
         else:
             client.pending_room = room
-            client.push(1, lambda w: write_byte(w, 2))
+            client.push(1, lambda w: write_byte(w, 2))      # запаролена
 
     def handle_password(self, client):
         password = read_str(client.read)
         room = client.pending_room
         if room is None:
-            client.push(2, lambda w: write_byte(w, 0))
+            client.push(2, lambda w: write_byte(w, 0))  # сначала kind=1
         elif password != room.password:
-            client.push(2, lambda w: write_byte(w, 1))
+            client.push(2, lambda w: write_byte(w, 1))  # не подошёл
         elif room.add(client):
             client.room = room
             client.pending_room = None
-            client.push(2, lambda w: write_byte(w, 2))
+            client.push(2, lambda w: write_byte(w, 2))  # подошёл
+            room.push_count()
         else:
-            client.push(2, lambda w: write_byte(w, 3))
+            client.push(2, lambda w: write_byte(w, 3))  # мест нет
 
     def handle_create(self, client):
         room_id = read_str(client.read)
@@ -252,19 +253,22 @@ class Server:
 
         with self.rooms_lock:
             if room_id in self.rooms:
-                client.push(3, lambda w: write_byte(w, 0))
+                client.push(3, lambda w: write_byte(w, 0))  # уже существует
                 return
             room = Room(room_id, password, max_members)
             self.rooms[room_id] = room
 
         if client.room is not None:
-            client.room.remove(client)
+            old = client.room
+            old.remove(client)
             client.room = None
+            old.push_count()
         if room.add(client):
             client.room = room
-            client.push(3, lambda w: write_byte(w, 1))
+            client.push(3, lambda w: write_byte(w, 1))  # удалось создать
+            room.push_count()
         else:
-            client.push(3, lambda w: write_byte(w, 2))
+            client.push(3, lambda w: write_byte(w, 2))  # не удалось создать
 
     def handle_list_members(self, client):
         room = client.room
@@ -286,19 +290,25 @@ class Server:
         room = client.room
         if room is None:
             return
-        is_private = bool(target_uid)
         with room.lock:
             members = list(room.members.values())
 
-        def payload(w, s=client.uid, p=1 if is_private else 0, d=data):
+        def payload(w, s=client.uid, p=1 if target_uid else 0, d=data):
             write_str(w, s)
             write_byte(w, p)
             write_str_bin(w, d)
 
-        for other in members:
-            if target_uid and other.uid != target_uid:
-                continue
-            other.push(10, payload)
+        if target_uid:
+            # личное: ровно одному получателю
+            for other in members:
+                if other.uid == target_uid:
+                    other.push(10, payload)
+                    return
+        else:
+            # broadcast: всем, кроме отправителя
+            for other in members:
+                if other.uid != client.uid:
+                    other.push(10, payload)
 
 
 def main():
