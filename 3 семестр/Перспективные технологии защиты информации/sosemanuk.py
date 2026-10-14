@@ -733,9 +733,17 @@ def sosemanuk_prng(rc: SosemanukRunContext, out_len: int):
         pos += n
     return bytes(out)
 
+def short_repr(data: bytes):
+    out = repr(data.decode("utf-8", errors="replace"))
+    if len(out) > 128:
+        return f"{out[:64]} ... {out[-64:]}"
+    return out
 def sosemanuk_encrypt(rc: SosemanukRunContext, data: bytes):
     ks = sosemanuk_prng(rc, len(data))
-    return bytes(a ^ b for a, b in zip(data, ks))
+    xored = bytes(a ^ b for a, b in zip(data, ks))
+    print("Вход:", short_repr(data))
+    print("Выход:", short_repr(xored))
+    return xored
 
 
 # ~~~ точка входа ~~~

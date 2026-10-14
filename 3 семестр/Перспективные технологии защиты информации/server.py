@@ -28,8 +28,7 @@ from codec import (
 HOST = "0.0.0.0"
 PORT = 5000
 
-OPEN_ROOM_MAX = 100
-PRIVATE_ROOM_MAX = 2
+ROOM_MAX = 100
 
 
 class Client:
@@ -98,13 +97,19 @@ class Client:
 HISTORY_LIMIT = 1000
 
 class Room:
-    def __init__(self, room_id, password, max_members):
-        self.room_id = room_id
-        self.password = password
-        self.max_members = max_members
+    def __init__(self, room_id, salt = None, verifier_iv = None, verifier_ct = None, max_members = ROOM_MAX):
+        self.room_id      = room_id
+        self.max_members  = max_members
+        self.salt         = salt
+        self.verifier_iv  = verifier_iv
+        self.verifier_ct  = verifier_ct
         self.members = {}
-        self.lock = threading.Lock()
+        self.lock    = threading.Lock()
         self.history = deque(maxlen=HISTORY_LIMIT)  # а, вот как... чтобы вручную не юзать popleft!
+
+    @property
+    def is_protected(self):
+        return bool(self.salt)
 
     def add(self, client) -> bool:
         with self.lock:
@@ -134,6 +139,8 @@ class Room:
     def remember(self, sender_uid: str, flag: int, data: bytes):
         with self.lock:
             self.history.append((sender_uid, flag, data))
+            from sosemanuk import short_repr
+            print("Сервер сообщение видит так:", short_repr(data))
 
     def snapshot_history(self) -> list[tuple[str, int, bytes]]:
         with self.lock:
@@ -244,47 +251,54 @@ class Server:
         room = self.get_room(room_id)
         if room is None:
             client.push(1, lambda w: write_byte(w, 0))      # не создана
-        elif room.password is None:
+            return
+
+        if not room.is_protected:
             if room.add(client):
                 client.room = room
-                client.push(1, lambda w: write_byte(w, 1))  # подключён
+                client.push(1, lambda w: write_byte(w, 1))  # зашёл
                 room.push_count()
                 client.push_messages(room.snapshot_history())
             else:
                 client.push(1, lambda w: write_byte(w, 3))  # мест нет
-        else:
-            client.pending_room = room
-            client.push(1, lambda w: write_byte(w, 2))      # запаролена
+            return
+
+        # protected
+        client.pending_room = room
+
+        def payload_with_verifier(w):
+            write_byte(w, 2)  # нужна проверка
+            write_str_bin(w, room.salt)
+            write_str_bin(w, room.verifier_iv)
+            write_str_bin(w, room.verifier_ct)
+        client.push(1, payload_with_verifier)
+
 
     def handle_password(self, client):
-        password = read_str(client.read)
+        """kind=2 теперь значит `клиент подтвердил пароль, добавь его в комнату`."""
         room = client.pending_room
         if room is None:
             client.push(2, lambda w: write_byte(w, 0))  # сначала kind=1
-        elif password != room.password:
-            client.push(2, lambda w: write_byte(w, 1))  # не подошёл
         elif room.add(client):
             client.room = room
             client.pending_room = None
-            client.push(2, lambda w: write_byte(w, 2))  # подошёл
+            client.push(2, lambda w: write_byte(w, 2))  # зашёл
             room.push_count()
+            client.push_messages(room.snapshot_history())
         else:
             client.push(2, lambda w: write_byte(w, 3))  # мест нет
 
     def handle_create(self, client):
         room_id = read_str(client.read)
-        password = read_str(client.read)
-        if password == "":
-            password = None
-            max_members = OPEN_ROOM_MAX
-        else:
-            max_members = PRIVATE_ROOM_MAX
+        salt        = read_str_bin(client.read)
+        verifier_iv = read_str_bin(client.read)
+        verifier_ct = read_str_bin(client.read)
 
         with self.rooms_lock:
             if room_id in self.rooms:
                 client.push(3, lambda w: write_byte(w, 0))  # уже существует
                 return
-            room = Room(room_id, password, max_members)
+            room = Room(room_id, salt, verifier_iv, verifier_ct)
             self.rooms[room_id] = room
 
         if client.room is not None:
@@ -292,6 +306,7 @@ class Server:
             old.remove(client)
             client.room = None
             old.push_count()
+
         if room.add(client):
             client.room = room
             client.push(3, lambda w: write_byte(w, 1))  # удалось создать

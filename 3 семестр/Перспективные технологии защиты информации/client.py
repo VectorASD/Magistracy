@@ -10,6 +10,8 @@ import socket
 import sys
 from io import BytesIO
 import threading
+import os
+import room_crypto
 
 from codec import (
     read_byte, write_byte,
@@ -30,8 +32,7 @@ class Client:
         self.rbuf = BytesIO()
         self.wlock = threading.Lock()  # wire-lock
         self.running = False
-
-        self.callbacks = {}  # kind -> cb (приложение)
+        self.kc = None   # SosemanukKeyContext для текущей комнаты (None = open)
 
         self.handlers = {   # kind -> парсер+эмиттер
             0: self.handle_uid,
@@ -42,6 +43,7 @@ class Client:
             5: self.handle_members,
             10: self.handle_message,
         }
+        self.callbacks = {}  # kind -> cb (приложение)
 
     # ---------- buffered IO ----------
 
@@ -116,21 +118,42 @@ class Client:
         self.send(0, None)
 
     def join_room(self, room_id: str):
+        self.kc = None
         self.send(1, lambda w: write_str(w, room_id))
 
-    def send_password(self, password: str):
-        self.send(2, lambda w: write_str(w, password))
+    def confirm_join(self):
+        """Отправить пустой kind=2 после успешной проверки пароля."""
+        self.send(2, None)
+        # Позже, можно сделать проверку сервером по части случайного проверочного сообщения
 
     def create_room(self, room_id: str, password: str):
+        if password:
+            salt       = os.urandom(room_crypto.SALT_LEN)
+            key        = room_crypto.derive_key(password, salt)
+            kc         = room_crypto.make_kc(key)
+            v_iv, v_ct = room_crypto.make_verifier(kc)
+            self.kc    = kc
+        else:
+            salt = v_iv = v_ct = b""
+            self.kc = None
+
         def payload(w):
             write_str(w, room_id)
-            write_str(w, password)
+            write_str_bin(w, salt)
+            write_str_bin(w, v_iv)
+            write_str_bin(w, v_ct)
         self.send(3, payload)
 
     def list_members(self):
         self.send(5, None)
 
-    def send_message(self, target_uid: str, data: bytes):
+    def send_message(self, target_uid: str, plaintext: bytes):
+        if self.kc is not None:
+            iv, ct = room_crypto.encrypt(self.kc, plaintext)
+            data = iv + ct
+        else:
+            data = plaintext
+
         def payload(w):
             write_str(w, target_uid)
             write_str_bin(w, data)
@@ -145,8 +168,15 @@ class Client:
 
     def handle_join(self, read):
         cb = self.callbacks.get(1)
+        code = read_byte(read)
+        if code == 2:
+            salt = read_str_bin(read)
+            v_iv = read_str_bin(read)
+            v_ct = read_str_bin(read)
+        else:
+            salt = v_iv = v_ct = b""
         if cb:
-            cb(read_byte(read))
+            cb(code, salt, v_iv, v_ct)
 
     def handle_password(self, read):
         cb = self.callbacks.get(2)
@@ -172,12 +202,21 @@ class Client:
 
     def handle_message(self, read):
         n = read_uleb128(read)
-        batch = [
-            {"sender": read_str(read),
-             "flag": read_byte(read),
-             "text": read_str_bin(read).decode("utf-8", "replace")}
-            for _ in range(n)
-        ]
+        batch = []
+        for _ in range(n):
+            sender = read_str(read)
+            flag   = read_byte(read)
+            data   = read_str_bin(read)
+            if self.kc is not None:
+                if len(data) < room_crypto.IV_LEN:
+                    batch.append({"sender": sender, "flag": flag, "text": "??? no IV ???"})
+                    continue
+                iv = data[:room_crypto.IV_LEN]
+                ct = data[room_crypto.IV_LEN:]
+                text = room_crypto.decrypt(self.kc, iv, ct).decode("utf-8", "replace")
+            else:
+                text = data.decode("utf-8", "replace")
+            batch.append({"sender": sender, "flag": flag, "text": text})
         cb = self.callbacks.get(10)
         if cb:
             cb(batch)
@@ -274,9 +313,9 @@ def app(gui = None):
         print(f"UID: {uid}")
         ask_room()
 
-    def on_join(code: int):
+    def on_join(code: int, salt: bytes, v_iv: bytes, v_ct: bytes):
         if code == 1:
-            print(f"Ты в комнате {room_id!r}.")
+            print(f"Ты в комнате {room_id!r} (открытая).")
             return
 
         if code == 0:
@@ -294,7 +333,14 @@ def app(gui = None):
         if code == 2:
             print(f"Комната {room_id!r} запаролена.")
             password = input("Пароль: ")
-            client.send_password(password)
+            key = room_crypto.derive_key(password, salt)
+            kc  = room_crypto.make_kc(key)
+            if not room_crypto.check_verifier(kc, v_iv, v_ct):
+                print("Пароль не подошёл.")
+                ask_room()
+                return
+            client.kc = kc
+            client.confirm_join()
             return
 
         if code == 3:
@@ -315,15 +361,14 @@ def app(gui = None):
             print(f"Не удалось войти в {room_id!r}.")
         else:
             print(f"[create] неизвестный код {code}")
+        client.kc = None
         ask_room()
 
     def on_password(code: int):
         if code == 2:
             print(f"Ты в комнате {room_id!r}.")
             return
-        if code == 1:
-            print("Пароль не подошёл.")
-        elif code == 0:
+        if code == 0:
             print("Сервер потерял состояние join.")
         elif code == 3:
             print(f"Комната {room_id!r} заполнена.")
