@@ -121,27 +121,28 @@ class Client:
         self.kc = None
         self.send(1, lambda w: write_str(w, room_id))
 
-    def confirm_join(self):
-        """Отправить пустой kind=2 после успешной проверки пароля."""
-        self.send(2, None)
-        # Позже, можно сделать проверку сервером по части случайного проверочного сообщения
+    def confirm_join(self, proof: bytes):
+        """Отправить proof в kind=2 после успешной проверки пароля."""
+        self.send(2, lambda w: write_str_bin(w, proof))
 
     def create_room(self, room_id: str, password: str):
         if password:
-            salt       = os.urandom(room_crypto.SALT_LEN)
-            key        = room_crypto.derive_key(password, salt)
-            kc         = room_crypto.make_kc(key)
-            v_iv, v_ct = room_crypto.make_verifier(kc)
-            self.kc    = kc
+            salt = os.urandom(room_crypto.SALT_LEN)
+            key  = room_crypto.derive_key(password, salt)
+            kc   = room_crypto.make_kc(key)
+            v_iv, v_ct, v_proof = room_crypto.make_verifier(kc)
+            self.kc = kc
         else:
-            salt = v_iv = v_ct = b""
+            salt = b""
             self.kc = None
 
         def payload(w):
             write_str(w, room_id)
             write_str_bin(w, salt)
-            write_str_bin(w, v_iv)
-            write_str_bin(w, v_ct)
+            if salt:
+                write_str_bin(w, v_iv)
+                write_str_bin(w, v_ct)
+                write_str_bin(w, v_proof)
         self.send(3, payload)
 
     def list_members(self):
@@ -335,12 +336,13 @@ def app(gui = None):
             password = input("Пароль: ")
             key = room_crypto.derive_key(password, salt)
             kc  = room_crypto.make_kc(key)
-            if not room_crypto.check_verifier(kc, v_iv, v_ct):
+            verified, proof = room_crypto.check_verifier(kc, v_iv, v_ct)
+            if not verified:
                 print("Пароль не подошёл.")
                 ask_room()
                 return
             client.kc = kc
-            client.confirm_join()
+            client.confirm_join(proof)
             return
 
         if code == 3:
@@ -370,6 +372,8 @@ def app(gui = None):
             return
         if code == 0:
             print("Сервер потерял состояние join.")
+        elif code == 1:
+            print("Вы передали неправильный verifier_proof, читер.")
         elif code == 3:
             print(f"Комната {room_id!r} заполнена.")
         else:

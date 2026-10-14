@@ -45,20 +45,22 @@ def _xor(data: bytes, kc: SosemanukKeyContext, iv: bytes) -> bytes:
     return sosemanuk_encrypt(rc, data)
 
 
-def make_verifier(kc: SosemanukKeyContext) -> tuple[bytes, bytes]:
-    """Генерирует (iv, ct). Клиент-создатель кладёт это в комнату открыто."""
-    data = os.urandom(VERIFIER_DATA_LEN)
-    tag  = sha256(data).digest()
-    pt   = data + tag
-    iv   = os.urandom(IV_LEN)
-    return iv, _xor(pt, kc, iv)
+def make_verifier(kc: SosemanukKeyContext) -> tuple[bytes, bytes, bytes]:
+    """Генерирует (iv, ct, proof). Клиент-создатель кладёт это в комнату открыто."""
+    data  = os.urandom(VERIFIER_DATA_LEN)
+    tag   = sha256(data).digest()
+    pt    = data + tag
+    iv    = os.urandom(IV_LEN)
+    proof = sha256(pt).digest()
+    return iv, _xor(pt, kc, iv), proof
 
-def check_verifier(kc: SosemanukKeyContext, iv: bytes, ct: bytes) -> bool:
+def check_verifier(kc: SosemanukKeyContext, iv: bytes, ct: bytes) -> tuple[bool, bytes]:
     if len(ct) != VERIFIER_PT_LEN:
-        return False
-    pt = _xor(ct, kc, iv)
+        return False, b""
+    pt    = _xor(ct, kc, iv)
+    proof = sha256(pt).digest()
     data, tag = pt[:VERIFIER_DATA_LEN], pt[VERIFIER_DATA_LEN:]
-    return sha256(data).digest() == tag
+    return sha256(data).digest() == tag, proof
 
 
 def encrypt(kc: SosemanukKeyContext, plaintext: bytes) -> tuple[bytes, bytes]:

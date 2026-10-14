@@ -37,7 +37,7 @@ class Client:
         self.conn = conn
         conn.settimeout(timeout)
         self.room: Optional[Room] = None
-        self.pending_room = None
+        self.pending_room: Optional[Room] = None
         self.rbuf = BytesIO()
         self.wlock = threading.Lock()
 
@@ -97,12 +97,15 @@ class Client:
 HISTORY_LIMIT = 1000
 
 class Room:
-    def __init__(self, room_id, salt = None, verifier_iv = None, verifier_ct = None, max_members = ROOM_MAX):
-        self.room_id      = room_id
-        self.max_members  = max_members
-        self.salt         = salt
-        self.verifier_iv  = verifier_iv
-        self.verifier_ct  = verifier_ct
+    def __init__(self, room_id, salt = None,
+                 verifier_iv = None, verifier_ct = None, verifier_proof = None,
+                 max_members = ROOM_MAX):
+        self.room_id        = room_id
+        self.max_members    = max_members
+        self.salt           = salt
+        self.verifier_iv    = verifier_iv
+        self.verifier_ct    = verifier_ct
+        self.verifier_proof = verifier_proof
         self.members = {}
         self.lock    = threading.Lock()
         self.history = deque(maxlen=HISTORY_LIMIT)  # а, вот как... чтобы вручную не юзать popleft!
@@ -236,10 +239,10 @@ class Server:
 
     # --- handlers ---
 
-    def handle_uid(self, client):
+    def handle_uid(self, client: Client):
         client.push(0, lambda w: write_str(w, client.uid))
 
-    def handle_join(self, client):
+    def handle_join(self, client: Client):
         room_id = read_str(client.read)
         old = client.room
         if old is not None:
@@ -274,11 +277,18 @@ class Server:
         client.push(1, payload_with_verifier)
 
 
-    def handle_password(self, client):
+    def handle_password(self, client: Client):
         """kind=2 теперь значит `клиент подтвердил пароль, добавь его в комнату`."""
+        proof = read_str_bin(client.read)
         room = client.pending_room
         if room is None:
             client.push(2, lambda w: write_byte(w, 0))  # сначала kind=1
+        elif proof != room.verifier_proof:
+            # Клиент соврал о прохождении челленджа
+            # Исключительно нужно для того, чтобы кто попало не мог
+            # считать все blob-id из истории чата. Это всё равно не даёт
+            # без ключа ни серверу, ни клиенту доступ к зашифрованным данным.
+            client.push(2, lambda w: write_byte(w, 1))
         elif room.add(client):
             client.room = room
             client.pending_room = None
@@ -288,17 +298,21 @@ class Server:
         else:
             client.push(2, lambda w: write_byte(w, 3))  # мест нет
 
-    def handle_create(self, client):
+    def handle_create(self, client: Client):
         room_id = read_str(client.read)
-        salt        = read_str_bin(client.read)
-        verifier_iv = read_str_bin(client.read)
-        verifier_ct = read_str_bin(client.read)
+        salt    = read_str_bin(client.read)
+        if salt:
+            verifier_iv    = read_str_bin(client.read)
+            verifier_ct    = read_str_bin(client.read)
+            verifier_proof = read_str_bin(client.read)
+        else:
+            salt = verifier_iv = verifier_ct = verifier_proof = None
 
         with self.rooms_lock:
             if room_id in self.rooms:
                 client.push(3, lambda w: write_byte(w, 0))  # уже существует
                 return
-            room = Room(room_id, salt, verifier_iv, verifier_ct)
+            room = Room(room_id, salt, verifier_iv, verifier_ct, verifier_proof)
             self.rooms[room_id] = room
 
         if client.room is not None:
@@ -314,7 +328,7 @@ class Server:
         else:
             client.push(3, lambda w: write_byte(w, 2))  # не удалось создать
 
-    def handle_list_members(self, client):
+    def handle_list_members(self, client: Client):
         room = client.room
         if room is None:
             client.push(5, lambda w: write_uleb128(w, 0))
