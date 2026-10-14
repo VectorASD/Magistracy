@@ -16,6 +16,8 @@ from hashlib import sha256
 from pathlib import Path
 
 from client import app as run_client
+from sosemanuk import format_size
+from profiling import measure
 
 
 # ---------- палитра ----------
@@ -58,14 +60,6 @@ FONT_TEXT   = ("Segoe UI", 12)
 MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 Mb
 
 
-def format_size(n: int) -> str:
-    for unit in ("B", "KB", "MB", "GB", "TB", "PB", "EB"):
-        if n < 1024:
-            break
-        n /= 1024
-    return f"{n:.2f}".rstrip('0').rstrip('.') + f" {unit}"
-
-
 class ChatGui:
     def __init__(self):
         self.root = None
@@ -91,9 +85,11 @@ class ChatGui:
         Все вызовы кладут снимок состояния в очередь.
         """
         if self.root is None:
-            self._spawn()
-            self.ready.wait()
-        self.queue.put((uid, room_id, members, messages))
+            with measure("gui.spawn"):
+                self._spawn()
+                self.ready.wait()
+        with measure("gui.enqueue"):
+            self.queue.put((uid, room_id, members, messages))
 
     # ---------- GUI-поток ----------
 
@@ -228,24 +224,25 @@ class ChatGui:
         self.canvas.itemconfig(self._canvas_window, width=event.width)
 
     def _render(self, uid, room_id, members, messages):
-        self.uid = uid
+        with measure("gui.render"):
+            self.uid = uid
 
-        names = ", ".join(members) if members else "—"
-        self.header.config(text=f"{room_id}  ·  ты {uid}  ·  [{names}]")
+            names = ", ".join(members) if members else "—"
+            self.header.config(text=f"{room_id}  ·  ты {uid}  ·  [{names}]")
 
-        for w in self.chat.winfo_children():
-            w.destroy()
-        self._last_sender = None
+            for w in self.chat.winfo_children():
+                w.destroy()
+            self._last_sender = None
 
-        # чуть меньше ширины канваса: padx row (12×2) + padx label (10×2)
-        # + scrollbar + запас
-        self._wrap = max(200, round(self.canvas.winfo_width() * 0.8))
+            # чуть меньше ширины канваса: padx row (12×2) + padx label (10×2)
+            # + scrollbar + запас
+            self._wrap = max(200, round(self.canvas.winfo_width() * 0.8))
 
-        for msg in messages:
-            self._render_one(msg)
+            for msg in messages:
+                self._render_one(msg)
 
-        self.canvas.update_idletasks()
-        self.canvas.yview_moveto(1.0)
+            self.canvas.update_idletasks()
+            self.canvas.yview_moveto(1.0)
 
     def _render_one(self, msg):
         sender = msg["sender"]

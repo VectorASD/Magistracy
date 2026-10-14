@@ -17,11 +17,23 @@ class SosemanukRunContext:
         self.buf = bytearray(80)  # байты keystream
         self.ptr = 0
 
+    def copy(self):
+        """Глубокая копия состояния (список s и buf - новые объекты)."""
+        new = SosemanukRunContext()
+        new.s   = self.s.copy()
+        new.r1  = self.r1
+        new.r2  = self.r2
+        new.buf = self.buf.copy()
+        new.ptr = self.ptr
+        return new
+
 
 # ~~~ Отладчик ~~~
 
 from functools import cache
 from hashlib import sha256
+from struct import pack
+from operator import xor
 
 from profiling import measure
 
@@ -43,6 +55,26 @@ def DTV_print(
       # print(block, end=end, file=_dtv_fp(), flush=True)
         DTV_digest.update(block.encode("utf-8"))
         DTV_digest.update(end.encode("utf-8"))
+
+
+# ~~~ Утилиты ~~~
+
+def format_size(n: int) -> str:
+    for unit in ("B", "KB", "MB", "GB", "TB", "PB", "EB"):
+        if n < 1024:
+            break
+        n /= 1024
+    return f"{n:.2f}".rstrip('0').rstrip('.') + f" {unit}"
+
+def short_repr(data: bytes):
+    with measure("short_repr"):
+        out = data
+        if len(out) > 514:
+            out = out[:257] + out[-257:]
+        out = repr(out.decode("utf-8", errors="replace"))
+        if len(out) > 128:
+            out = f"{out[:64]} ... {out[-64:]}"
+        return f"{out}  ({format_size(len(data))})"
 
 
 # ~~~ Заспидранненый Серпент ~~~
@@ -627,35 +659,36 @@ def _mul_a(x: int):
 def _mul_g(x: int):
     return (x >> 8) ^ MUL_IA_TABLE[x & 0xFF]
 
+# x1..x9 - индексы s_t+1 .. s_t+9; сам s_t остаётся аргументом base
+_STEP_INDICES = tuple(
+    ((b + 1) % 10, (b + 2) % 10, (b + 3) % 10,
+     (b + 4) % 10, (b + 5) % 10, (b + 6) % 10,
+     (b + 7) % 10, (b + 8) % 10, (b + 9) % 10)
+    for b in range(10)
+)
+
 def _step(s: list[int], base: int, r1: int, r2: int):
     """Один STEP. s — список из 10 LFSR-слов, base — индекс s_t.
     Возвращает (dd, ee, r1, r2); s[base] обновляется in-place."""
-    x1 = (base + 1) % 10
-    x2 = (base + 2) % 10
-    x3 = (base + 3) % 10
-    x4 = (base + 4) % 10
-    x5 = (base + 5) % 10
-    x6 = (base + 6) % 10
-    x7 = (base + 7) % 10
-    x8 = (base + 8) % 10
-    x9 = (base + 9) % 10
+    x1, x2, x3, x4, x5, x6, x7, x8, x9 = _STEP_INDICES[base]
 
     # --- FSM (Trans инлайн) ---
-    s_x1 = s[x1]
-    s_x8 = s[x8]
-    tt = (s_x1 ^ s_x8) if (r1 & 1) else s_x1
-    or1 = r1
-    r1 = (r2 + tt) & 0xFFFFFFFF
-    tt = (or1 * 0x54655307) & 0xFFFFFFFF
+    tt = (s[x1] ^ s[x8]) if (r1 & 1) else s[x1]
+    r1, tt = (r2 + tt) & 0xFFFFFFFF, (r1 * 0x54655307) & 0xFFFFFFFF
     r2 = ((tt << 7) | (tt >> 25)) & 0xFFFFFFFF
-    if SOSEMANUK_VECTOR:
-        DTV_print("New FSM state:  r1 = %08X   r2 = %08X" % (r1, r2))
 
     # --- LRU (сдвиг LFSR) ---
     dd   = s[base]
     s_x9 = s[x9]
-    s[base] = (_mul_a(dd) ^ _mul_g(s[x3]) ^ s_x9) & 0xFFFFFFFF
+    s_x3 = s[x3]
+  # s[base] = _mul_a(dd) ^ _mul_g(s_x3) ^ s_x9
+    s[base] = ((dd << 8) & 0xFFFFFFFF) ^ MUL_A_TABLE[dd >> 24] ^ (s_x3 >> 8) ^ MUL_IA_TABLE[s_x3 & 0xFF] ^ s_x9
+
+    # --- CC1 ---
+    ee = ((s_x9 + r1) & 0xFFFFFFFF) ^ r2
+
     if SOSEMANUK_VECTOR:
+        DTV_print("New FSM state:  r1 = %08X   r2 = %08X" % (r1, r2))
         DTV_print(
             "New LFSR state:\n"
             "   dropped (s_t): %08X\n"
@@ -670,60 +703,51 @@ def _step(s: list[int], base: int, r1: int, r2: int):
             "         s_t+9  = %08X\n"
             "         s_t+10 = %08X"
             % (dd, s[x1], s[x2], s[x3], s[x4], s[x5],
-                  s[x6], s[x7], s[x8], s[x9], s[base]))
-
-    # --- CC1 ---
-    ee = ((s_x9 + r1) & 0xFFFFFFFF) ^ r2
-    if SOSEMANUK_VECTOR:
+                   s[x6], s[x7], s[x8], s[x9], s[base]))
         DTV_print("Intermediate output: %08X" % ee)
 
     return dd, ee, r1, r2
 
-def _srd(s: list[int], base: int, r1: int, r2: int, out_buf: bytearray, ooff: int):
-    v = [0, 0, 0, 0]
-    u = [0, 0, 0, 0]
-    for k in range(4):
-        v[k], u[k], r1, r2 = _step(s, (base + k) % 10, r1, r2)
+
+_SRD_BASES = tuple(
+    ((b + 1) % 10, (b + 2) % 10, (b + 3) % 10)
+    for b in range(10)
+)
+
+def _srd(s: list[int], base: int, r1: int, r2: int):
+    b1, b2, b3 = _SRD_BASES[base]
+    v0, u0, r1, r2 = _step(s, base, r1, r2)
+    v1, u1, r1, r2 = _step(s, b1,   r1, r2)
+    v2, u2, r1, r2 = _step(s, b2,   r1, r2)
+    v3, u3, r1, r2 = _step(s, b3,   r1, r2)
+
+    _, o1, o2, o3, o4 = _S2(u0, u1, u2, u3, 0)
+    block = pack("<IIII", o2 ^ v0, o3 ^ v1, o1 ^ v2, o4 ^ v3)
 
     if SOSEMANUK_VECTOR:
-        DTV_print("Serpent1 input:  %08X %08X %08X %08X"
-                  % (u[3], u[2], u[1], u[0]))
+        DTV_print("Serpent1 input:  %08X %08X %08X %08X" % (u3, u2, u1, u0))
+        DTV_print("Serpent1 output: %08X %08X %08X %08X" % (o4, o1, o3, o2))
+        DTV_print("Stream output: " + block.hex().upper())
 
-    u = list(_S2(u[0], u[1], u[2], u[3], 0))
-
-    if SOSEMANUK_VECTOR:
-        # PSPOUT получает u2, u3, u1, u4 и печатает их в порядке u4 u1 u3 u2
-        DTV_print("Serpent1 output: %08X %08X %08X %08X"
-                  % (u[4], u[1], u[3], u[2]))
-
-    w0 = (u[2] ^ v[0]) & 0xFFFFFFFF
-    w1 = (u[3] ^ v[1]) & 0xFFFFFFFF
-    w2 = (u[1] ^ v[2]) & 0xFFFFFFFF
-    w3 = (u[4] ^ v[3]) & 0xFFFFFFFF
-
-    out_buf[ooff + 0 :ooff + 4]  = w0.to_bytes(4, "little")
-    out_buf[ooff + 4 :ooff + 8]  = w1.to_bytes(4, "little")
-    out_buf[ooff + 8 :ooff + 12] = w2.to_bytes(4, "little")
-    out_buf[ooff + 12:ooff + 16] = w3.to_bytes(4, "little")
-
-    if SOSEMANUK_VECTOR:
-        DTV_print("Stream output: " + out_buf[ooff:ooff + 16].hex().upper())
-
-    return r1, r2
+    return r1, r2, block
 
 
 def _sosemanuk_internal(rc: SosemanukRunContext):
     """Один блок keystream — 80 байт в rc.buf."""
-    s = rc.s
-    r1, r2 = rc.r1, rc.r2
-    for block in range(5):
-        base = (block * 4) % 10
-        r1, r2 = _srd(s, base, r1, r2, rc.buf, block * 16)
+    s, r1, r2 = rc.s, rc.r1, rc.r2
+
+    r1, r2, buf0 = _srd(s, 0, r1, r2)
+    r1, r2, buf1 = _srd(s, 4, r1, r2)
+    r1, r2, buf2 = _srd(s, 8, r1, r2)
+    r1, r2, buf3 = _srd(s, 2, r1, r2)
+    r1, r2, buf4 = _srd(s, 6, r1, r2)
+
     rc.r1 = r1
     rc.r2 = r2
+    rc.buf = b''.join((buf0, buf1, buf2, buf3, buf4))
 
 
-def sosemanuk_prng(rc: SosemanukRunContext, out_len: int):
+def sosemanuk_prng_old(rc: SosemanukRunContext, out_len: int):
     out = bytearray(out_len)
     pos = 0
     while pos < out_len:
@@ -736,16 +760,39 @@ def sosemanuk_prng(rc: SosemanukRunContext, out_len: int):
         pos += n
     return bytes(out)
 
-def short_repr(data: bytes):
-    out = repr(data.decode("utf-8", errors="replace"))
-    if len(out) > 128:
-        return f"{out[:64]} ... {out[-64:]}"
-    return out
+def sosemanuk_prng(rc: SosemanukRunContext, out_len: int):
+    out = bytearray(out_len)
+    pos = 0
+
+    # 1) добираем остаток из текущего буфера
+    take = min(80 - rc.ptr, out_len)
+    if take:
+        out[:take] = rc.buf[rc.ptr:rc.ptr + take]
+        rc.ptr += take
+        pos = take
+
+    # 2) остаток делим на полные блоки + хвост
+    remaining = out_len - pos
+    if remaining:
+        full, tail = divmod(remaining, 80)
+        for _ in range(full):
+            _sosemanuk_internal(rc)
+            out[pos:pos + 80] = rc.buf
+            pos += 80
+        if tail:
+            _sosemanuk_internal(rc)
+            out[pos:pos + tail] = rc.buf[:tail]
+            rc.ptr = tail
+        else:
+            rc.ptr = 80
+
+    return out  # bytearray, а не bytes — без копии 4 МБ
+
 def sosemanuk_encrypt(rc: SosemanukRunContext, data: bytes, user: str):
     with measure(f"{user}.prng"):
         ks = sosemanuk_prng(rc, len(data))
     with measure(f"{user}.xor"):
-        xored = bytes(a ^ b for a, b in zip(data, ks))
+        xored = bytes(map(xor, data, ks))
     print("Вход:", short_repr(data))
     print("Выход:", short_repr(xored))
     return xored
@@ -773,6 +820,22 @@ def trace_vector(num, key_hex, iv_hex, out_len=160):
         DTV_print(f"\nTotal output:\n{_hex_dump(ks)}\n")
 
 
+def check_prng():
+    kc = SosemanukKeyContext()
+    rc = SosemanukRunContext()
+    sosemanuk_schedule(kc, bytes.fromhex("A7C083FEB7"))
+    sosemanuk_init(rc, kc, bytes.fromhex("00112233445566778899AABBCCDDEEFF"))
+    ks_arr = []
+    for func in (sosemanuk_prng_old, sosemanuk_prng):
+        ks_arr.append(sosemanuk_prng_old(rc.copy(), 1000))
+        rc2 = rc.copy()
+        ks = sosemanuk_prng_old(rc2, 45)
+        ks2 = sosemanuk_prng_old(rc2, 1000 - 45*2)
+        ks3 = sosemanuk_prng_old(rc2, 45)
+        ks_arr.append(ks + ks2 + ks3)
+    print("\nCHECK sosemanuk_prng:", [ks == ks_arr[0] for ks in ks_arr[1:]])
+
+
 if __name__ == "__main__":
     for i in range(8):
         test_sbox_table(i)
@@ -784,3 +847,6 @@ if __name__ == "__main__":
     trace_vector(2, "00112233445566778899AABBCCDDEEFF", "8899AABBCCDDEEFF0011223344556677")
     print("DTV-digest:", DTV_digest.hexdigest())
     assert DTV_digest.hexdigest() == "7ad601eb1cc6b60e0c8591655ec3bc2b00c05bfce73e122ebca3b39f105974ea"
+
+    SOSEMANUK_VECTOR = False
+    check_prng()
