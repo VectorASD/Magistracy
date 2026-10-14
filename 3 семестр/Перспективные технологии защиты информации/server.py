@@ -14,6 +14,7 @@ import sys
 import threading
 from io import BytesIO
 from collections import deque
+import os
 
 from typing import Optional
 
@@ -51,16 +52,17 @@ class Client:
             except OSError as e:
                 print(f"{self.uid}: push failed: {e}", flush=True)
 
-    def push_messages(self, messages: list[tuple[str, int, bytes]]) -> None:
-        """Отправить один kind=10 со списком сообщений (sender, flag, data)."""
+    def push_messages(self, messages: list[tuple[str, int, bool, bytes]]) -> None:
+        """Отправить один kind=10 со списком сообщений (sender, flag, is_blob, data)."""
         if not messages:
             return
 
         def payload(w):
             write_uleb128(w, len(messages))
-            for sender, flag, data in messages:
+            for sender, flag, is_blob, data in messages:
                 write_str(w, sender)
                 write_byte(w, flag)
+                write_byte(w, is_blob)
                 write_str_bin(w, data)
 
         self.push(10, payload)
@@ -106,7 +108,7 @@ class Room:
         self.verifier_iv    = verifier_iv
         self.verifier_ct    = verifier_ct
         self.verifier_proof = verifier_proof
-        self.members = {}
+        self.members: dict[str, Client] = {}
         self.lock    = threading.Lock()
         self.history = deque(maxlen=HISTORY_LIMIT)  # а, вот как... чтобы вручную не юзать popleft!
 
@@ -114,7 +116,7 @@ class Room:
     def is_protected(self):
         return bool(self.salt)
 
-    def add(self, client) -> bool:
+    def add(self, client: Client) -> bool:
         with self.lock:
             if client.uid in self.members:
                 return True
@@ -123,7 +125,7 @@ class Room:
             self.members[client.uid] = client
         return True
 
-    def remove(self, client) -> None:
+    def remove(self, client: Client) -> None:
         with self.lock:
             if client.uid in self.members:
                 del self.members[client.uid]
@@ -139,13 +141,13 @@ class Room:
         with self.lock:
             return list(self.members.keys())
 
-    def remember(self, sender_uid: str, flag: int, data: bytes):
+    def remember(self, sender_uid: str, flag: int, is_blob: bool, data: bytes):
         with self.lock:
-            self.history.append((sender_uid, flag, data))
+            self.history.append((sender_uid, flag, is_blob, data))
             from sosemanuk import short_repr
             print("Сервер сообщение видит так:", short_repr(data))
 
-    def snapshot_history(self) -> list[tuple[str, int, bytes]]:
+    def snapshot_history(self) -> list[tuple[str, int, bool, bytes]]:
         with self.lock:
             return list(self.history)
 
@@ -154,12 +156,18 @@ class Server:
     def __init__(self, host=HOST, port=PORT):
         self.host = host
         self.port = port
+
         self.uid_counter = 0
         self.uid_lock = threading.Lock()
+
         self.clients = {}
         self.clients_lock = threading.Lock()
+
         self.rooms: dict[str, Room] = {}
         self.rooms_lock = threading.Lock()
+
+        self.blobs: dict[bytes, bytes] = {}
+        self.blobs_lock = threading.Lock()
 
         self.handlers = {
             0: self.handle_uid,
@@ -168,6 +176,7 @@ class Server:
             3: self.handle_create,
             5: self.handle_list_members,
             10: self.handle_send_message,
+            11: self.handle_fetch_blob,
         }
 
     def new_uid(self) -> str:
@@ -343,32 +352,56 @@ class Server:
         client.push(5, payload)
 
     def handle_send_message(self, client: Client):
-        target_uid = read_str(client.read)
-        data = read_str_bin(client.read)
+        r = client.read
+        target_uid = read_str(r)
+        is_blob = bool(read_byte(r))
+        metadata = read_str_bin(r) if is_blob else None
+        data = read_str_bin(r)
+
         room = client.room
         if room is None:
             return
-        flag = 1 if target_uid else 0
-        room.remember(client.uid, flag, data)
 
-        with room.lock:
-            members = list(room.members.values())
-        messages = [(client.uid, flag, data)]
+        flag = 1 if target_uid else 0
+        if is_blob:
+            uuid = os.urandom(16)
+            with self.blobs_lock:
+                self.blobs[uuid] = data
+            data = metadata + uuid  # в историю и рассылку едет metadata вместо blob'а
+
+        room.remember(client.uid, flag, is_blob, data)
+        messages = [(client.uid, flag, is_blob, data)]
 
         if target_uid:
             # личное: ровно одному получателю
-            for other in members:
-                if other.uid == target_uid:
-                    other.push_messages(messages)
-                    return
+            with room.lock:
+                other = room.members.get(target_uid)
+            if other is None:
+                print(f"[!] {client.uid}: target {target_uid} not in room", flush=True)
+            else:
+                other.push_messages(messages)
         else:
             # broadcast: всем
+            with room.lock:
+                members = list(room.members.values())
             for other in members:
                 # if other.uid != client.uid:
                 # В нормальном мессенджере у нас клиент добавляет сообщение,
                 # а сервер лишь заменяет "часы" на "одну галочку".
                 # Но, т.к. это приложение не для web, а локальное, то сильно пинговать просто нечему
                 other.push_messages(messages)
+
+    def handle_fetch_blob(self, client: Client):
+        uuid = read_str_bin(client.read)
+        with self.blobs_lock:
+            blob = self.blobs.get(uuid)
+        def payload(w):
+            exists = blob is not None
+            write_str_bin(w, uuid)
+            write_byte(w, exists)
+            if exists:
+                write_str_bin(w, blob)
+        client.push(11, payload)
 
 
 def main():

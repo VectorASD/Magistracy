@@ -10,6 +10,7 @@
 
 import os
 from hashlib import sha256, pbkdf2_hmac
+from typing import Optional
 
 from sosemanuk import (
     SosemanukKeyContext,
@@ -63,9 +64,21 @@ def check_verifier(kc: SosemanukKeyContext, iv: bytes, ct: bytes) -> tuple[bool,
     return sha256(data).digest() == tag, proof
 
 
-def encrypt(kc: SosemanukKeyContext, plaintext: bytes) -> tuple[bytes, bytes]:
-    iv = os.urandom(IV_LEN)
-    return iv, _xor(plaintext, kc, iv)
+def encrypt(kc: Optional[SosemanukKeyContext], plaintext: bytes) -> bytes:
+    if kc is None:
+        return plaintext
 
-def decrypt(kc: SosemanukKeyContext, iv: bytes, ct: bytes) -> bytes:
+    iv = os.urandom(IV_LEN)
+    ct = _xor(plaintext, kc, iv)
+    return iv + ct
+
+def decrypt(kc: Optional[SosemanukKeyContext], data: bytes) -> bytes:
+    if kc is None:
+        return data
+
+    if len(data) < IV_LEN:
+        return b"??? no IV ???"
+
+    iv = data[:IV_LEN]
+    ct = data[IV_LEN:]
     return _xor(ct, kc, iv)

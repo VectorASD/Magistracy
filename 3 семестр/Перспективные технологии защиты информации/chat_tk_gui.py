@@ -11,8 +11,9 @@ Main-поток крутит _loop Client — Ctrl+C в консоли заве�
 import queue
 import threading
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
 from hashlib import sha256
+from pathlib import Path
 
 from client import app as run_client
 
@@ -53,6 +54,16 @@ BTN_FG       = "#ffffff"
 FONT_HEADER = ("Segoe UI", 10)
 FONT_NAME   = ("Segoe UI", 11)
 FONT_TEXT   = ("Segoe UI", 12)
+
+MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 Mb
+
+
+def format_size(n: int) -> str:
+    for unit in ("B", "KB", "MB", "GB", "TB", "PB", "EB"):
+        if n < 1024:
+            break
+        n /= 1024
+    return f"{n:.2f}".rstrip('0').rstrip('.') + f" {unit}"
 
 
 class ChatGui:
@@ -145,11 +156,18 @@ class ChatGui:
         inp.pack(fill="x", side="bottom")
         inp.pack_propagate(False)
 
+        tk.Button(
+            inp, text="📎", command=self._on_attach,
+            font=("Segoe UI Emoji", 20),
+            bg=BTN_BG, fg=BTN_FG, relief="flat",
+            width=2, activebackground=BTN_BG,
+        ).pack(side="left", padx=(12, 0), pady=10)
+
         self.entry = tk.Entry(
             inp, bg=INPUT_BG, fg=TEXT, insertbackground=TEXT,
             relief="flat", font=FONT_TEXT,
         )
-        self.entry.pack(side="left", fill="both", expand=True, padx=12, pady=10)
+        self.entry.pack(side="left", fill="both", expand=True, padx=(8, 12), pady=10)
         self.entry.bind("<Return>", self._on_send)
         self.entry.focus_set()
 
@@ -173,6 +191,24 @@ class ChatGui:
             self.entry.select_range(0, "end")
             self.entry.icursor("end")
         return "break"
+
+    def _on_attach(self):
+        if self.client is None:
+            return
+        path = filedialog.askopenfilename()
+        if not path:
+            return
+
+        p = Path(path)
+        size = p.stat().st_size
+        if size > MAX_FILE_BYTES:
+            messagebox.showerror(
+                "Файл слишком большой",
+                f"{size / 1024 / 1024:.1f} Mb, а максимум: {MAX_FILE_BYTES // 1024 // 1024} Mb",
+            )
+            return
+
+        self.client.send_message("", p.read_bytes(), p.name)
 
     # ---------- опрос очереди ----------
 
@@ -213,7 +249,6 @@ class ChatGui:
 
     def _render_one(self, msg):
         sender = msg["sender"]
-        text = msg["text"]
         mine = (sender == self.uid)
         first = (self._last_sender != sender)
         self._last_sender = sender
@@ -232,13 +267,49 @@ class ChatGui:
                 font=FONT_NAME, anchor="w", padx=10
             ).pack(fill="x")
 
-        tk.Label(
-            bubble, text=text, bg=bubble_bg, fg=TEXT,
-            font=FONT_TEXT, anchor="w", justify="left",
-            wraplength=self._wrap, padx=10,
-        ).pack(fill="x", pady=(0, 6))
+        if msg.get("is_blob"):
+            self._render_file(bubble, bubble_bg, msg)
+        else:
+            text = msg["text"]
+            tk.Label(
+                bubble, text=text, bg=bubble_bg, fg=TEXT,
+                font=FONT_TEXT, anchor="w", justify="left",
+                wraplength=self._wrap, padx=10,
+            ).pack(fill="x", pady=(0, 6))
 
-    # ---------- отправка ----------
+    def _render_file(self, parent, bg, msg):
+        box = tk.Frame(parent, bg=bg)
+        box.pack(fill="x", padx=10, pady=(4, 6))
+
+        # иконка-документ слева
+        tk.Label(
+            box, text="📄", bg=bg, fg=TEXT,
+            font=("Segoe UI Emoji", 23), width=2
+        ).pack(side="left", padx=(0, 10), anchor="n")
+
+        # две строки справа: имя + размер
+        col = tk.Frame(box, bg=bg)
+        col.pack(side="left", fill="x", expand=True)
+
+        name_lbl = tk.Label(
+            col, text=msg["filename"], bg=bg, fg=TEXT,
+            font=FONT_NAME, anchor="w", justify="left",
+            wraplength=self._wrap - 60,
+        )
+        name_lbl.pack(fill="x")
+
+        size_lbl = tk.Label(
+            col, text=format_size(msg["size"]), bg=bg, fg="#707579",
+            font=FONT_HEADER, anchor="w",
+        )
+        size_lbl.pack(fill="x")
+
+        # вся площадь — кликабельна, скачивание по клику
+        for w in (box, name_lbl, size_lbl):
+            w.configure(cursor="hand2")
+            w.bind("<Button-1>", lambda e, m=msg: self._download_file(m))
+
+    # ---------- обработчики ----------
 
     def _on_send(self, event=None):
         text = self.entry.get().strip()
@@ -246,6 +317,19 @@ class ChatGui:
             return
         self.client.send_message("", text.encode("utf-8"))
         self.entry.delete(0, "end")
+
+    def _download_file(self, msg):
+        def on_bytes(result: dict[str, str | bytes]):
+            if "error" in result:
+                messagebox.showerror("Не удалось скачать файл", result["error"])
+                return
+            path = filedialog.asksaveasfilename(initialfile=msg["filename"])
+            if not path:
+                return
+            with open(path, "wb") as f:
+                f.write(result["content"])
+
+        self.client.fetch_blob(msg["uuid"], on_bytes)
 
     # ---------- закрытие ----------
 

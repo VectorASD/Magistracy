@@ -11,12 +11,13 @@ import sys
 from io import BytesIO
 import threading
 import os
-import room_crypto
+from typing import Optional
 
+import room_crypto
 from codec import (
     read_byte, write_byte,
     read_str, write_str,
-    read_uleb128,
+    read_uleb128, write_uleb128,
     read_str_bin, write_str_bin,
 )
 
@@ -42,8 +43,10 @@ class Client:
             4: self.handle_count,
             5: self.handle_members,
             10: self.handle_message,
+            11: self.handle_blob,
         }
-        self.callbacks = {}  # kind -> cb (приложение)
+        self.callbacks     = {}  # kind -> cb (приложение)
+        self._blob_waiters = {}  # uuid -> cb (fetch_blob)
 
     # ---------- buffered IO ----------
 
@@ -148,17 +151,35 @@ class Client:
     def list_members(self):
         self.send(5, None)
 
-    def send_message(self, target_uid: str, plaintext: bytes):
-        if self.kc is not None:
-            iv, ct = room_crypto.encrypt(self.kc, plaintext)
-            data = iv + ct
+    def send_message(self, target_uid: str, plaintext: bytes, filename: Optional[str] = None):
+        is_blob = filename is not None
+        if is_blob:
+            buff = BytesIO()
+            write_str(buff.write, filename)
+            write_uleb128(buff.write, len(plaintext))
+            metadata = buff.getvalue()
         else:
-            data = plaintext
+            metadata = None
+
+        data = room_crypto.encrypt(self.kc, plaintext)
 
         def payload(w):
             write_str(w, target_uid)
+            write_byte(w, is_blob)
+            if is_blob:
+                write_str_bin(w, metadata)
             write_str_bin(w, data)
         self.send(10, payload)
+
+    def fetch_blob(self, uuid: bytes, cb, timeout=10.0):
+        self._blob_waiters[uuid] = cb
+        self.send(11, lambda w: write_str_bin(w, uuid))
+        def _expire():
+            if self._blob_waiters.pop(uuid, None) is not None:
+                cb({"error": f"timeout for {uuid.hex()}"})
+        t = threading.Timer(timeout, _expire)
+        t.daemon = True
+        t.start()
 
     # ---------- handlers: wire-парсеры ----------
 
@@ -205,22 +226,39 @@ class Client:
         n = read_uleb128(read)
         batch = []
         for _ in range(n):
-            sender = read_str(read)
-            flag   = read_byte(read)
-            data   = read_str_bin(read)
-            if self.kc is not None:
-                if len(data) < room_crypto.IV_LEN:
-                    batch.append({"sender": sender, "flag": flag, "text": "??? no IV ???"})
-                    continue
-                iv = data[:room_crypto.IV_LEN]
-                ct = data[room_crypto.IV_LEN:]
-                text = room_crypto.decrypt(self.kc, iv, ct).decode("utf-8", "replace")
-            else:
-                text = data.decode("utf-8", "replace")
-            batch.append({"sender": sender, "flag": flag, "text": text})
+            sender  = read_str(read)
+            flag    = read_byte(read)
+            is_blob = bool(read_byte(read))
+            data    = read_str_bin(read)
+            if is_blob:
+                buff = BytesIO(data)
+                filename = read_str(buff.read)
+                size = read_uleb128(buff.read)
+                uuid = buff.read()
+                batch.append({
+                    "sender": sender, "flag": flag, "is_blob": True,
+                    "filename": filename, "size": size, "uuid": uuid,
+                })
+                continue
+
+            text = room_crypto.decrypt(self.kc, data).decode("utf-8", "replace")
+            batch.append({"sender": sender, "flag": flag, "is_blob": is_blob, "text": text})
         cb = self.callbacks.get(10)
         if cb:
             cb(batch)
+
+    def handle_blob(self, read):
+        uuid   = read_str_bin(read)
+        exists = read_byte(read) 
+        if exists:
+            blob = read_str_bin(read)
+            file_bytes = room_crypto.decrypt(self.kc, blob)
+            result = {"content": file_bytes}
+        else:
+            result = {"error": f"{uuid.hex()} not found on server"}
+        cb = self._blob_waiters.pop(uuid, None)
+        if cb:
+            cb(result)
 
 
 # ---------- ввод с валидацией ----------
