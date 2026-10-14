@@ -19,6 +19,7 @@ from sosemanuk import (
     sosemanuk_init,
     sosemanuk_encrypt,
 )
+from profiling import measure
 
 
 PBKDF2_ITERATIONS = 100_000
@@ -30,20 +31,21 @@ VERIFIER_DATA_LEN = VERIFIER_PT_LEN - VERIFIER_TAG_LEN  # что осталос�
 
 
 def derive_key(password: str, salt: bytes) -> bytes:
-    return pbkdf2_hmac(
-        "sha256", password.encode("utf-8"), salt,
-        PBKDF2_ITERATIONS, dklen=32,
-    )
+    with measure("crypto.pbkdf2"):
+        return pbkdf2_hmac("sha256", password.encode("utf-8"), salt,
+                           PBKDF2_ITERATIONS, dklen=32)
 
 def make_kc(key: bytes) -> SosemanukKeyContext:
     kc = SosemanukKeyContext()
-    sosemanuk_schedule(kc, key)
+    with measure("crypto.schedule"):
+        sosemanuk_schedule(kc, key)
     return kc
 
 def _xor(data: bytes, kc: SosemanukKeyContext, iv: bytes) -> bytes:
     rc = SosemanukRunContext()
-    sosemanuk_init(rc, kc, iv)
-    return sosemanuk_encrypt(rc, data)
+    with measure("crypto.init"):
+        sosemanuk_init(rc, kc, iv)
+    return sosemanuk_encrypt(rc, data, "crypto")
 
 
 def make_verifier(kc: SosemanukKeyContext) -> tuple[bytes, bytes, bytes]:

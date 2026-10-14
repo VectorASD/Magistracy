@@ -23,6 +23,9 @@ class SosemanukRunContext:
 from functools import cache
 from hashlib import sha256
 
+from profiling import measure
+
+
 SOSEMANUK_VECTOR = False  # Просто debug-режим, должен выводить содержимое TEST_VECTOR_128.txt
 DTV_digest = sha256()
 @cache
@@ -738,9 +741,11 @@ def short_repr(data: bytes):
     if len(out) > 128:
         return f"{out[:64]} ... {out[-64:]}"
     return out
-def sosemanuk_encrypt(rc: SosemanukRunContext, data: bytes):
-    ks = sosemanuk_prng(rc, len(data))
-    xored = bytes(a ^ b for a, b in zip(data, ks))
+def sosemanuk_encrypt(rc: SosemanukRunContext, data: bytes, user: str):
+    with measure(f"{user}.prng"):
+        ks = sosemanuk_prng(rc, len(data))
+    with measure(f"{user}.xor"):
+        xored = bytes(a ^ b for a, b in zip(data, ks))
     print("Вход:", short_repr(data))
     print("Выход:", short_repr(xored))
     return xored

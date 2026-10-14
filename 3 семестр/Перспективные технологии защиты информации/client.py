@@ -12,6 +12,7 @@ from io import BytesIO
 import threading
 import os
 from typing import Optional
+import atexit
 
 import room_crypto
 from codec import (
@@ -20,6 +21,7 @@ from codec import (
     read_uleb128, write_uleb128,
     read_str_bin, write_str_bin,
 )
+from profiling import measure, STATS
 
 
 HOST = "127.0.0.1"
@@ -152,28 +154,32 @@ class Client:
         self.send(5, None)
 
     def send_message(self, target_uid: str, plaintext: bytes, filename: Optional[str] = None):
-        is_blob = filename is not None
-        if is_blob:
-            buff = BytesIO()
-            write_str(buff.write, filename)
-            write_uleb128(buff.write, len(plaintext))
-            metadata = buff.getvalue()
-        else:
-            metadata = None
-
-        data = room_crypto.encrypt(self.kc, plaintext)
-
-        def payload(w):
-            write_str(w, target_uid)
-            write_byte(w, is_blob)
+        with measure("cli.send.format"):
+            is_blob = filename is not None
             if is_blob:
-                write_str_bin(w, metadata)
-            write_str_bin(w, data)
-        self.send(10, payload)
+                buff = BytesIO()
+                write_str(buff.write, filename)
+                write_uleb128(buff.write, len(plaintext))
+                metadata = buff.getvalue()
+            else:
+                metadata = None
+
+        with measure("cli.send.encrypt"):
+            data = room_crypto.encrypt(self.kc, plaintext)
+
+        with measure("cli.send.sendall"):
+            def payload(w):
+                write_str(w, target_uid)
+                write_byte(w, is_blob)
+                if is_blob:
+                    write_str_bin(w, metadata)
+                write_str_bin(w, data)
+            self.send(10, payload)
 
     def fetch_blob(self, uuid: bytes, cb, timeout=10.0):
-        self._blob_waiters[uuid] = cb
-        self.send(11, lambda w: write_str_bin(w, uuid))
+        with measure("cli.blob.send"):
+            self._blob_waiters[uuid] = cb
+            self.send(11, lambda w: write_str_bin(w, uuid))
         def _expire():
             if self._blob_waiters.pop(uuid, None) is not None:
                 cb({"error": f"timeout for {uuid.hex()}"})
@@ -223,36 +229,40 @@ class Client:
             cb(members)
 
     def handle_message(self, read):
-        n = read_uleb128(read)
-        batch = []
-        for _ in range(n):
-            sender  = read_str(read)
-            flag    = read_byte(read)
-            is_blob = bool(read_byte(read))
-            data    = read_str_bin(read)
-            if is_blob:
-                buff = BytesIO(data)
-                filename = read_str(buff.read)
-                size = read_uleb128(buff.read)
-                uuid = buff.read()
-                batch.append({
-                    "sender": sender, "flag": flag, "is_blob": True,
-                    "filename": filename, "size": size, "uuid": uuid,
-                })
-                continue
+        with measure("cli.recv.parse"):
+            n = read_uleb128(read)
+            batch = []
+            for _ in range(n):
+                sender  = read_str(read)
+                flag    = read_byte(read)
+                is_blob = bool(read_byte(read))
+                data    = read_str_bin(read)
+                if is_blob:
+                    buff = BytesIO(data)
+                    filename = read_str(buff.read)
+                    size = read_uleb128(buff.read)
+                    uuid = buff.read()
+                    batch.append({
+                        "sender": sender, "flag": flag, "is_blob": True,
+                        "filename": filename, "size": size, "uuid": uuid,
+                    })
+                    continue
 
-            text = room_crypto.decrypt(self.kc, data).decode("utf-8", "replace")
-            batch.append({"sender": sender, "flag": flag, "is_blob": is_blob, "text": text})
-        cb = self.callbacks.get(10)
-        if cb:
-            cb(batch)
+                text = room_crypto.decrypt(self.kc, data).decode("utf-8", "replace")
+                batch.append({"sender": sender, "flag": flag, "is_blob": is_blob, "text": text})
+
+        with measure("cli.recv.dispatch"):
+            cb = self.callbacks.get(10)
+            if cb:
+                cb(batch)
 
     def handle_blob(self, read):
         uuid   = read_str_bin(read)
         exists = read_byte(read) 
         if exists:
             blob = read_str_bin(read)
-            file_bytes = room_crypto.decrypt(self.kc, blob)
+            with measure("cli.blob.decrypt"):
+                file_bytes = room_crypto.decrypt(self.kc, blob)
             result = {"content": file_bytes}
         else:
             result = {"error": f"{uuid.hex()} not found on server"}
@@ -444,6 +454,7 @@ def app(gui = None):
         _redraw = gui.redraw
         gui.client = client
 
+    atexit.register(STATS.dump, "client")
     client.get_uid()
     client.start()
 
